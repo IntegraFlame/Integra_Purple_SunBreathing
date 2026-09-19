@@ -28,6 +28,8 @@ CLAUDE_API_KEY.env
 geminihemisphere.env
 claudehemisphere.env
 *hemisphere*.env
+Git_personal_access.env
+*.env
 
 # --- Local Databases (ChromaDB, SQLite) ---
 local_dbs/
