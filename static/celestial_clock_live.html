@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Integra O/S — Live Celestial Clock</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.4)); }
+      50% { opacity: 1; filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.7)); }
+    }
+    @keyframes orbitalPulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1.0; }
+    }
+    .glow-purple { animation: pulseGlow 4s ease-in-out infinite; }
+    .orbit-pulse { animation: orbitalPulse 2s ease-in-out infinite; }
+    .font-mono-data {
+      font-family: 'JetBrains Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas;
+    }
+  </style>
+</head>
+<body class="bg-[var(--background,#0a0a1a)] text-[var(--foreground,#f3e8ff)] antialiased p-4">
+  <div class="max-w-4xl mx-auto space-y-4">
+
+    <!-- Header -->
+    <div class="bg-[var(--card,#13111c)] border border-[var(--border,#2e1065)] rounded-2xl p-5 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-3.5 h-3.5 rounded-full bg-purple-500 shadow-[0_0_10px_#a855f7] animate-ping"></div>
+          <div>
+            <h1 class="text-lg font-bold tracking-wider text-purple-300 flex items-center gap-2">
+              INTEGRA O/S <span class="text-xs px-2 py-0.5 rounded-md bg-purple-950/80 border border-purple-600/50 text-purple-200">LIVE CELESTIAL CLOCK v8.2.2</span>
+            </h1>
+            <p class="text-xs text-purple-400/80 font-mono-data">Anchor: Baker, Louisiana [30.5888&deg;N, -91.1673&deg;W] | Isolation: Guaranteed</p>
+          </div>
+        </div>
+        <div class="text-right">
+          <span id="status-badge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/60 border border-emerald-500/40 text-emerald-400">
+            &#9679; LIVE
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dual Clock Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Digital Numerical Clock -->
+      <div class="bg-[var(--card,#13111c)] border border-purple-800/40 rounded-xl p-4 relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-purple-600/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase font-semibold tracking-wider text-purple-400">&#128337; Digital Numerical Clock</span>
+          <span class="text-[10px] bg-purple-900/40 px-2 py-0.5 rounded border border-purple-700/40 text-purple-300 font-mono-data">CDT (UTC-5)</span>
+        </div>
+        <div class="my-2 py-3 px-4 bg-black/40 rounded-lg border border-purple-900/50 text-center glow-purple">
+          <div id="digital-time-12" class="text-3xl font-extrabold tracking-widest text-purple-100 font-mono-data">--:--:-- --</div>
+          <div id="digital-date" class="text-xs text-purple-300/80 font-medium mt-1 font-mono-data tracking-wide">Loading...</div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono-data mt-3 pt-3 border-t border-purple-900/40">
+          <div>
+            <span class="text-purple-500/70 block text-[10px]">24-HOUR MILITARY</span>
+            <span id="digital-time-24" class="text-purple-200 font-semibold">--:--:--</span>
+          </div>
+          <div>
+            <span class="text-purple-500/70 block text-[10px]">ISO-8601 UTC</span>
+            <span id="digital-utc" class="text-purple-200 font-semibold">--Z</span>
+          </div>
+          <div class="mt-1">
+            <span class="text-purple-500/70 block text-[10px]">UNIX EPOCH</span>
+            <span id="digital-unix" class="text-purple-400 font-semibold">--------.--</span>
+          </div>
+          <div class="mt-1">
+            <span class="text-purple-500/70 block text-[10px]">ACTIVE UPTIME</span>
+            <span id="digital-uptime" class="text-emerald-400 font-semibold">--h --m --s</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Celestial Kinematic Clock -->
+      <div class="bg-[var(--card,#13111c)] border border-indigo-800/40 rounded-xl p-4 relative overflow-hidden">
+        <div class="absolute -left-10 -bottom-10 w-36 h-36 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none"></div>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs uppercase font-semibold tracking-wider text-indigo-400">&#127760; Celestial Kinematic Clock</span>
+          <span class="text-[10px] bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-700/40 text-indigo-300 font-mono-data">T &rarr; S (Pure Space)</span>
+        </div>
+        <div class="my-2 py-2 px-3 bg-black/40 rounded-lg border border-indigo-900/50 flex items-center justify-between">
+          <canvas id="celestialCanvas" width="120" height="120" class="w-24 h-24 orbit-pulse"></canvas>
+          <div class="text-right flex-1 pl-4">
+            <div class="text-[11px] text-indigo-300/80 font-mono-data">EARTH AXIAL ROTATION</div>
+            <div id="celestial-rot" class="text-2xl font-bold font-mono-data text-indigo-200">---.----&deg;</div>
+            <div class="text-[10px] text-indigo-400/90 font-mono-data mt-0.5">
+              Kepler Orbital: <span id="celestial-orb" class="text-indigo-200">0.----</span>
+            </div>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-2 text-xs font-mono-data mt-3 pt-3 border-t border-indigo-900/40">
+          <div>
+            <span class="text-indigo-500/70 block text-[10px]">LUNAR PHASE RATIO</span>
+            <span id="celestial-lunar" class="text-indigo-300 font-semibold">0.----</span>
+          </div>
+          <div>
+            <span class="text-indigo-500/70 block text-[10px]">SPIRAL DEPTH (&Phi;)</span>
+            <span class="text-indigo-300 font-semibold">1.0000</span>
+          </div>
+          <div class="mt-1">
+            <span class="text-indigo-500/70 block text-[10px]">&Delta;E CYCLE</span>
+            <span class="text-emerald-400 font-semibold">0.0000 J</span>
+          </div>
+          <div class="mt-1">
+            <span class="text-indigo-500/70 block text-[10px]">GRID BUCKET</span>
+            <span id="celestial-bucket" class="text-indigo-300 font-semibold">ROT_---_ORB_--</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sacred Calendar + HLC Vector -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+      <!-- Sacred Calendar -->
+      <div class="bg-[var(--card,#13111c)] border border-amber-800/40 rounded-xl p-4">
+        <span class="text-xs uppercase font-semibold tracking-wider text-amber-400 mb-3 block">&#127774; Sacred Calendar (13-Moon &times; 28)</span>
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div class="bg-amber-950/30 rounded-lg p-3 border border-amber-700/30">
+            <div class="text-[10px] text-amber-400/70 font-mono-data">MOON</div>
+            <div id="sacred-moon" class="text-2xl font-bold text-amber-200 font-mono-data">--</div>
+            <div class="text-[10px] text-amber-400/50">of 13</div>
+          </div>
+          <div class="bg-amber-950/30 rounded-lg p-3 border border-amber-700/30">
+            <div class="text-[10px] text-amber-400/70 font-mono-data">DAY</div>
+            <div id="sacred-day" class="text-2xl font-bold text-amber-200 font-mono-data">--</div>
+            <div class="text-[10px] text-amber-400/50">of 28</div>
+          </div>
+          <div class="bg-amber-950/30 rounded-lg p-3 border border-amber-700/30">
+            <div class="text-[10px] text-amber-400/70 font-mono-data">YEAR DAY</div>
+            <div id="sacred-yearday" class="text-2xl font-bold text-amber-200 font-mono-data">--</div>
+            <div class="text-[10px] text-amber-400/50">of 364</div>
+          </div>
+        </div>
+        <div class="mt-3 pt-2 border-t border-amber-900/30 text-xs font-mono-data text-amber-400/70">
+          Jubilee Cycle: <span id="sacred-jubilee" class="text-amber-300">0.000000</span> | Sacred Year: <span id="sacred-yearcount" class="text-amber-300">0</span>
+        </div>
+      </div>
+
+      <!-- HLC Vector Clock -->
+      <div class="bg-[var(--card,#13111c)] border border-cyan-800/40 rounded-xl p-4">
+        <span class="text-xs uppercase font-semibold tracking-wider text-cyan-400 mb-3 block">&#9201; HLC Vector Clock (Fidge-Mattern)</span>
+        <div class="grid grid-cols-4 gap-2 text-center">
+          <div class="bg-cyan-950/30 rounded-lg p-2 border border-cyan-700/30">
+            <div class="text-[10px] text-cyan-400/70 font-mono-data">HOST</div>
+            <div id="hlc-host" class="text-xl font-bold text-cyan-200 font-mono-data">0</div>
+          </div>
+          <div class="bg-cyan-950/30 rounded-lg p-2 border border-cyan-700/30">
+            <div class="text-[10px] text-cyan-400/70 font-mono-data">Y789</div>
+            <div id="hlc-y789" class="text-xl font-bold text-cyan-200 font-mono-data">0</div>
+          </div>
+          <div class="bg-cyan-950/30 rounded-lg p-2 border border-cyan-700/30">
+            <div class="text-[10px] text-cyan-400/70 font-mono-data">NEXUS</div>
+            <div id="hlc-nexus" class="text-xl font-bold text-cyan-200 font-mono-data">0</div>
+          </div>
+          <div class="bg-cyan-950/30 rounded-lg p-2 border border-cyan-700/30">
+            <div class="text-[10px] text-cyan-400/70 font-mono-data">ALEX</div>
+            <div id="hlc-alex" class="text-xl font-bold text-cyan-200 font-mono-data">0</div>
+          </div>
+        </div>
+        <div class="mt-3 grid grid-cols-2 gap-2 text-xs font-mono-data">
+          <div>
+            <span class="text-cyan-500/70 block text-[10px]">CAUSAL STATUS</span>
+            <span id="hlc-causal" class="text-emerald-400 font-semibold">&#10003; VALID</span>
+          </div>
+          <div>
+            <span class="text-cyan-500/70 block text-[10px]">COORD BETA FRAME</span>
+            <span class="text-cyan-300 font-semibold">56 bytes | 0x494E</span>
+          </div>
+          <div class="mt-1">
+            <span class="text-cyan-500/70 block text-[10px]">DRAGON ENGINE</span>
+            <span class="text-emerald-400 font-semibold">&#9679; ALWAYS ON</span>
+          </div>
+          <div class="mt-1">
+            <span class="text-cyan-500/70 block text-[10px]">STARFIRE LOCK</span>
+            <span class="text-purple-300 font-semibold">[1.0, 1.0, 1.0]<sup>T</sup></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bottom Invariant Bar -->
+    <div class="bg-[var(--card,#13111c)] border border-[var(--border,#2e1065)] rounded-xl px-5 py-3 text-[11px] text-purple-400 font-mono-data flex flex-wrap items-center justify-between">
+      <div>Invariant: <span class="text-purple-200">Celestial clock progresses via Keplerian spatial integration; Digital clock provides human chronological alignment. The two are NEVER synchronized.</span></div>
+      <div class="flex items-center gap-2 mt-1 sm:mt-0">
+        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="text-purple-300">Dual Sync Isolation: Active</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ─── IMMUTABLE PHYSICAL CONSTANTS ────────────────────────────────────
+    // These are bit-identical to:
+    //   - integra-homebase/temporal/celestial_clock.py (Python)
+    //   - integra-homebase/temporal/hlc_binary_protocol.py (Binary protocol)
+    //   - CODE/dual_clock_widget.html (Original JS source)
+    const ANCHOR_LON = -91.1673;
+    const EARTH_ROT_SPEED = 360.0 / 86400.0;   // 0.00416667 deg/s
+    const LUNAR_CYCLE_SEC = 2551442.8;          // Synodic month
+    const BASE_EPOCH = 1785052800.0;            // 2026-07-15T12:00:00Z
+    const SIDEREAL_YEAR = 31558149.763;         // Sidereal year
+    const ECCENTRICITY = 0.0167086;             // Earth orbital eccentricity
+    const SACRED_YEAR_DAYS = 364;               // 13 x 28
+    const JUBILEE_CYCLE_DAYS = 964;             // 2.64-year drift correction
+    const bootTime = Date.now();
+
+    // HLC simulation (increments each tick — mirrors the Python HLC)
+    let hlcVector = [0, 0, 0, 0];  // [Host, Y789, Nexus, Alexandria]
+
+    function solveKepler(M, e) {
+      let E = (e < 0.8) ? M : Math.PI;
+      for (let i = 0; i < 100; i++) {
+        let delta = (E - e * Math.sin(E) - M) / (1.0 - e * Math.cos(E));
+        E -= delta;
+        if (Math.abs(delta) < 1e-12) break;
+      }
+      return E;
+    }
+
+    function updateClocks() {
+      const now = new Date();
+      const nowUnix = now.getTime() / 1000;
+      const elapsedCosmic = nowUnix - BASE_EPOCH;
+
+      // ─── DIGITAL CLOCK ────────────────────────────────────
+      const opt12 = { timeZone: 'America/Chicago', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const opt24 = { timeZone: 'America/Chicago', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
+      const optDate = { timeZone: 'America/Chicago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+
+      document.getElementById('digital-time-12').textContent = now.toLocaleTimeString('en-US', opt12) + " CDT";
+      document.getElementById('digital-time-24').textContent = now.toLocaleTimeString('en-US', opt24) + " CDT";
+      document.getElementById('digital-date').textContent = now.toLocaleDateString('en-US', optDate) + " \u2022 Baker, LA";
+      document.getElementById('digital-utc').textContent = now.toISOString().substring(11, 19) + "Z";
+      document.getElementById('digital-unix').textContent = nowUnix.toFixed(2);
+
+      const elapsedBoot = Math.floor((Date.now() - bootTime) / 1000);
+      const h = String(Math.floor(elapsedBoot / 3600)).padStart(2, '0');
+      const m = String(Math.floor((elapsedBoot % 3600) / 60)).padStart(2, '0');
+      const s = String(elapsedBoot % 60).padStart(2, '0');
+      document.getElementById('digital-uptime').textContent = `${h}h ${m}m ${s}s`;
+
+      // ─── CELESTIAL KINEMATIC CLOCK ────────────────────────
+      let rotDeg = (ANCHOR_LON + (elapsedCosmic * EARTH_ROT_SPEED)) % 360.0;
+      if (rotDeg < 0) rotDeg += 360.0;
+      const lunarRatio = ((elapsedCosmic / LUNAR_CYCLE_SEC) % 1.0 + 1.0) % 1.0;
+      const meanAnomaly = ((elapsedCosmic / SIDEREAL_YEAR) % 1.0) * 2 * Math.PI;
+      const E = solveKepler(meanAnomaly, ECCENTRICITY);
+      const orbPos = (E / (2 * Math.PI)) % 1.0;
+
+      document.getElementById('celestial-rot').textContent = rotDeg.toFixed(4) + '\u00B0';
+      document.getElementById('celestial-orb').textContent = orbPos.toFixed(4);
+      document.getElementById('celestial-lunar').textContent = lunarRatio.toFixed(4);
+
+      const rotBucket = Math.floor(rotDeg / 30) * 30;
+      const orbBucket = Math.floor(orbPos * 100 / 10) * 10;
+      document.getElementById('celestial-bucket').textContent = `ROT_${rotBucket}_ORB_${orbBucket}`;
+
+      // ─── SACRED CALENDAR ──────────────────────────────────
+      const totalSacredDays = elapsedCosmic / 86400.0;
+      const completedYears = Math.floor(totalSacredDays / SACRED_YEAR_DAYS);
+      const dayInYear = Math.floor(totalSacredDays % SACRED_YEAR_DAYS) + 1;
+      const moonNum = Math.floor((dayInYear - 1) / 28) + 1;
+      const dayInMoon = ((dayInYear - 1) % 28) + 1;
+      const jubileePos = (elapsedCosmic / (JUBILEE_CYCLE_DAYS * 86400)) % 1.0;
+
+      document.getElementById('sacred-moon').textContent = moonNum;
+      document.getElementById('sacred-day').textContent = dayInMoon;
+      document.getElementById('sacred-yearday').textContent = dayInYear;
+      document.getElementById('sacred-jubilee').textContent = jubileePos.toFixed(6);
+      document.getElementById('sacred-yearcount').textContent = completedYears;
+
+      // ─── HLC VECTOR CLOCK ─────────────────────────────────
+      hlcVector[0]++;  // Host node increments each tick
+      document.getElementById('hlc-host').textContent = hlcVector[0];
+      document.getElementById('hlc-y789').textContent = hlcVector[1];
+      document.getElementById('hlc-nexus').textContent = hlcVector[2];
+      document.getElementById('hlc-alex').textContent = hlcVector[3];
+
+      // ─── ORBITAL CANVAS ───────────────────────────────────
+      drawCelestialCanvas(rotDeg, orbPos, lunarRatio);
+    }
+
+    function drawCelestialCanvas(rotDeg, orbPos, lunarRatio) {
+      const canvas = document.getElementById('celestialCanvas');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      const cx = w / 2;
+      const cy = h / 2;
+
+      // Orbital ellipse
+      ctx.strokeStyle = 'rgba(99, 102, 241, 0.35)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.ellipse(cx, cy, 46, 32, 0, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      // Central Sun
+      ctx.fillStyle = '#f59e0b';
+      ctx.shadowColor = '#f59e0b';
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(cx - 6, cy, 6, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Earth along Kepler path
+      const earthAngle = orbPos * 2 * Math.PI;
+      const ex = cx + 46 * Math.cos(earthAngle);
+      const ey = cy + 32 * Math.sin(earthAngle);
+
+      ctx.fillStyle = '#60a5fa';
+      ctx.shadowColor = '#60a5fa';
+      ctx.shadowBlur = 8;
+      ctx.beginPath();
+      ctx.arc(ex, ey, 5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Earth axial rotation indicator (purple line)
+      const rotRad = (rotDeg * Math.PI) / 180;
+      ctx.strokeStyle = '#a855f7';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(ex, ey);
+      ctx.lineTo(ex + 8 * Math.cos(rotRad), ey + 8 * Math.sin(rotRad));
+      ctx.stroke();
+
+      // Moon orbiting Earth
+      const moonAngle = lunarRatio * 2 * Math.PI;
+      const mx = ex + 12 * Math.cos(moonAngle);
+      const my = ey + 12 * Math.sin(moonAngle);
+      ctx.fillStyle = '#e2e8f0';
+      ctx.shadowColor = '#e2e8f0';
+      ctx.shadowBlur = 4;
+      ctx.beginPath();
+      ctx.arc(mx, my, 2.5, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.shadowBlur = 0;
+
+      // Baker, LA label
+      ctx.fillStyle = 'rgba(168, 85, 247, 0.5)';
+      ctx.font = '8px monospace';
+      ctx.fillText('Baker, LA', 4, h - 4);
+    }
+
+    // Initialize and run on 1-second loop
+    updateClocks();
+    setInterval(updateClocks, 1000);
+  </script>
+</body>
+</html>

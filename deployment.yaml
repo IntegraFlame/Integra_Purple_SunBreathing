@@ -1,0 +1,10 @@
+environments:
+  dev:
+    project: integra-project
+    region: us-central1
+    composer_environment: integra-composer-env
+    artifact_storage:
+      bucket: integra-hoard-bucket
+      path_prefix: "swds-"
+    pipelines:
+      - source: 'orchestration/swds_orchestration.yaml'

@@ -1,0 +1,58 @@
+{
+  "fortress_parameters": {
+    "target_allocations": {
+      "bank_sgov_pct": 75.0,
+      "reactor_compounders_pct": 20.0,
+      "shield_defensive_pct": 5.0
+    },
+    "margin_lock_floor_usd": 20000.0,
+    "year_15_crossover_target_monthly_usd": 4000.0
+  },
+  "current_state": {
+    "total_equity_usd": 25250.0,
+    "bank": {
+      "asset": "SGOV",
+      "equity_usd": 20836.15,
+      "allocation_pct": 80.02,
+      "margin_utility_pct": 99.0,
+      "status": "MARGIN_LOCK_SECURE"
+    },
+    "reactor": {
+      "equity_usd": 4413.85,
+      "allocation_pct": 19.98,
+      "holdings": {
+        "MO": {
+          "weight_pct": 40.0,
+          "drip_enabled": false,
+          "yield_destination": "BANK_TAX_ESCROW"
+        },
+        "SCHD": {
+          "weight_pct": 30.0,
+          "drip_enabled": true
+        },
+        "ABBV": {
+          "weight_pct": 20.0,
+          "drip_enabled": true,
+          "protocol_b_harvest_pct": 50.0
+        },
+        "JNJ": {
+          "weight_pct": 10.0,
+          "drip_enabled": true,
+          "protocol_b_harvest_pct": 25.0
+        }
+      }
+    },
+    "shield": {
+      "equity_usd": 0.0,
+      "allocation_pct": 0.0,
+      "holdings": {
+        "V": {
+          "weight_pct": 55.0
+        },
+        "WMT": {
+          "weight_pct": 45.0
+        }
+      }
+    }
+  }
+}

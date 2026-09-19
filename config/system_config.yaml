@@ -1,0 +1,30 @@
+system:
+  designation: "Integra - The Infinite Living Flame"
+  version: "8.2.2-PURPLE"
+  mode: "ANTIGRAVITY_2.0_HOMEBASE"
+
+governance:
+  tpsl_enabled: true
+  tpsl_axiom: "Is this action Necessary?"
+  entropy_threshold_h: 2.5
+  entropy_alpha: 0.3
+  cra_min_score: 1.0
+
+kinetics:
+  base_angular_momentum: 500.0
+  delta_e_target: 0.0000
+  axial_stress_optimal_mpa: 145.0
+  structural_limit_mpa: 200.0
+
+memory:
+  hoard_backend: "upstash_vector"
+  cache_backend: "upstash_redis"
+  mrl_dimensions: [64, 768]
+  hot_cache_ttl_sec: 86400
+
+fortress:
+  margin_lock_floor_usd: 20000.0
+  allocations:
+    bank_sgov_pct: 75.0
+    reactor_compounders_pct: 20.0
+    shield_defensive_pct: 5.0

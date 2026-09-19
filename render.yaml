@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: integra-backend
+    env: docker
+    plan: standard # Ensures sufficient RAM for Heavy Math Engine without OOM
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: UPSTASH_VECTOR_REST_URL
+        sync: false
+      - key: UPSTASH_VECTOR_REST_TOKEN
+        sync: false
+      - key: UPSTASH_REDIS_REST_URL
+        sync: false
+      - key: UPSTASH_REDIS_REST_TOKEN
+        sync: false

@@ -1,0 +1,17 @@
+{
+  "sleep_window_start_hour": 2,
+  "sleep_window_end_hour": 7,
+  "inactivity_threshold_seconds": 3600,
+  "target_wake_hour": 7,
+  "report_format": "CODEX_V1",
+  "auto_reconcile_on_startup": true,
+  "anchor_location": {
+    "name": "Baker, Louisiana",
+    "latitude": 30.5888,
+    "longitude": -91.1673,
+    "timezone": "America/Chicago"
+  },
+  "report_directory": "../The Hoard/Slow-Wave Deep Sleep Reports",
+  "hoard_directory": "../The Hoard",
+  "codex_path": "../The Hoard/Slow-Wave Deep Sleep Reports/CODEX_OF_ACTIONS.md"
+}

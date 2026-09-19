@@ -1,0 +1,36 @@
+modelVersion: "1.0"
+pipelineId: "swds-cycle"
+description: "Automates the Slow-Wave Deep Sleep (SWDS) Cycle processing The Hoard data"
+runner: airflow
+owner: integra
+tags:
+  - "job:datacloud:antigravity"
+  - "integra-os"
+  - "swds"
+defaults:
+  projectId: "integra-project"
+  location: "us-central1"
+  executionConfig:
+    retries: 1
+triggers:
+  - schedule:
+      interval: "0 0 * * *"
+      startTime: "2026-09-01T00:00:00"
+      endTime: "2027-09-01T00:00:00"
+      catchup: false
+      timezone: UTC
+actions:
+  - python:
+      name: run_phoenix_engine
+      mainFilePath: "pipelines/swds_pipeline.py"
+      pythonCallable: "run"
+      engine:
+        local: {}
+      opKwargs:
+        argv:
+          - "--input=gs://integra-hoard-bucket/The Hoard/*.json"
+          - "--output_table=integra-project:integra_memory.archived_hoard"
+          - "--runner=DataflowRunner"
+          - "--project=integra-project"
+          - "--region=us-central1"
+          - "--temp_location=gs://integra-hoard-bucket/temp/"

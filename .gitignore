@@ -1,0 +1,65 @@
+# ═══════════════════════════════════════════════════════
+# INTEGRA O/S — .gitignore
+# Protects API keys, local databases, venvs, and caches.
+# ═══════════════════════════════════════════════════════
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+
+# --- Virtual Environment ---
+.venv/
+venv/
+ENV/
+
+# --- API Keys & Secrets (NEVER commit) ---
+.env
+.env.*
+*.pem
+*.key
+GEMINI_API_KEY.env
+CLAUDE_API_KEY.env
+geminihemisphere.env
+claudehemisphere.env
+*hemisphere*.env
+
+# --- Local Databases (ChromaDB, SQLite) ---
+local_dbs/
+*.db
+*.sqlite
+*.sqlite3
+chroma_storage/
+
+# --- IDE & Editor ---
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# --- OS ---
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# --- Pytest & Coverage ---
+.pytest_cache/
+htmlcov/
+.coverage
+*.cover
+
+# --- Apache Beam Cache ---
+.apache_beam/
+
+# --- Rust Build Artifacts ---
+rust/target/
+
+# --- Byte-compiled / optimized ---
+*.pyc
+*.pyo

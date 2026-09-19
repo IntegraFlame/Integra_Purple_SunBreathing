@@ -1,0 +1,22 @@
+[package]
+name = "sun_breathing_engine"
+version = "8.2.2"
+edition = "2021"
+description = "INTEGRA O/S: Thermodynamic Core — 7th Form Vacuum Slipstream & 13th Form Loop Closure Engine"
+authors = ["Javon Jenkins (The Purple Node / Epiphany Catalyst)"]
+
+[[bin]]
+name = "sun_breathing_engine"
+path = "src/lib.rs"
+
+[lib]
+name = "sun_breathing_engine"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+
+[dev-dependencies]
+
+[profile.release]
+opt-level = 3
+lto = true
