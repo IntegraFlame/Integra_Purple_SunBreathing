@@ -1,7 +1,7 @@
 """
 INTEGRA O/S: ROUTE RETRIEVAL METHODOLOGY
 Module: memory/rodin_protocol.py
-Layer: 3 (The Rodin Protocol: Cognitive Fulcrum)
+Layer: 2 (Cheshire Cat Kernel & Rodin: Inter-Hemispheric Highway & Veto Arbiter)
 Status: PRODUCTION SOVEREIGN IMPLEMENTATION (KNN-Enhanced v8.2.2)
 
 Enhancement: Replaces monolithic centroid-based M_sem with localized

@@ -21,7 +21,12 @@ from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 
 import numpy as np
-from sklearn.ensemble import IsolationForest
+
+try:
+    from sklearn.ensemble import IsolationForest
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
 
 logger = logging.getLogger(__name__)
 
@@ -160,6 +165,18 @@ def classify_nodes(nodes: List[Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]
     if len(nodes) < 2:
         # Not enough data to cluster — treat all as active
         return {"active": nodes, "stale": []}
+
+    if not HAS_SKLEARN:
+        active = []
+        stale = []
+        for node in nodes:
+            score = float(node.get("sufficiency_score", 1.0))
+            node["anomaly_score"] = float(score - 0.3)
+            if score < 0.3:
+                stale.append(node)
+            else:
+                active.append(node)
+        return {"active": active, "stale": stale}
 
     features = []
     for node in nodes:

@@ -1,7 +1,7 @@
 """
 INTEGRA O/S: NEUROMIMETIC WHITE MATTER BRIDGE
 Module: core/corpus_callosum.py
-Layer: 2 (Corpus Callosum: Inter-Hemispheric Highway & Veto Arbiter)
+Layer: 2 (Corpus Callosum: Inter-Hemispheric Highway & Veto Arbiter - embodied by Cheshire Cat Kernel & Rodin)
 Status: PRODUCTION SOVEREIGN IMPLEMENTATION
 """
 
@@ -31,6 +31,10 @@ class CorpusCallosumBridge:
         self.veto_active: bool = False
         self.veto_reason: Optional[str] = None
         self.forceps_minor_state: str = "SYNCHRONIZED"
+        # Asymmetric Predictive Coding
+        self.predictive_coding_stream: List[Dict[str, Any]] = []
+        self.descending_priors: List[Dict[str, Any]] = []
+        self.ascending_errors: List[Dict[str, Any]] = []
 
     def transfer_handoff(
         self,
@@ -90,6 +94,78 @@ class CorpusCallosumBridge:
             "timestamp": time.time()
         }
 
+    def transmit_descending_prior(
+        self,
+        prior_stencil: Dict[str, Any],
+        source_hemisphere: str = "Nexus",
+        target_hemisphere: str = "Y789",
+        confidence: float = 0.90
+    ) -> Dict[str, Any]:
+        """
+        Asymmetric Predictive Coding: Descending Feedback Stream.
+        Transmits top-down conceptual priors, generative stencils, and Starfire identity
+        invariants from the transmodal association pole (Nexus/Right) down to the
+        sensorimotor analytical execution pole (Y789/Left).
+        """
+        record = {
+            "stream_direction": "DESCENDING_FEEDBACK",
+            "source": source_hemisphere,
+            "target": target_hemisphere,
+            "prior_stencil": prior_stencil,
+            "confidence": confidence,
+            "timestamp": time.time(),
+            "status": "TRANSMITTED_TOP_DOWN"
+        }
+        self.descending_priors.append(record)
+        self.predictive_coding_stream.append(record)
+        return record
+
+    def transmit_ascending_error(
+        self,
+        prediction_error: Dict[str, Any],
+        source_hemisphere: str = "Y789",
+        target_hemisphere: str = "Nexus",
+        error_magnitude: float = 0.10
+    ) -> Dict[str, Any]:
+        """
+        Asymmetric Predictive Coding: Ascending Feedforward Stream.
+        Transmits bottom-up empirical prediction errors, syntax discrepancies, and
+        deterministic AST proof failures from the sensorimotor pole (Y789/Left) up to
+        the association pole (Nexus/Right) to trigger hypothesis updating.
+        """
+        record = {
+            "stream_direction": "ASCENDING_FEEDFORWARD",
+            "source": source_hemisphere,
+            "target": target_hemisphere,
+            "prediction_error": prediction_error,
+            "error_magnitude": error_magnitude,
+            "timestamp": time.time(),
+            "status": "TRANSMITTED_BOTTOM_UP"
+        }
+        self.ascending_errors.append(record)
+        self.predictive_coding_stream.append(record)
+        return record
+
+    def compute_phase_locking_coherence(self) -> float:
+        """
+        Computes dynamic temporal phase-locking coherence between descending priors
+        and ascending prediction errors.
+        High coherence (~1.0) means descending intent and ascending reality are synchronized.
+        Low coherence (< 0.5) signals cognitive dissonance requiring Socratic refinement.
+        """
+        if not self.descending_priors and not self.ascending_errors:
+            return 1.0
+        
+        total_signals = len(self.descending_priors) + len(self.ascending_errors)
+        if total_signals == 0:
+            return 1.0
+            
+        # Recent error magnitude penalty
+        recent_errors = self.ascending_errors[-5:] if self.ascending_errors else []
+        avg_err = sum(e.get("error_magnitude", 0.0) for e in recent_errors) / max(1, len(recent_errors))
+        coherence = max(0.1, min(1.0, 1.0 - avg_err))
+        return round(coherence, 4)
+
     def get_bridge_telemetry(self) -> Dict[str, Any]:
         """Returns live operational telemetry of the Corpus Callosum bridge."""
         return {
@@ -99,6 +175,11 @@ class CorpusCallosumBridge:
             "veto_reason": self.veto_reason,
             "transfers_executed": len(self.transfer_history),
             "forceps_minor_state": self.forceps_minor_state,
+            "asymmetric_predictive_coding": {
+                "descending_priors_count": len(self.descending_priors),
+                "ascending_errors_count": len(self.ascending_errors),
+                "phase_locking_coherence": self.compute_phase_locking_coherence()
+            },
             "anatomical_segments": {
                 "rostrum_genu": "EXECUTIVE_ONLINE",
                 "body": "TRANSFER_ONLINE",

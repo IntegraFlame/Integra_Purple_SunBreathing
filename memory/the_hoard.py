@@ -282,6 +282,19 @@ class TheHoard:
             print(f"[HOARD] ChromaDB query failed: {e}")
             return []
 
+    def count(self) -> int:
+        """
+        Returns the total number of indexed nodes in The Hoard.
+        Queries the persistent ChromaDB collection if active, or falls back
+        to the local sparse cache count.
+        """
+        if self._chroma_collection is not None:
+            try:
+                return self._chroma_collection.count()
+            except Exception:
+                pass
+        return len(self.local_sparse_cache)
+
     # ─────────────────────────────────────────────
     #  COMMIT: v2 (Full Schema)
     # ─────────────────────────────────────────────

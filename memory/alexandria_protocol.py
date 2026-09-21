@@ -24,8 +24,9 @@ class AlexandriaProtocol:
     4. Embed (Inject to The Hoard)
     5. Re-Run
     """
-    def __init__(self, sufficiency_threshold: float = 0.95):
+    def __init__(self, sufficiency_threshold: float = 0.95, daily_planet: Any = None):
         self.threshold = sufficiency_threshold
+        self._daily_planet = daily_planet
 
     def evaluate_internal_sufficiency(self, sufficiency_score: float) -> bool:
         return sufficiency_score >= self.threshold
@@ -33,20 +34,44 @@ class AlexandriaProtocol:
     def execute_loop_2_learning(self, query: str) -> Dict[str, Any]:
         """
         Executes the full fallback learning sequence when Rodin halts.
+        Leverages the Daily Planet Protocol (Firecrawl Engine) for multi-modal
+        epistemic audit, dialectic triangulation, and Hoard embedding.
         """
         # 1. Halt & Freeze (Implicitly handled by the Supervisor routing)
         timestamp = time.time()
         
-        # 2. Search (Mocked dispatch to Research Agent / Firecrawl)
+        # 2 & 3. Search & Synthesize via Daily Planet Protocol
+        if self._daily_planet is None:
+            try:
+                from tools.daily_planet import DailyPlanetProtocol
+                self._daily_planet = DailyPlanetProtocol()
+            except Exception:
+                self._daily_planet = None
+
+        if self._daily_planet:
+            try:
+                dp_report = self._daily_planet.execute_daily_planet_brief(
+                    query=query,
+                    domain_focus="general",
+                    commit=True
+                )
+                node_id = dp_report.hoard_ccid or f"DP_{int(timestamp)}"
+                return {
+                    "status": "ALEXANDRIA_LEARNING_COMPLETE",
+                    "query": query,
+                    "report_generated": True,
+                    "new_node_id": node_id,
+                    "daily_planet_report": dp_report.model_dump(),
+                    "action_required": "RE_RUN_RODIN_SUPERVISOR",
+                    "timestamp": timestamp
+                }
+            except Exception:
+                pass
+
+        # Fallback to internal routines
         search_results = self._dispatch_external_search(query)
-        
-        # 3. Synthesize 
         report = self._synthesize_knowledge_report(query, search_results)
-        
-        # 4. Embed (Inject to Hoard)
         embedded_node = self._embed_into_hoard(report)
-        
-        # 5. Re-Run (Signal to Supervisor)
         
         return {
             "status": "ALEXANDRIA_LEARNING_COMPLETE",

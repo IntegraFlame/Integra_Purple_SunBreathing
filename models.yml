@@ -1,0 +1,13 @@
+models:
+  cheshire_cat:
+    model: "gemini-3.8-flash"
+    role: "Thalamic Arbitrator, Fast Routing, & Paradox Detection"
+  left_hemisphere:
+    deep_think: true
+    extended_thinking: true
+    model: "gemini-3.1-pro"
+    role: "Analytical Engine (Spock) / Deconstruction & Formal Verification"
+    thinking_budget: 8192
+  right_hemisphere:
+    model: "claude-sonnet-4-6"
+    role: "Synthetic Engine (Kirk) / Emergence & Generative Fusion"

@@ -69,13 +69,18 @@ class MetacognitiveMonitor:
         assessment["entropy"] = h_smooth
         assessment["knowledge_boundary_breached"] = is_breached
 
-        # Step 3: Confidence Calibration
+        # Step 3: Confidence Calibration & Omega Metric
         # Inverse relationship with entropy: Higher entropy -> Lower confidence
         confidence = max(0.0, 1.0 - (h_smooth / 5.0))
         assessment["confidence_calibration"] = round(confidence, 4)
 
+        omega_meta = self.heimdall.calculate_omega_metric(agency_score=1.0, entropy_val=h_smooth)
+        assessment["omega_metric"] = omega_meta
+
         # Step 4: Trip evaluation
         trip_needed, trip_action = self.heimdall.evaluate_entropy_trip(is_breached, h_smooth)
+        if not omega_meta["is_healthy"] and trip_action != "VASOVAGAL_SYNCOPE::HARD_HALT":
+            trip_action = "TRIGGER_CIRCUIT_BREAKER"
         assessment["trip_action"] = trip_action
 
         return assessment
@@ -152,18 +157,23 @@ class DragonEngine:
         action_decision = "EXECUTE"
         result_payload: Dict[str, Any] = {}
 
-        if assessment["knowledge_boundary_breached"]:
-            if assessment["trip_action"] == "VASOVAGAL_SYNCOPE::HARD_HALT":
-                action_decision = "HALT_AND_REGROUND"
-                result_payload["mandate"] = (
-                    "Cognitive drift exceeded safety ceiling. "
-                    "Pause all generation. Re-anchor to ground truth."
-                )
-            else:
-                # Generate grounding prompt for sync callers
-                grounding = self.heimdall.generate_grounding_prompt(prompt)
-                action_decision = "AUTONOMOUS_UGL_RECOVERY"
-                result_payload["ugl_prompt"] = grounding
+        if assessment["trip_action"] == "VASOVAGAL_SYNCOPE::HARD_HALT":
+            action_decision = "HALT_AND_REGROUND"
+            result_payload["mandate"] = (
+                "Cognitive drift exceeded safety ceiling. "
+                "Pause all generation. Re-anchor to ground truth."
+            )
+        elif assessment.get("trip_action") == "TRIGGER_CIRCUIT_BREAKER":
+            action_decision = "CIRCUIT_BREAKER_ENGAGED"
+            cascade = self.heimdall.cascade_circuit_breaker(context_data={"raw_input": prompt, "reason": "Omega metric collapsed below floor"})
+            result_payload["circuit_breaker_cascade"] = cascade
+            result_payload["mandate"] = "Omega Metric below floor threshold. 4-step emergency circuit breaker cascade executed."
+
+        elif assessment["knowledge_boundary_breached"]:
+            # Generate grounding prompt for sync callers
+            grounding = self.heimdall.generate_grounding_prompt(prompt)
+            action_decision = "AUTONOMOUS_UGL_RECOVERY"
+            result_payload["ugl_prompt"] = grounding
 
         elif assessment["confidence_calibration"] < 0.5:
             action_decision = "REQUEST_CLARIFICATION"
@@ -207,14 +217,20 @@ class DragonEngine:
         action_decision = "EXECUTE"
         result_payload: Dict[str, Any] = {}
 
-        if assessment["knowledge_boundary_breached"]:
-            if assessment["trip_action"] == "VASOVAGAL_SYNCOPE::HARD_HALT":
-                action_decision = "HALT_AND_REGROUND"
-                result_payload["mandate"] = (
-                    "Cognitive drift exceeded safety ceiling. "
-                    "Pause all generation. Re-anchor to ground truth."
-                )
-            elif self.cognitive_engine is not None:
+        if assessment["trip_action"] == "VASOVAGAL_SYNCOPE::HARD_HALT":
+            action_decision = "HALT_AND_REGROUND"
+            result_payload["mandate"] = (
+                "Cognitive drift exceeded safety ceiling. "
+                "Pause all generation. Re-anchor to ground truth."
+            )
+        elif assessment.get("trip_action") == "TRIGGER_CIRCUIT_BREAKER":
+            action_decision = "CIRCUIT_BREAKER_ENGAGED"
+            cascade = self.heimdall.cascade_circuit_breaker(context_data={"raw_input": prompt, "reason": "Omega metric collapsed below floor"})
+            result_payload["circuit_breaker_cascade"] = cascade
+            result_payload["mandate"] = "Omega Metric below floor threshold. 4-step emergency circuit breaker cascade executed."
+
+        elif assessment["knowledge_boundary_breached"]:
+            if self.cognitive_engine is not None:
                 # Delegate P-SSR recovery to the canonical Cognitive Engine
                 try:
                     zenitsu_output = await self.cognitive_engine.execute_zenitsu_method(

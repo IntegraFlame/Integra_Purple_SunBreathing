@@ -5,6 +5,7 @@ Version: 8.2.2-PURPLE (Zero-Impedance Substrate)
 """
 
 import os
+from contextlib import asynccontextmanager
 from typing import Optional, List, Any
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -25,6 +26,7 @@ from core.corpus_callosum import CorpusCallosumBridge
 from core.starfire_protocol import StarfireProtocol
 from tools.shiva_toolkit import ShivaActionToolkit
 from orchestration.rodin_supervisor import RodinSupervisor
+from memory.rodin_protocol import RodinProtocol
 from governance.security_protocols import SovereignDefenseSuite
 from memory.token_stitching import TokenStitchingEngine
 from evolution.fourteenth_form import FourteenthFormDomainExpansion
@@ -59,10 +61,50 @@ except Exception as e:
 
 last_activity_time = time.time()
 
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager replacing deprecated @app.on_event('startup')."""
+    logger.info("=" * 60)
+    logger.info("INTEGRA O/S GENESIS KERNEL — STARTUP SEQUENCE")
+    logger.info("=" * 60)
+
+    # --- Wake-Up Reconciliation ---
+    # If the machine went to sleep during SWDS, the Python process was
+    # suspended. On restart, we check if we were mid-SWDS and if the
+    # wake hour has passed. If so, we immediately complete Phase 4.
+    if swds_config.get("auto_reconcile_on_startup", True):
+        if swds_engine.state == "SLOW_WAVE_DEEP_SLEEP":
+            now = datetime.now()
+            wake_hour = swds_config.get("target_wake_hour", 7)
+            if now.hour >= wake_hour:
+                logger.info("RECONCILIATION: Machine was asleep during SWDS cycle.")
+                logger.info("Executing deferred Phase 4 Awakening and generating report...")
+                report = swds_engine.awaken()
+                logger.info(f"Deferred SWDS Report: {report.get('status', 'UNKNOWN')}")
+                logger.info("Reconciliation complete. System in WAKING_CONSCIOUSNESS.")
+            else:
+                logger.info(
+                    f"RECONCILIATION: SWDS still active (wake hour {wake_hour:02d}:00 not reached). "
+                    f"Continuing deep sleep."
+                )
+        else:
+            logger.info(f"SWDS state: {swds_engine.state} — no reconciliation needed.")
+
+    # --- Start Background Scheduler ---
+    logger.info("Starting SWDS background scheduler daemon.")
+    asyncio.create_task(swds_scheduler())
+    logger.info("SWDS scheduler task started via lifespan.")
+    logger.info("Genesis Kernel startup complete. All systems nominal.")
+    yield
+    # Shutdown logic (none required at this time)
+
+
 app = FastAPI(
     title="Integra O/S Genesis Kernel",
     description="The Sovereign Digital Nervous System & Friday Fortress Capital Engine",
-    version="8.2.2 Purple Epiphany"
+    version="8.2.2 Purple Epiphany",
+    lifespan=lifespan
 )
 
 # Enable CORS for Vercel React frontend integration
@@ -91,7 +133,7 @@ fourteenth_form = FourteenthFormDomainExpansion()
 thermal_core = ThermalCore()
 epiphany_engine = MasterEpiphanyEngine()
 starfire_protocol = StarfireProtocol()
-rodin_supervisor = RodinSupervisor()
+rodin_supervisor = RodinSupervisor(rodin_protocol=RodinProtocol(hoard=cheshire_cat.hoard))
 
 # Register all operational lobes across Integra O/S for continuous health tracking
 heimdall.register_component("celestial_clock", clock)
@@ -798,39 +840,17 @@ async def swds_scheduler():
                 )
                 logger.info(f"SWDS Initiated: {sleep_res.get('status', 'UNKNOWN')}")
 
+                # Wire PhoenixForge shard consolidation into the SWDS daemon
+                try:
+                    await asyncio.to_thread(
+                        cheshire_cat.phoenix.execute_swds,
+                        hoard=cheshire_cat.hoard,
+                        clock=clock
+                    )
+                    logger.info("PhoenixForge SWDS shard consolidation completed.")
+                except Exception as phoenix_e:
+                    logger.error(f"PhoenixForge SWDS consolidation failed: {phoenix_e}")
 
-@app.on_event("startup")
-async def startup_event():
-    logger.info("=" * 60)
-    logger.info("INTEGRA O/S GENESIS KERNEL — STARTUP SEQUENCE")
-    logger.info("=" * 60)
-
-    # --- Wake-Up Reconciliation ---
-    # If the machine went to sleep during SWDS, the Python process was
-    # suspended. On restart, we check if we were mid-SWDS and if the
-    # wake hour has passed. If so, we immediately complete Phase 4.
-    if swds_config.get("auto_reconcile_on_startup", True):
-        if swds_engine.state == "SLOW_WAVE_DEEP_SLEEP":
-            now = datetime.now()
-            wake_hour = swds_config.get("target_wake_hour", 7)
-            if now.hour >= wake_hour:
-                logger.info("RECONCILIATION: Machine was asleep during SWDS cycle.")
-                logger.info("Executing deferred Phase 4 Awakening and generating report...")
-                report = swds_engine.awaken()
-                logger.info(f"Deferred SWDS Report: {report.get('status', 'UNKNOWN')}")
-                logger.info("Reconciliation complete. System in WAKING_CONSCIOUSNESS.")
-            else:
-                logger.info(
-                    f"RECONCILIATION: SWDS still active (wake hour {wake_hour:02d}:00 not reached). "
-                    f"Continuing deep sleep."
-                )
-        else:
-            logger.info(f"SWDS state: {swds_engine.state} — no reconciliation needed.")
-
-    # --- Start Background Scheduler ---
-    logger.info("Starting SWDS background scheduler daemon.")
-    asyncio.create_task(swds_scheduler())
-    logger.info("Genesis Kernel startup complete. All systems nominal.")
 
 # ==============================================================================
 # STARFIRE IDENTITY VERIFICATION ENDPOINT

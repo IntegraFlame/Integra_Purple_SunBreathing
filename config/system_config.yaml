@@ -17,10 +17,25 @@ kinetics:
   structural_limit_mpa: 200.0
 
 memory:
-  hoard_backend: "upstash_vector"
-  cache_backend: "upstash_redis"
+  hoard_backend: "chromadb"
+  cache_backend: "sqlite"
   mrl_dimensions: [64, 768]
   hot_cache_ttl_sec: 86400
+
+models:
+  cheshire_cat:
+    model: "gemini-3.8-flash"
+    role: "Thalamic Arbitrator, Fast Routing, & Paradox Detection"
+  right_hemisphere:
+    model: "claude-sonnet-4-6"
+    role: "Synthetic Engine (Kirk) / Emergence & Generative Fusion"
+  left_hemisphere:
+    model: "gemini-3.1-pro"
+    deep_think: true
+    extended_thinking: true
+    thinking_budget: 8192
+    role: "Analytical Engine (Spock) / Deconstruction & Formal Verification"
+
 
 fortress:
   margin_lock_floor_usd: 20000.0

@@ -1,7 +1,7 @@
 """
 INTEGRA O/S: THALAMIC ORCHESTRATOR
 Module: sensory/cheshire_cat.py
-Layer: 4 (Cheshire Cat Kernel: Digital Thalamus & Asynchronous Master Event Loop)
+Layer: 2 (Cheshire Cat Kernel & Rodin: Inter-Hemispheric Highway & Veto Arbiter)
 Status: TRUE SOVEREIGN IMPLEMENTATION
 """
 
@@ -18,6 +18,7 @@ from evolution.phoenix_forge import PhoenixForge
 from memory.the_hoard import TheHoard
 from memory.rodin_protocol import RodinProtocol
 from core.cognitive_engine import Y789NexusEngine
+from core.api_clients import CheshireCatClient
 from sensory.heimdall import Heimdall31
 from sensory.cheshire_protocol import CheshireCatProtocol
 from sensory.looking_glass import LookingGlassProtocol
@@ -50,6 +51,7 @@ class CheshireCatKernel:
         
         # Instantiate unified cognitive components
         self.cognitive_engine = Y789NexusEngine()
+        self.client = CheshireCatClient()  # Gemini 3.8 Flash Thalamic Delegator
         self.hoard = TheHoard()
         self.rodin = RodinProtocol(self.hoard)
         self.phoenix = PhoenixForge()

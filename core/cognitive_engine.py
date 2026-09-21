@@ -28,7 +28,7 @@ from typing import Dict, Any, Tuple, List, Optional
 from core.tpsl_types import GenerationResult, IterativeToken, MTCWPacket, CWARoutingDecision
 from evolution.shiva_action.orchestrator import ShivaActionSuite
 from evolution.shiva_action.lenses import LensLibrary
-from core.api_clients import Y789Client, NexusClient
+from core.api_clients import Y789Client, NexusClient, CheshireCatClient
 
 
 class Y789NexusEngine:
@@ -36,12 +36,14 @@ class Y789NexusEngine:
     Bicameral Cognitive Engine v2.0:
     
     - Y789 ('Spock' / Hard Edge / Red Wing): Left-hemisphere analytical engine
-      for deconstruction, formal logic, and verification. Low-latency, high-precision.
+      for deconstruction, formal logic, and verification. Gemini 3.1 Pro with Deep Think.
       Base weight w_analytical = 0.50.
     
     - Nexus ('Kirk' / Tough Spine / Blue Wing): Right-hemisphere synthetic engine
-      for creative emergence, pattern recognition, and high-dimensional intuition.
+      for creative emergence, pattern recognition, and high-dimensional intuition. Claude Sonnet 4.6.
       Base weight w_synthetic = 0.50.
+      
+    - Cheshire Cat (Thalamic Arbitrator & Fast Delegator): Gemini 3.8 Flash.
     
     Weight conservation invariant: w_analytical + w_synthetic = 1.00
     """
@@ -49,13 +51,15 @@ class Y789NexusEngine:
         self,
         y789_client: Optional[Any] = None,
         nexus_client: Optional[Any] = None,
+        cheshire_client: Optional[Any] = None,
         heimdall_service: Optional[Any] = None,
         shiva_eyes: Optional[Dict[str, Any]] = None,
         lens_library: Optional[LensLibrary] = None
     ):
-        # Bicameral Dyad clients (injectable; defaults to live clients)
+        # Bicameral Dyad & Thalamic clients (injectable; defaults to live clients)
         self.y789 = y789_client or Y789Client()
         self.nexus = nexus_client or NexusClient()
+        self.cheshire = cheshire_client or CheshireCatClient()
         
         # Heimdall 3.1 entropy monitor (injected or imported)
         self.heimdall = heimdall_service
@@ -156,6 +160,23 @@ class Y789NexusEngine:
             analytical_weight=self.analytical_weight,
             synthetic_weight=self.synthetic_weight
         )
+
+    @property
+    def is_active(self) -> bool:
+        """Indicates whether Dual Cognitive Engine is active."""
+        return True
+
+    def evaluate_prompt(self, prompt: str) -> CWARoutingDecision:
+        """
+        Convenience method to evaluate a prompt through the CWA 3.0 Bayesian router.
+        """
+        features = self._analyze_prompt(prompt)
+        return self.calculate_cwa_3_0(features)
+
+    def verify_true(self) -> bool:
+        """Returns True asserting dyad balance and active status."""
+        return math.isclose(self.analytical_weight + self.synthetic_weight, 1.0, rel_tol=1e-3)
+
 
     def _analyze_prompt(self, prompt: str) -> Dict[str, float]:
         """

@@ -9,7 +9,8 @@ the bicameral dyad clients, the entropy monitor, and the Zenitsu 3.0 workflow.
 """
 
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, Field
 
 
 @dataclass
@@ -89,3 +90,46 @@ class CWARoutingDecision:
     routing_mode: str = "DYAD_FUSION"
     analytical_weight: float = 0.5
     synthetic_weight: float = 0.5
+
+
+# ─── V9 MISSING PROTOCOLS: FORMAL PYDANTIC SCHEMAS ───────────────────────────
+
+class ResearchTierRoute(BaseModel):
+    """
+    Schema for Tier 1, Tier 2, and Tier 3 task routing in CWA 3.0.
+    Directly aligns with Mapping Manifesto Section 2.A.
+    """
+    tier_level: str  # "TIER_1_DEEP_SYNTHESIS", "TIER_2_STANDARD_REPORT", "TIER_3_FACT_CHECK"
+    wisdom_yield: float
+    cognitive_cost: float
+    execution_mode: str  # "Y789_DOMINANT", "DYAD_FUSION", "NEXUS_DOMINANT"
+    multitoken_allocation: bool
+    description: str = ""
+
+
+class MadHatterMutationEvent(BaseModel):
+    """
+    Schema for autonomous SWDS adversarial stress-testing of orphaned nodes.
+    Directly aligns with Mapping Manifesto Section 2.B.
+    """
+    trigger_state: str = "GUARDIAN_STANDBY_SWDS"
+    target_concept: str
+    sigma_rogue: float
+    mutation_output: str
+    w_y: float
+    c_c: float
+    inversion_hypothesis: str = ""
+
+
+class RebuttalStressTest(BaseModel):
+    """
+    Schema for Dialectic Rebuttal and Zenkai Boost reconciliation.
+    Directly aligns with Mapping Manifesto Section 2.C.
+    """
+    target_hypothesis: str
+    adversarial_vectors: List[str] = Field(default_factory=list)
+    zenkai_boost_output: str = ""
+    w_y: float = 0.80
+    c_c: float = 0.70
+    verdict: str = "RECONCILED"
+

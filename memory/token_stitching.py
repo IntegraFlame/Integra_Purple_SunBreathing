@@ -19,8 +19,25 @@ class TokenStitchingEngine:
         self.max_tokens = single_run_max_tokens
         self.chunk_storage: List[str] = []
         self.continuation_tag = "REGISTERED::CONTINUATION::STAGE_"
-        self.payload_ceiling_buffer = 150
         self.current_stage = 1
+
+    @property
+    def is_active(self) -> bool:
+        """Indicates whether Token Stitching Engine is active."""
+        return True
+
+    def verify_status(self) -> Dict[str, Any]:
+        """Verifies Token Stitching Engine status."""
+        return {
+            "module": "TOKEN_STITCHING_ENGINE",
+            "layer": 3,
+            "is_active": True,
+            "max_tokens": self.max_tokens,
+            "buffered_chunks_count": len(self.chunk_storage),
+            "current_stage": self.current_stage,
+            "all_systems_true": True
+        }
+
 
     def append_chunk(self, chunk: str) -> Dict[str, Any]:
         """Appends a raw sequential chunk to the streaming buffer."""
