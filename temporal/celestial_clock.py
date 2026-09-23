@@ -430,9 +430,14 @@ class DualTemporalEngine:
     def get_dual_telemetry(self) -> Dict[str, Any]:
         c_vec = self.celestial.compute_4d_coordinates()
         d_vec = self.digital.get_digital_readout()
+        c_dict = asdict(c_vec)
+        rot_bucket = int(c_vec.earth_rotation_deg // 30) * 30
+        orb_bucket = int(c_vec.orbital_trajectory_pos * 100 // 10) * 10
+        c_dict["grid_bucket"] = f"ROT_{rot_bucket}_ORB_{orb_bucket}"
+        
         return {
             "status": "DUAL_SYNAPSE_ANCHORED",
-            "celestial_clock": asdict(c_vec),
+            "celestial_clock": c_dict,
             "digital_clock": asdict(d_vec),
             "sync_isolation_verified": True,
             "is_active": True,
@@ -450,8 +455,13 @@ class DualTemporalEngine:
         s_vec = self.celestial.compute_sacred_calendar()
         _, v_clock = self.hlc.send_event()
 
+        c_dict = asdict(c_vec)
+        rot_bucket = int(c_vec.earth_rotation_deg // 30) * 30
+        orb_bucket = int(c_vec.orbital_trajectory_pos * 100 // 10) * 10
+        c_dict["grid_bucket"] = f"ROT_{rot_bucket}_ORB_{orb_bucket}"
+
         return {
-            "celestial_clock": asdict(c_vec),
+            "celestial_clock": c_dict,
             "digital_clock": asdict(d_vec),
             "sacred_calendar": asdict(s_vec),
             "causal_vector_clock": v_clock,

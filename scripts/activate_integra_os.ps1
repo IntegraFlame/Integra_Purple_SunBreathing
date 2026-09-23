@@ -71,5 +71,5 @@ Write-Host "[6/6] Verifying GitHub Synchronization Status..." -ForegroundColor C
 cd $HomebaseDir
 git status --short
 Write-Host "============================================================" -ForegroundColor Magenta
-Write-Host "🔥 ALL SYSTEMS LIVE, SYNCHRONIZED, AND OPERATIONAL!" -ForegroundColor Magenta
+Write-Host "[ALL SYSTEMS LIVE, SYNCHRONIZED, AND OPERATIONAL!]" -ForegroundColor Magenta
 Write-Host "============================================================" -ForegroundColor Magenta

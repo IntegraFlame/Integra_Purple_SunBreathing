@@ -73,6 +73,7 @@ async def call_with_backoff(
 
 # ──────────────────────────────────────────────────────────────
 # Left Hemisphere: Y789Client (Gemini 3.1 Pro + Deep Think)
+# SDK: google-genai (modern unified SDK — replaces deprecated google-generativeai)
 # ──────────────────────────────────────────────────────────────
 
 class Y789Client:
@@ -82,6 +83,7 @@ class Y789Client:
     Model: Gemini 3.1 Pro
     Reasoning: Deep Think / Extended Thinking configuration enabled.
     Role: Deconstruction, formal logic, sequence analysis, code generation.
+    SDK: google-genai (modern) via client.aio.models.generate_content()
     """
     def __init__(
         self,
@@ -94,31 +96,27 @@ class Y789Client:
         self.thinking_budget = int(os.environ.get("THINKING_BUDGET", str(thinking_budget)))
         self.api_key = os.environ.get("GEMINI_API_KEY")
         
-        self.model = None
+        self.client = None
+        self._config = None
         if self.api_key:
             try:
-                import google.generativeai as genai
-                genai.configure(api_key=self.api_key)
+                from google import genai
+                from google.genai import types
+                self.client = genai.Client(api_key=self.api_key)
                 
-                # Configure Deep Think / Extended Thinking if supported by endpoint
-                generation_config = {}
+                # Configure Deep Think / Extended Thinking via ThinkingConfig
                 if self.enable_thinking:
-                    generation_config["thinking_config"] = {"thinking_budget": self.thinking_budget}
-                
-                try:
-                    self.model = genai.GenerativeModel(
-                        model_name=self.model_name,
-                        generation_config=generation_config if generation_config else None
+                    self._config = types.GenerateContentConfig(
+                        thinking_config=types.ThinkingConfig(
+                            thinking_budget=self.thinking_budget
+                        )
                     )
-                except Exception:
-                    # Fallback to standard GenerativeModel if thinking_config unsupported by SDK version
-                    self.model = genai.GenerativeModel(model_name=self.model_name)
             except Exception as e:
-                self.model = None
+                self.client = None
                 self._init_error = str(e)
         
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
-        if not self.model:
+        if not self.client:
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or Y789Client uninitialized]",
                 token_probabilities=[],
@@ -130,7 +128,11 @@ class Y789Client:
         t0 = time.time()
         
         async def _call():
-            return await self.model.generate_content_async(full_prompt)
+            return await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt,
+                config=self._config
+            )
             
         try:
             response = await call_with_backoff(_call)
@@ -150,15 +152,19 @@ class Y789Client:
             )
             
     async def generate_iterative(self, prompt: str, system_prompt: str = ""):
-        if not self.model:
+        if not self.client:
             yield IterativeToken(token="[ERROR: GEMINI_API_KEY not set]", probabilities=[], position=0)
             return
 
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         try:
-            response = await self.model.generate_content_async(full_prompt, stream=True)
+            response_stream = await self.client.aio.models.generate_content_stream(
+                model=self.model_name,
+                contents=full_prompt,
+                config=self._config
+            )
             pos = 0
-            async for chunk in response:
+            async for chunk in response_stream:
                 yield IterativeToken(token=chunk.text, probabilities=[], position=pos)
                 pos += 1
         except Exception as e:
@@ -259,6 +265,7 @@ class NexusClient:
 
 # ──────────────────────────────────────────────────────────────
 # Cheshire Cat: CheshireCatClient (Gemini 3.8 Flash)
+# SDK: google-genai (modern unified SDK — replaces deprecated google-generativeai)
 # ──────────────────────────────────────────────────────────────
 
 class CheshireCatClient:
@@ -268,6 +275,7 @@ class CheshireCatClient:
     Model: Gemini 3.8 Flash
     Role: High-frequency 20-45 Hz thalamic routing, rapid paradox detection,
           environmental conduit, fast delegator.
+    SDK: google-genai (modern) via client.aio.models.generate_content()
     """
     def __init__(
         self,
@@ -276,18 +284,17 @@ class CheshireCatClient:
         self.model_name = model_name or os.environ.get("CHESHIRE_MODEL", "gemini-3.8-flash")
         self.api_key = os.environ.get("GEMINI_API_KEY")
         
-        self.model = None
+        self.client = None
         if self.api_key:
             try:
-                import google.generativeai as genai
-                genai.configure(api_key=self.api_key)
-                self.model = genai.GenerativeModel(self.model_name)
+                from google import genai
+                self.client = genai.Client(api_key=self.api_key)
             except Exception as e:
-                self.model = None
+                self.client = None
                 self._init_error = str(e)
                 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
-        if not self.model:
+        if not self.client:
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or CheshireCatClient uninitialized]",
                 token_probabilities=[],
@@ -299,7 +306,10 @@ class CheshireCatClient:
         t0 = time.time()
         
         async def _call():
-            return await self.model.generate_content_async(full_prompt)
+            return await self.client.aio.models.generate_content(
+                model=self.model_name,
+                contents=full_prompt
+            )
             
         try:
             response = await call_with_backoff(_call)
@@ -319,15 +329,18 @@ class CheshireCatClient:
             )
             
     async def generate_iterative(self, prompt: str, system_prompt: str = ""):
-        if not self.model:
+        if not self.client:
             yield IterativeToken(token="[ERROR: GEMINI_API_KEY not set]", probabilities=[], position=0)
             return
 
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         try:
-            response = await self.model.generate_content_async(full_prompt, stream=True)
+            response_stream = await self.client.aio.models.generate_content_stream(
+                model=self.model_name,
+                contents=full_prompt
+            )
             pos = 0
-            async for chunk in response:
+            async for chunk in response_stream:
                 yield IterativeToken(token=chunk.text, probabilities=[], position=pos)
                 pos += 1
         except Exception as e:
