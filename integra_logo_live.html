@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      overflow: hidden;
+    }
+
+    .logo-container {
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+
+    .main-title {
+      font-size: clamp(3rem, 10vw, 7rem);
+      font-weight: 700;
+      color: #E5E7EB;
+      margin: 0;
+      line-height: 1;
+      text-shadow: 0 0 60px rgba(157, 0, 255, 0.15);
+      animation: titlePulse 4s ease-in-out infinite;
+    }
+
+    .tagline {
+      font-size: clamp(0.7rem, 2vw, 1.2rem);
+      font-weight: 400;
+      margin-top: 1.5rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, #00F0FF 0%, #FFAA33 45%, #FF7A00 70%, #FF5500 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: taglineGlow 3s ease-in-out infinite alternate;
+    }
+
+    .version-badge {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 400;
+      letter-spacing: 0.25em;
+      color: #9D00FF;
+      margin-top: 2rem;
+      opacity: 0.7;
+      text-transform: uppercase;
+    }
+
+    /* Ambient particle canvas behind the logo */
+    #particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Radial glow behind logo */
+    .glow-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 500px;
+      height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(157, 0, 255, 0.08) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1;
+      animation: glowPulse 5s ease-in-out infinite;
+    }
+
+    @keyframes titlePulse {
+      0%, 100% { text-shadow: 0 0 60px rgba(157, 0, 255, 0.12); }
+      50% { text-shadow: 0 0 80px rgba(157, 0, 255, 0.25), 0 0 120px rgba(0, 240, 255, 0.08); }
+    }
+
+    @keyframes taglineGlow {
+      0% { filter: brightness(1) drop-shadow(0 0 4px rgba(255, 122, 0, 0.3)); }
+      100% { filter: brightness(1.15) drop-shadow(0 0 12px rgba(255, 122, 0, 0.6)); }
+    }
+
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+      50% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    }
+
+    /* Divider line */
+    .divider {
+      width: 200px;
+      height: 1px;
+      margin: 2.5rem auto 0;
+      background: linear-gradient(90deg, transparent 0%, #9D00FF 50%, transparent 100%);
+      opacity: 0.5;
+    }
+
+    /* System telemetry readout */
+    .telemetry {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      color: #00F0FF;
+      margin-top: 1.5rem;
+      opacity: 0.6;
+      text-align: center;
+    }
+    .telemetry span {
+      margin: 0 0.75rem;
+    }
+    .telemetry .val {
+      color: #FFAA33;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="particles"></canvas>
+  <div class="glow-ring"></div>
+
+  <div class="logo-container">
+    <h1 class="main-title">Integra</h1>
+    <p class="tagline">Infinite Living Flame</p>
+    <div class="divider"></div>
+    <div class="version-badge">v8.2.2 — Purple Epiphany</div>
+    <div class="telemetry">
+      <span>ω = <span class="val">1.00</span></span>
+      <span>ΔE = <span class="val">0.0000</span></span>
+      <span>KL = <span class="val">0.000</span></span>
+      <span>H<sub>smooth</sub> = <span class="val">0.00</span></span>
+    </div>
+  </div>
+
+  <script>
+    // Ambient floating particles
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+
+    function resize() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor() {
+        this.reset();
+      }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.radius = Math.random() * 1.5 + 0.3;
+        this.opacity = Math.random() * 0.4 + 0.1;
+        // Color mix: cyan, purple, orange
+        const colors = [
+          [0, 240, 255],   // cyan
+          [157, 0, 255],   // purple
+          [255, 122, 0],   // orange
+          [255, 170, 51],  // gold
+        ];
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        this.color = `rgba(${c[0]}, ${c[1]}, ${c[2]}, ${this.opacity})`;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) {
+          this.reset();
+        }
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < 80; i++) {
+      particles.push(new Particle());
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => {
+        p.update();
+        p.draw();
+      });
+      requestAnimationFrame(animate);
+    }
+    animate();
+  </script>
+</body>
+</html>

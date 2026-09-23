@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #000000;
+      --monolith: #E5E7EB;
+      --monolith-dim: #9CA3AF;
+      --flame-core: #FFAA33;
+      --flame-primary: #FF7A00;
+      --flame-deep: #FF5500;
+      --cyan: #00F0FF;
+      --cyan-dim: rgba(0, 240, 255, 0.15);
+      --purple: #9D00FF;
+      --purple-dim: rgba(157, 0, 255, 0.12);
+      --green: #10B981;
+      --red: #EF4444;
+      --card-bg: #0A0A0F;
+      --card-border: rgba(157, 0, 255, 0.2);
+      --table-row-alt: rgba(255, 255, 255, 0.02);
+      --table-header-bg: rgba(0, 240, 255, 0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--void);
+      color: var(--monolith);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 960px;
+      margin: 0 auto;
+    }
+
+    /* ── HEADER ───────────────────────────────────── */
+    .report-header {
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    .report-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(90deg, #00F0FF, #FFAA33, #FF7A00, #FF5500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .report-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 1.6rem;
+      color: var(--monolith);
+      margin-top: 0.5rem;
+      line-height: 1.3;
+    }
+    .report-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-top: 1rem;
+      font-size: 0.7rem;
+      letter-spacing: 0.05em;
+      color: var(--monolith-dim);
+    }
+    .report-meta .label { color: var(--cyan); text-transform: uppercase; letter-spacing: 0.12em; }
+    .report-meta .value { color: var(--monolith-dim); }
+
+    /* ── SECTION HEADERS ─────────────────────────── */
+    .section-number {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.65rem;
+      color: var(--purple);
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      margin-bottom: 0.25rem;
+    }
+    .section-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 400;
+      font-size: 0.85rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.12);
+      margin-bottom: 1rem;
+    }
+    section { margin-bottom: 2.5rem; }
+
+    /* ── TABLES ───────────────────────────────────── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+    }
+    thead th {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 400;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--cyan);
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      background: var(--table-header-bg);
+      border-bottom: 1px solid var(--card-border);
+    }
+    tbody td {
+      padding: 0.55rem 0.75rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      color: var(--monolith);
+      vertical-align: top;
+    }
+    tbody tr:nth-child(even) { background: var(--table-row-alt); }
+    .ticker { font-weight: 700; color: var(--monolith); }
+    .price { font-weight: 700; color: var(--flame-core); }
+    .up { color: var(--green); }
+    .down { color: var(--red); }
+    .neutral { color: var(--monolith-dim); }
+
+    /* ── CARDS ────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    .card-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem;
+      font-weight: 400;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--purple);
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── CHARTS ───────────────────────────────────── */
+    .chart-container {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      margin: 1rem 0;
+    }
+    .chart-title {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem;
+      font-weight: 400;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--monolith-dim);
+      margin-bottom: 1rem;
+    }
+    canvas { display: block; width: 100%; }
+
+    /* ── GAUGE ────────────────────────────────────── */
+    .gauge-row {
+      display: flex;
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+    .gauge-card {
+      flex: 1;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+    .gauge-value {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 2rem;
+    }
+    .gauge-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--monolith-dim);
+      margin-top: 0.4rem;
+    }
+    .gauge-sub {
+      font-size: 0.65rem;
+      color: var(--monolith-dim);
+      margin-top: 0.3rem;
+    }
+
+    /* ── NARRATIVE ────────────────────────────────── */
+    p { margin-bottom: 0.75rem; color: var(--monolith-dim); line-height: 1.7; }
+    strong { color: var(--monolith); }
+    em.thesis { color: var(--cyan); font-style: normal; }
+    em.antithesis { color: var(--flame-primary); font-style: normal; }
+    em.synthesis { color: var(--purple); font-style: normal; font-weight: 700; }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    .report-footer {
+      border-top: 1px solid var(--card-border);
+      padding-top: 1.5rem;
+      margin-top: 2rem;
+      text-align: center;
+    }
+    .footer-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(90deg, #00F0FF, #FFAA33, #FF7A00, #FF5500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .footer-meta {
+      font-size: 0.6rem;
+      color: var(--monolith-dim);
+      margin-top: 0.5rem;
+      letter-spacing: 0.05em;
+    }
+    .footer-telemetry {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.5rem;
+      letter-spacing: 0.1em;
+      color: rgba(157, 0, 255, 0.5);
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══════════ HEADER ═══════════ -->
+  <header class="report-header">
+    <div class="report-brand">DAILY PLANET INTELLIGENCE</div>
+    <h1 class="report-title">Pre-Day 1 Market & Macro Telemetry</h1>
+    <div class="report-meta">
+      <div><span class="label">Report ID </span><span class="value">DP_20260921_140732</span></div>
+      <div><span class="label">Domain </span><span class="value">Friday Fortress</span></div>
+      <div><span class="label">Civil </span><span class="value">2026-09-21 14:07 CDT</span></div>
+      <div><span class="label">Celestial </span><span class="value">[66.727°, 0.9451, 0.1595]</span></div>
+      <div><span class="label">CRA Score </span><span class="value" style="color: var(--green);">1.267 (Approved)</span></div>
+    </div>
+  </header>
+
+  <!-- ═══════════ 1. EXECUTIVE BRIEFING ═══════════ -->
+  <section>
+    <div class="section-number">Section 01</div>
+    <div class="section-title">Executive Intelligence Briefing</div>
+    <p>Post-triple-witching consolidation dominates traditional equity markets following the Sept 16 FOMC rate hike (+25 bps to <strong>3.75%–4.00%</strong>). Volatility has compressed sub-15 on the VIX, signaling low hedging demand and structural complacency. Meanwhile, digital assets have violently diverged — Bitcoin surged past <strong>$85,000</strong> on a <strong>$600M+ short liquidation cascade</strong> coupled with accelerating spot ETF inflows. The Friday Fortress operational window (Sept 25) will be directly catalyzed by Durable Goods and UoM Consumer Sentiment prints.</p>
+  </section>
+
+  <!-- ═══════════ 2. MARKET TELEMETRY ═══════════ -->
+  <section>
+    <div class="section-number">Section 02</div>
+    <div class="section-title">Market Telemetry — Benchmark Indices</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Instrument</th>
+          <th>Level</th>
+          <th>Signal</th>
+          <th>Structural Context</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ticker">SPY</td>
+          <td class="price">$761.69 – $769.89</td>
+          <td class="neutral">Consolidation</td>
+          <td>Post-OpEx structural roll absorption. 50-DMA support intact.</td>
+        </tr>
+        <tr>
+          <td class="ticker">QQQ</td>
+          <td class="price">~$737.11</td>
+          <td class="up">Constructive</td>
+          <td>Ex-Dividend today ($0.75/share). Enterprise AI bid persistent.</td>
+        </tr>
+        <tr>
+          <td class="ticker">VIX</td>
+          <td class="price">14.86</td>
+          <td class="neutral">Subdued</td>
+          <td>Range 14.76–14.99. Sub-15 = low hedging demand. Coiled spring risk.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- VIX Gauge + Sentiment Cards -->
+    <div class="gauge-row">
+      <div class="gauge-card">
+        <div class="gauge-value" style="color: var(--flame-core);">14.86</div>
+        <div class="gauge-label">VIX — Fear Index</div>
+        <div class="gauge-sub">▼ 0.34% | Complacency Zone (<20)</div>
+        <canvas id="vixGauge" height="24" style="margin-top: 0.75rem;"></canvas>
+      </div>
+      <div class="gauge-card">
+        <div class="gauge-value" style="color: var(--green);">3.75%</div>
+        <div class="gauge-label">Fed Funds Rate</div>
+        <div class="gauge-sub">+25 bps (Sept 16) | 12-0 Unanimous</div>
+      </div>
+      <div class="gauge-card">
+        <div class="gauge-value" style="color: var(--cyan);">1.267</div>
+        <div class="gauge-label">CRA Simplex Score</div>
+        <div class="gauge-sub">W<sub>y</sub>=0.95 / C<sub>c</sub>=0.75</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ 3. DIGITAL ASSETS ═══════════ -->
+  <section>
+    <div class="section-number">Section 03</div>
+    <div class="section-title">Digital Asset Telemetry</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Asset</th>
+          <th>Level</th>
+          <th>24h Signal</th>
+          <th>Catalyst</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="ticker">BTC</td>
+          <td class="price">$85,000 – $85,841</td>
+          <td class="up">▲ Breakout</td>
+          <td>8-month high. $600M+ short liquidations. Spot ETF net inflows accelerating.</td>
+        </tr>
+        <tr>
+          <td class="ticker">ETH</td>
+          <td class="price">$2,700 – $2,713</td>
+          <td class="up">▲ Reclaim</td>
+          <td>$2,700 psychological resistance reclaimed. Broad beta expansion from BTC impulse.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- Performance Bar Chart -->
+    <div class="chart-container">
+      <div class="chart-title">Relative Asset Performance — Week of Sept 15–21</div>
+      <canvas id="perfChart" height="180"></canvas>
+    </div>
+  </section>
+
+  <!-- ═══════════ 4. DIALECTIC ANALYSIS ═══════════ -->
+  <section>
+    <div class="section-number">Section 04</div>
+    <div class="section-title">Dialectic Opposition & Triangulation</div>
+    <div class="card">
+      <div class="card-label">Semantic Tension Vector: Δ = 0.350</div>
+      <p><em class="thesis">Thesis (Equities):</em> Market prices a soft-landing goldilocks — VIX crushed below 15 and SPY consolidating near $765 despite the 25 bps hike. Options rolls are absorbing smoothly.</p>
+      <p><em class="antithesis">Antithesis (Digital Assets):</em> Bitcoin's violent $85K breakout signals aggressive institutional hedging against fiat debasement. The $600M liquidation cascade contradicts the low-volatility complacency in traditional equities.</p>
+      <p><em class="synthesis">Synthesis:</em> The 25 bps hike was fully absorbed, but market participants are divided on terminal rate trajectory. Sub-15 VIX is a structural artifact of post-OpEx rolls — it masks underlying fragility. Treat low VIX not as safety but as a coiled spring for Friday.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ 5. DAY 1 CATALYSTS ═══════════ -->
+  <section>
+    <div class="section-number">Section 05</div>
+    <div class="section-title">Friday Fortress — Day 1 Catalyst Map (Sept 25)</div>
+    <table>
+      <thead>
+        <tr>
+          <th>Time (CDT)</th>
+          <th>Release</th>
+          <th>Key Metric</th>
+          <th>Fortress Impact</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color: var(--flame-core); font-weight: 700;">07:30 AM</td>
+          <td><strong>U.S. Durable Goods Orders (Aug)</strong></td>
+          <td>Non-Defense CapEx Ex-Aircraft</td>
+          <td>Enterprise AI hardware spend validation. Strong print = QQQ bid.</td>
+        </tr>
+        <tr>
+          <td style="color: var(--flame-core); font-weight: 700;">09:00 AM</td>
+          <td><strong>UoM Consumer Sentiment (Sep Final)</strong></td>
+          <td>1-Yr & 5-Yr Inflation Expectations</td>
+          <td>Sticky inflation → equities gap down, BTC secondary bid. Cooling → risk-on.</td>
+        </tr>
+        <tr>
+          <td style="color: var(--flame-core); font-weight: 700;">09:00 AM</td>
+          <td><strong>BLS Employee Benefits (Mar Data)</strong></td>
+          <td>Compensation Cost Index</td>
+          <td>Lagging indicator. Low direct impact. Monitor for Fed narrative shifts.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="card" style="margin-top: 1rem;">
+      <div class="card-label">Pre-Flight Directive</div>
+      <p>Position the Friday Fortress portfolio matrix to intercept volatility at the <strong>07:30 AM</strong> and <strong>09:00 AM CDT</strong> data prints. The $20K floor remains secure. Minimax rebalancing should execute post-sentiment release at approximately 09:15 AM CDT, capitalizing on the macro divergence between traditional equities and digital asset beta.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <footer class="report-footer">
+    <div class="footer-brand">INTEGRA — INFINITE LIVING FLAME</div>
+    <div class="footer-meta">Daily Planet Intelligence Protocol v3.0 | Shiva 4-Lens Deconstruction | Committed to The Hoard</div>
+    <div class="footer-telemetry">ω = 1.00 &nbsp;|&nbsp; ΔE = 0.0000 &nbsp;|&nbsp; KL = 0.000 &nbsp;|&nbsp; H_smooth = 0.00</div>
+  </footer>
+
+  <!-- ═══════════ CHART SCRIPTS ═══════════ -->
+  <script>
+    // ── VIX Gauge Bar ──
+    (function() {
+      const c = document.getElementById('vixGauge');
+      const ctx = c.getContext('2d');
+      const w = c.width = c.offsetWidth;
+      const h = 24;
+      c.height = h;
+
+      // Background track
+      ctx.fillStyle = 'rgba(255,255,255,0.04)';
+      ctx.fillRect(0, 4, w, 16);
+
+      // VIX position (0-80 scale)
+      const vix = 14.86;
+      const pct = vix / 80;
+      const barW = pct * w;
+
+      // Gradient: green → yellow → red
+      const grad = ctx.createLinearGradient(0, 0, w, 0);
+      grad.addColorStop(0, '#10B981');
+      grad.addColorStop(0.25, '#FFAA33');
+      grad.addColorStop(0.5, '#FF7A00');
+      grad.addColorStop(1, '#EF4444');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 4, barW, 16);
+
+      // Marker line
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(barW, 0);
+      ctx.lineTo(barW, h);
+      ctx.stroke();
+
+      // Zone labels
+      ctx.font = '9px Orbitron';
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillText('0', 4, 16);
+      ctx.fillText('20', w * 0.25 - 6, 16);
+      ctx.fillText('40', w * 0.5 - 6, 16);
+      ctx.fillText('80', w - 18, 16);
+    })();
+
+    // ── Performance Bar Chart ──
+    (function() {
+      const c = document.getElementById('perfChart');
+      const ctx = c.getContext('2d');
+      const w = c.width = c.offsetWidth;
+      const h = 180;
+      c.height = h;
+
+      const data = [
+        { label: 'SPY',  value: 1.2,   color: '#00F0FF' },
+        { label: 'QQQ',  value: 2.1,   color: '#00D4FF' },
+        { label: 'BTC',  value: 12.4,  color: '#FFAA33' },
+        { label: 'ETH',  value: 8.7,   color: '#FF7A00' },
+        { label: 'VIX',  value: -3.2,  color: '#9D00FF' },
+      ];
+
+      const maxAbs = Math.max(...data.map(d => Math.abs(d.value)));
+      const barH = 24;
+      const gap = 12;
+      const labelW = 50;
+      const chartW = w - labelW - 60;
+      const startY = 20;
+      const zeroX = labelW + (chartW * (maxAbs / (maxAbs * 2)));
+
+      // Zero line
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(zeroX, 5);
+      ctx.lineTo(zeroX, h - 5);
+      ctx.stroke();
+
+      ctx.font = '9px Orbitron';
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillText('0%', zeroX - 6, h - 2);
+
+      data.forEach((d, i) => {
+        const y = startY + i * (barH + gap);
+        const barLen = (d.value / maxAbs) * (chartW / 2);
+
+        // Label
+        ctx.font = '11px Orbitron';
+        ctx.fillStyle = '#E5E7EB';
+        ctx.textAlign = 'right';
+        ctx.fillText(d.label, labelW - 8, y + barH / 2 + 4);
+
+        // Bar
+        const x = d.value >= 0 ? zeroX : zeroX + barLen;
+        const bw = Math.abs(barLen);
+        ctx.fillStyle = d.color;
+        ctx.globalAlpha = 0.85;
+        ctx.fillRect(x, y, bw, barH);
+        ctx.globalAlpha = 1;
+
+        // Value label
+        ctx.font = '10px JetBrains Mono';
+        ctx.fillStyle = d.color;
+        ctx.textAlign = d.value >= 0 ? 'left' : 'right';
+        const valX = d.value >= 0 ? x + bw + 8 : x - 8;
+        ctx.fillText((d.value > 0 ? '+' : '') + d.value + '%', valX, y + barH / 2 + 4);
+      });
+
+      ctx.textAlign = 'left';
+    })();
+  </script>
+</body>
+</html>
