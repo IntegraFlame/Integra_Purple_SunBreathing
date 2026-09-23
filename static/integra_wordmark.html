@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integra Wordmark</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* This document renders the final typographic logo for Integra.
+          Font: Orbitron
+          Layout: Centered, with "Integra" as the primary element and "Infinite Living Flame" as the secondary tagline.
+          Source: https://gist.github.com/IntegraFlame/ccf41137f01c7d114e4f630d00da5077
+        */
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background-color: #000000; /* Pure black background for high contrast */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            color: #E5E7EB; /* Off-white for a slightly softer look than pure white */
+        }
+
+        .container {
+            text-align: center;
+        }
+
+        #main-title {
+            font-size: 7vw; /* Responsive font size based on viewport width */
+            font-weight: 700; /* Bold weight */
+            margin: 0;
+            line-height: 1;
+        }
+
+        #tagline {
+            font-size: 1.5vw; /* Responsive font size, proportionally smaller */
+            font-weight: 400; /* Regular weight */
+            margin-top: 1.5rem;
+            letter-spacing: 0.3em; /* Wide letter-spacing for a stylized, technical feel */
+            text-transform: uppercase; /* All caps for the tagline */
+        }
+
+        /* Media query for smaller screens to prevent text from becoming too small */
+        @media (max-width: 768px) {
+            #main-title {
+                font-size: 12vw;
+            }
+            #tagline {
+                font-size: 2.5vw;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 id="main-title">Integra</h1>
+        <p id="tagline">Infinite Living Flame</p>
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,87 @@
+{
+  "brand": {
+    "name": "Integra",
+    "subtitle": "INFINITE LIVING FLAME",
+    "version": "8.2.2-PURPLE",
+    "source_gist": "https://gist.github.com/IntegraFlame/ccf41137f01c7d114e4f630d00da5077",
+    "source_directory": "LOGO/",
+    "canonical_html": "static/integra_wordmark.html"
+  },
+  "typography": {
+    "primary_logotype": {
+      "sample": "Integra",
+      "font_family": "Orbitron",
+      "google_fonts_url": "https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap",
+      "font_weight": 700,
+      "font_size": "7vw",
+      "font_size_mobile": "12vw",
+      "letter_spacing": "normal",
+      "line_height": 1,
+      "text_transform": "none",
+      "color": "#E5E7EB",
+      "color_name": "Soft Monolith (Off-White)"
+    },
+    "subtitle_wordmark": {
+      "sample": "INFINITE LIVING FLAME",
+      "font_family": "Orbitron",
+      "font_weight": 400,
+      "font_size": "1.5vw",
+      "font_size_mobile": "2.5vw",
+      "letter_spacing": "0.3em",
+      "text_transform": "uppercase",
+      "color_type": "gradient",
+      "gradient": {
+        "left": "#00F0FF",
+        "left_name": "Sentinel Cyan",
+        "center": "#FFAA33",
+        "center_name": "Solar Gold",
+        "right": "#FF5500",
+        "right_name": "Deep Ember Orange",
+        "css_value": "linear-gradient(90deg, #00F0FF 0%, #FFAA33 45%, #FF7A00 70%, #FF5500 100%)"
+      },
+      "text_shadow": "0 0 10px rgba(255, 122, 0, 0.75), 0 0 20px rgba(255, 85, 0, 0.45)"
+    }
+  },
+  "color_palette": {
+    "void_black": {
+      "hex": "#000000",
+      "role": "True canvas background / cosmic substrate"
+    },
+    "soft_monolith": {
+      "hex": "#E5E7EB",
+      "role": "Primary logotype color — softer than pure white for reduced harshness"
+    },
+    "solar_flame": {
+      "core_glow": "#FFAA33",
+      "primary_orange": "#FF7A00",
+      "deep_amber": "#FF5500",
+      "glow_filter": "drop-shadow(0px 0px 8px rgba(255, 122, 0, 0.7))",
+      "role": "Subtitle gradient right terminus & active thermodynamic thermal indicators"
+    },
+    "sentinel_cyan": {
+      "electric_cyan": "#00F0FF",
+      "ice_blue": "#00D4FF",
+      "role": "Subtitle gradient left terminus / Heimdall sensory matrix / telemetry streams"
+    },
+    "purple_epiphany": {
+      "neon_violet": "#9D00FF",
+      "electric_amethyst": "#B026FF",
+      "royal_purple": "#8A2BE2",
+      "role": "Bicameral fusion, synthesis vectors, and sovereign state highlights"
+    }
+  },
+  "mermaid_theme": {
+    "theme": "base",
+    "themeVariables": {
+      "darkMode": true,
+      "background": "#000000",
+      "primaryColor": "#120B20",
+      "primaryTextColor": "#E5E7EB",
+      "primaryBorderColor": "#9D00FF",
+      "lineColor": "#FF7A00",
+      "secondaryColor": "#1A1005",
+      "tertiaryColor": "#08131A",
+      "nodeTextColor": "#E5E7EB"
+    }
+  }
+}

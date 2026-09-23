@@ -1,0 +1,128 @@
+/* ═══════════════════════════════════════════════════════════════════
+   INTEGRA O/S BRAND STYLING & COLOR MATRICES (v8.2.2-PURPLE)
+   Canonical Source: https://gist.github.com/IntegraFlame/ccf41137f01c7d114e4f630d00da5077
+   Font: Orbitron (Google Fonts)
+   ═══════════════════════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;700&display=swap');
+
+:root {
+  /* ── Core Palette ──────────────────────────────────────────────── */
+  --color-void: #000000;
+  --color-monolith: #E5E7EB;          /* Off-white logotype (NOT pure white) */
+  --color-flame-core: #FFAA33;        /* Solar gold center */
+  --color-flame-primary: #FF7A00;     /* Primary orange */
+  --color-flame-deep: #FF5500;        /* Deep ember terminus */
+  --color-sentinel-cyan: #00F0FF;     /* Heimdall / subtitle left origin */
+  --color-sentinel-ice: #00D4FF;      /* Ice blue variant */
+  --color-purple-neon: #9D00FF;       /* Sovereign purple */
+  --color-purple-amethyst: #B026FF;   /* Epiphany amethyst */
+  --color-purple-royal: #8A2BE2;      /* Royal purple accent */
+
+  /* ── Typography ────────────────────────────────────────────────── */
+  --font-primary: 'Orbitron', sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* ── Glow Filters ──────────────────────────────────────────────── */
+  --flame-glow: 0 0 12px rgba(255, 122, 0, 0.75), 0 0 24px rgba(255, 85, 0, 0.45);
+  --purple-glow: 0 0 12px rgba(157, 0, 255, 0.65), 0 0 24px rgba(138, 43, 226, 0.35);
+  --cyan-glow: 0 0 10px rgba(0, 240, 255, 0.65);
+
+  /* ── Subtitle Gradient (Cyan → Gold → Orange) ──────────────────── */
+  --subtitle-gradient: linear-gradient(90deg, #00F0FF 0%, #FFAA33 45%, #FF7A00 70%, #FF5500 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   LOGOTYPE COMPONENTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.integra-logo-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-void);
+  padding: 2rem;
+  font-family: var(--font-primary);
+}
+
+.integra-wordmark {
+  font-family: var(--font-primary);
+  font-size: 7vw;
+  font-weight: 700;
+  color: var(--color-monolith);
+  line-height: 1;
+  margin: 0;
+}
+
+.integra-subtitle {
+  font-family: var(--font-primary);
+  font-size: 1.5vw;
+  font-weight: 400;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  margin-top: 1.5rem;
+  /* Cyan-to-Flame gradient text */
+  background: var(--subtitle-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  /* Fallback for non-gradient browsers */
+  color: var(--color-flame-primary);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   DASHBOARD & DAILY PLANET REPORT COMPONENTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+.dp-report-header {
+  font-family: var(--font-primary);
+  font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--color-monolith);
+  border-bottom: 2px solid var(--color-purple-neon);
+  padding-bottom: 0.5rem;
+}
+
+.dp-section-title {
+  font-family: var(--font-primary);
+  font-weight: 400;
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-sentinel-cyan);
+}
+
+.dp-metric-value {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--color-flame-core);
+}
+
+.dp-status-ok {
+  color: var(--color-sentinel-cyan);
+  text-shadow: var(--cyan-glow);
+}
+
+.dp-status-alert {
+  color: var(--color-flame-deep);
+  text-shadow: var(--flame-glow);
+}
+
+.dp-status-sovereign {
+  color: var(--color-purple-neon);
+  text-shadow: var(--purple-glow);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+   ═══════════════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  .integra-wordmark {
+    font-size: 12vw;
+  }
+  .integra-subtitle {
+    font-size: 2.5vw;
+  }
+}

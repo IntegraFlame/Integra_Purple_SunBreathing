@@ -1,9 +1,12 @@
 {
   "turns": [],
-  "last_ccid": null,
+  "last_ccid": "1790014675",
+  "last_session_id": "2b6d5f67-8693-43f7-8e4e-cee30589afee",
+  "previous_ccid": "1789837697",
+  "previous_session_id": "882ff934-e8c0-4cef-83bf-40db995fd1d5",
   "last_swds_epoch": {
-    "generation": 1,
-    "timestamp": 1790011076.4370663,
+    "generation": 2,
+    "timestamp": 1790146834.4371445,
     "library_file": "library_genesis_purple.md",
     "shards_consolidated": 10
   }
