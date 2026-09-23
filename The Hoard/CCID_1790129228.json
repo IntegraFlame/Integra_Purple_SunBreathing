@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790129228",
+  "timestamp": "2026-09-22T21:00:00-05:00",
+  "celestial": [311.150, 0.9930, 0.1659],
+  "epoch": "Hour 21",
+  "topic": "March 2023 Regional Bank Contagion (SVB, Signature) \u2014 Unrealized HTM Securities Losses, Digital Bank Runs, and BTFP Intervention",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

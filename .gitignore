@@ -1,0 +1,28 @@
+# Python / Virtualenv
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.pytest_cache/
+
+# Credentials & Secrets
+*.env
+*.env.*
+Git_personal_access.env
+
+# Large Binary / Source Archives
+*.zip
+sqlite-src-*/
+
+# IDE / Editor
+.vscode/
+.kilo/
+.agents/
+0.26.0
+
+# Large Audio Recordings
+Audio_Lectures/
+*.m4a
+*.mp3
+*.wav
+

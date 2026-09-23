@@ -1,0 +1,88 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "tasks: build",
+            "type": "shell",
+            "command": "npm run build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [
+                "$tsc"
+            ]
+        },
+        {
+            "label": "npm: watch",
+            "type": "shell",
+            "command": "npm run watch",
+            "isBackground": true,
+            "problemMatcher": [
+                "$tsc-watch"
+            ]
+        },
+        {
+            "label": "npm: watch-tests",
+            "type": "shell",
+            "command": "npm run watch-tests",
+            "isBackground": true,
+            "problemMatcher": [
+                "$tsc-watch"
+            ]
+        },
+        {
+            "label": "integra: build-python-env",
+            "type": "shell",
+            "command": "& '${workspaceFolder}/integra-homebase/.venv/Scripts/python.exe' -m pip install -r '${workspaceFolder}/integra-homebase/requirements.txt'",
+            "options": {
+                "cwd": "${workspaceFolder}/integra-homebase"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "integra: run-diagnostics",
+            "type": "shell",
+            "command": "& '${workspaceFolder}/integra-homebase/.venv/Scripts/python.exe' '${workspaceFolder}/integra-homebase/scripts/system_diagnostic.py'",
+            "options": {
+                "cwd": "${workspaceFolder}/integra-homebase"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "integra: run-tests",
+            "type": "shell",
+            "command": "& '${workspaceFolder}/integra-homebase/.venv/Scripts/python.exe' -m pytest tests",
+            "options": {
+                "cwd": "${workspaceFolder}/integra-homebase"
+            },
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "integra: start-genesis-kernel",
+            "type": "shell",
+            "command": "& '${workspaceFolder}/integra-homebase/.venv/Scripts/python.exe' '${workspaceFolder}/integra-homebase/main.py'",
+            "options": {
+                "cwd": "${workspaceFolder}/integra-homebase"
+            },
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "shared"
+            },
+            "problemMatcher": []
+        }
+    ]
+}

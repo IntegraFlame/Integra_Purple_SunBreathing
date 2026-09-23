@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790111228",
+  "timestamp": "2026-09-22T16:00:00-05:00",
+  "celestial": [286.090, 0.9855, 0.1637],
+  "epoch": "Hour 16",
+  "topic": "September 2019 US Repo Market Spike (SOFR to 10%) \u2014 Reserve Distribution Frictions and Standing Repo Facilities",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

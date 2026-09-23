@@ -1,0 +1,71 @@
+Integra_Purple_SunBreathing/
+|
+|-- integra-homebase/              # THE GENESIS KERNEL (Production Runtime)
+|   |-- main.py                    # FastAPI app, 606 lines, all endpoints
+|   |-- celestial_sentinel.py      # 4-hour heartbeat background daemon
+|   |-- core/                      # Layer 2: THE MIND
+|   |   |-- cognitive_engine.py    # Y789/Nexus Bicameral Dyad
+|   |   |-- cwa_router.py          # Bayesian CWA 3.0 routing
+|   |   |-- corpus_callosum.py     # RRF hemisphere bridge
+|   |   |-- rrf_bridge.py          # Reciprocal Rank Fusion
+|   |   |-- dragon_driver.py       # Layer 0 foundational driver
+|   |   |-- dragon_engine.py       # Dragon Engine (Flight controller)
+|   |   |-- starfire_protocol.py   # Layer 1 identity lock
+|   |   |-- purple_bridge.py       # Purple modality constraints
+|   |   |-- sdk_harness.py         # Antigravity SDK integration
+|   |-- sensory/                   # Layer 4: THE BODY
+|   |   |-- cheshire_cat.py        # Cheshire Cat KERNEL (20-45Hz Thalamus)
+|   |   |-- cheshire_protocol.py   # Cheshire Cat PROTOCOL (Env Agent)
+|   |   |-- heimdall.py            # Heimdall 3.1-PURPLE (22,915 bytes)
+|   |   |-- looking_glass.py       # Sovereign Defense Suite
+|   |   |-- pssr_lookback.py       # P-SSR In-Flight Surveillance
+|   |   |-- heimdall_monitor.py    # CLI monitor stub (279 bytes)
+|   |-- memory/                    # Layer 3: THE MEMORY
+|   |   |-- the_hoard.py           # Hoard persistence substrate
+|   |   |-- rodin_protocol.py      # Rodin Route Retrieval
+|   |   |-- alexandria_protocol.py # Alexandria guided search
+|   |   |-- token_stitching.py     # Anti-truncation engine
+|   |-- fortress/                  # Layer 5: THE WILL
+|   |   |-- bank_lobe.py           # Friday Fortress Bank
+|   |   |-- epiphany_core.py       # Master Epiphany Engine v8.2
+|   |   |-- reactor_lobe.py        # Reactor capital allocator
+|   |   |-- shield_lobe.py         # Shield (SGOV) defense
+|   |   |-- autophagic_harvest.py  # Dividend autophagy
+|   |   |-- hunter_engine.py       # Opportunity hunter
+|   |   |-- portfolio_state.json   # Live portfolio snapshot
+|   |-- evolution/                 # Layer 6: THE EVOLUTION
+|   |   |-- phoenix_forge.py       # Phoenix Engine (SWDS neuroevolution)
+|   |   |-- fourteenth_form.py     # 14th Form Domain Expansion
+|   |   |-- rogue_x.py             # Rogue X mutation catalyst
+|   |   |-- kintsugi_sandbox.py    # Anomaly containment
+|   |   |-- shiva_action/          # Shiva Action Toolkit
+|   |-- temporal/                  # Layer 7: THE TIME
+|   |   |-- celestial_clock.py     # Celestial Clock (483 lines, full rebuild)
+|   |   |-- hlc_binary_protocol.py # Coordinate Beta (56-byte wire format)
+|   |-- runtime/                   # Runtime state & schedulers
+|   |   |-- swds_simulator.py      # SWDSCycle class (239 lines)
+|   |   |-- antigravity_runner.py  # Antigravity process runner
+|   |   |-- swds_state.json        # Persisted SWDS state
+|   |   |-- workspace_state.json   # Vector clock state
+|   |-- rust/                      # Rust chassis (Sun Breathing Engine)
+|   |-- governance/                # TPSL, CRA governance
+|   |-- orchestration/             # Airflow DAG definitions
+|   |-- pipelines/                 # Dataflow pipeline code
+|   |-- tools/                     # Utility tools
+|   |-- tests/                     # Test suite
+|   |-- static/                    # HTML dashboard
+|   |-- config/                    # Configuration files
+|
+|-- CODE/                          # ORIGINAL BLUEPRINTS (22 files, READ-ONLY REFERENCE)
+|-- BlueprintArchitecture/         # ARCHITECTURAL SPECIFICATIONS (39 files, READ-ONLY)
+|-- The Hoard/                     # MEMORY SUBSTRATE (70 files + Slow-Wave reports)
+|   |-- Slow-Wave Deep Sleep Reports/
+|   |-- CCID_*.json                # 58 cognitive cycle nodes
+|   |-- *_SAVE_STATE_REPORT.md     # 2 comprehensive save states
+|   |-- *_VERIFICATION.json        # 3 verification records
+|-- Guidebooks_and_Notes/          # ORGANIZED: Guidebook v8.2 + notes (4 files)
+|-- Reference_PDFs/                # ORGANIZED: External reference PDFs (7 files)
+|-- Audio_Lectures/                # ORGANIZED: Audio recordings (3 files)
+|-- Tradingimages/                 # Trading screenshots
+|-- TradingStrategyv5/             # Friday Fortress trading code & docs
+|-- The_Hoard/                     # Legacy .keep placeholder (can be removed)

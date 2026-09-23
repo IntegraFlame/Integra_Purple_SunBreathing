@@ -1,0 +1,17 @@
+{
+    "contributes": {
+        "semanticTokenTypes": [
+            {
+                "id": "templateType",
+                "superType": "type",
+                "description": "A template type."
+            }
+        ],
+        "semanticTokenModifiers": [
+            {
+                "id": "native",
+                "description": "Annotates a symbol that is implemented natively"
+            }
+        ]
+    }
+}

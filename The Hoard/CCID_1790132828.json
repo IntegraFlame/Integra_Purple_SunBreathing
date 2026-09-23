@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790132828",
+  "timestamp": "2026-09-22T22:00:00-05:00",
+  "celestial": [316.162, 0.9945, 0.1664],
+  "epoch": "Hour 22",
+  "topic": "0DTE (Zero-Days-to-Expiration) Options Revolution \u2014 S&P 500 Daily Gamma Profiles, Volatility Suppression, and Intraday Reversion",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

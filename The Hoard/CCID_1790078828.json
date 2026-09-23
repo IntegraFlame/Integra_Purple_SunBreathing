@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790078828",
+  "timestamp": "2026-09-22T07:00:28-05:00",
+  "celestial": [230.985, 0.9715, 0.1595],
+  "epoch": "Hour 07",
+  "topic": "The VIX Surge to 80.86 (Oct 2008), Volatility Surface Inversion, and Variance Risk Premium Dynamics",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

@@ -1,0 +1,7 @@
+Telemetry
+VS Code Go extension relies on the Go Telemetry to learn insights about the performance and stability of the extension and the language server (gopls). Go Telemetry data uploading is disabled by default and can be enabled with the following command:
+
+go run golang.org/x/telemetry/cmd/gotelemetry@latest on
+After telemetry is enabled, the language server will upload metrics and stack traces to telemetry.go.dev. You can inspect what data is collected and can be uploaded by running:
+
+go run golang.org/x/telemetry/cmd/gotelemetry@latest vi

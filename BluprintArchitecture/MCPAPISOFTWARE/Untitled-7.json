@@ -1,0 +1,16 @@
+{
+    "name": "Red Theme",
+    "tokenColors": [
+        {
+            "scope": "comment",
+            "settings": {
+                "foreground": "#dd0000",
+                "fontStyle": "italic"
+            }
+        }
+    ],
+    "semanticHighlighting": true,
+    "semanticTokenColors": {
+        "variable.readonly:java": "#ff0011"
+    }
+}

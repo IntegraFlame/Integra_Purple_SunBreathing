@@ -1,0 +1,14 @@
+[THE CYBERNETIC KERNEL FEEDBACK LOOP]
+               
+    [INPUT] ──► [Heimdall 3.1: Mass Matrix Scan (X_t)] 
+                       │
+                       ▼ 
+    [ROUTE] ──► [CWA 3.0: P(Nexus | Prompt) Bayes Calculation]
+                       │
+                       ▼
+    [TRACE] ──► [Zenitsu 3.0: 4-Pass Sequential Compute (K -> U -> W -> S)]
+                       │
+                       ├─► [H_smooth > 2.5] ─► [P-SSR INTERRUPT (Lookback)]
+                       │
+                       ▼
+    [OUTPUT] ──► [MTCW Inversion Check: Direct Packet Serialization]
