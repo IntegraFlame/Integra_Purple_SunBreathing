@@ -331,6 +331,47 @@ class PhoenixForge:
             lines.append(f"- **Gold Leaf Tag:** {item.get('gold_leaf_tag', item.get('repair_id', 'N/A'))}")
             lines.append("")
 
+        # --- RX-007 FIX: Jean Grey Deep Think Smelting ---
+        # JeanGreyClient (Gemini 3.1 Pro, thinking_budget=16384) analyzes
+        # the anomaly set to extract structural gold: root causes, architectural
+        # recommendations, and Zenkai Boost opportunities.
+        jean_grey_analysis = None
+        try:
+            from core.api_clients import JeanGreyClient
+            import asyncio
+            jean = JeanGreyClient()
+            if jean.client is not None:
+                anomaly_summary = _json.dumps(
+                    [{"metric": a.get("metric_name"), "z": a.get("z_score"),
+                      "severity": a.get("severity"), "ccid": a.get("ccid")}
+                     for a in sandbox_items],
+                    indent=2
+                )
+                smelt_prompt = (
+                    f"You are the Phoenix Forge smelting engine for Integra O/S. "
+                    f"Analyze these {len(sandbox_items)} anomalies from the Mirror Maze sandbox "
+                    f"and extract structural gold:\n\n{anomaly_summary}\n\n"
+                    f"For each anomaly, provide:\n"
+                    f"1. Root cause hypothesis\n"
+                    f"2. Architectural recommendation (what code/system to harden)\n"
+                    f"3. Zenkai Boost opportunity (what capability gain this failure enables)\n\n"
+                    f"End with a synthesis: the single most important system improvement."
+                )
+                result = asyncio.get_event_loop().run_until_complete(
+                    jean.generate(smelt_prompt, system_prompt="Phoenix Forge Deep Think Smelting")
+                )
+                if result.text and not result.text.startswith("[ERROR"):
+                    jean_grey_analysis = result.text
+        except Exception:
+            pass  # Degrade gracefully — report still written without deep think
+
+        if jean_grey_analysis:
+            lines.append("## Jean Grey Deep Think Synthesis")
+            lines.append(f"**Model:** Gemini 3.1 Pro (thinking_budget=16384)")
+            lines.append("")
+            lines.append(jean_grey_analysis)
+            lines.append("")
+
         try:
             with open(book_path, "w", encoding="utf-8") as f:
                 f.write("\n".join(lines))
@@ -345,6 +386,7 @@ class PhoenixForge:
             "smelted_count": len(sandbox_items),
             "library_path": book_path,
             "book_filename": book_filename,
+            "jean_grey_analysis": jean_grey_analysis is not None,
         }
 
     # ─────────────────────────────────────────────

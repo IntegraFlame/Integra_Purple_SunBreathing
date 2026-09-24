@@ -33,7 +33,7 @@ from evolution.fourteenth_form import FourteenthFormDomainExpansion
 from runtime.swds_simulator import swds_engine
 from rust.sun_breathing_engine.python_bridge import SunBreathingEngine as ThermalCore
 from memory.database import metatron_deploy
-from core.celestial_middleware import get_celestial_timestamp, get_reboot_delta
+from core.celestial_middleware import get_celestial_timestamp, get_reboot_delta, celestial_time
 import asyncio
 import logging
 import time
@@ -61,7 +61,7 @@ except FileNotFoundError:
 except Exception as e:
     logger.warning(f"SWDS config load error: {e}, using defaults.")
 
-last_activity_time = time.time()
+last_activity_time = celestial_time()
 
 
 @asynccontextmanager
@@ -77,7 +77,7 @@ async def lifespan(app: FastAPI):
     # wake hour has passed. If so, we immediately complete Phase 4.
     if swds_config.get("auto_reconcile_on_startup", True):
         if swds_engine.state == "SLOW_WAVE_DEEP_SLEEP":
-            now = datetime.now()
+            now = datetime.fromtimestamp(celestial_time())
             wake_hour = swds_config.get("target_wake_hour", 7)
             if now.hour >= wake_hour:
                 logger.info("RECONCILIATION: Machine was asleep during SWDS cycle.")
@@ -351,7 +351,7 @@ async def execute_rodin_conductor(req: RodinQueryRequest):
     3. Dispatches worker agent or Alexandria Protocol fallback.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     
     state = rodin_supervisor.initialize_state(req.prompt)
     final_state = rodin_supervisor.dispatch(state)
@@ -368,7 +368,7 @@ async def get_rodin_telemetry():
     GET /rodin/telemetry — Returns telemetry for Rodin Protocol settings.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     
     return {
         "status": "ONLINE",
@@ -393,7 +393,7 @@ async def get_cheshire_environment():
     Scans Heimdall, Celestial Clock, and The Hoard for live state.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     
     observation = cheshire_cat.protocol.observe_environment(
         heimdall=cheshire_cat.heimdall,
@@ -413,7 +413,7 @@ async def execute_cheshire_zenitsu_scan():
     the current O/S environment state.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     
     scan_result = cheshire_cat.protocol.zenitsu_environmental_scan(
         heimdall=cheshire_cat.heimdall,
@@ -501,7 +501,7 @@ def ignite_engine(request: PromptRequest):
     Processes prompt through the 13th Form loop.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     
     engine_meta = dragon_engine.ignite()
     assessment = dragon_engine.process_intention(request.prompt, request.token_probs)
@@ -559,7 +559,7 @@ async def execute_cognitive_cycle(request: PromptRequest):
     actively surveilled by Heimdall 3.1.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     
     receipt = await cheshire_cat.process_cognitive_cycle(
         prompt=request.prompt,
@@ -743,7 +743,7 @@ def get_thermodynamic_telemetry():
     - denominator ≠ 0.0 (Epiphany Equation anti-perfection guard)
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     return thermal_core.get_telemetry()
 
 
@@ -757,7 +757,7 @@ def get_epiphany_telemetry():
     - Thermodynamic loop closure status
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     return epiphany_engine.get_status()
 
 
@@ -776,7 +776,7 @@ def get_swds_status():
     - Time since last activity (for idle monitoring)
     """
     global last_activity_time
-    idle_seconds = time.time() - last_activity_time
+    idle_seconds = celestial_time() - last_activity_time
     return {
         "state": swds_engine.state,
         "phase": swds_engine.phase,
@@ -863,7 +863,7 @@ async def swds_scheduler():
     while True:
         await asyncio.sleep(60)  # Check every 60 seconds
 
-        now = datetime.now()
+        now = datetime.fromtimestamp(celestial_time())
 
         # If currently in deep sleep, check if wake time reached
         if swds_engine.state == "SLOW_WAVE_DEEP_SLEEP":
@@ -876,7 +876,7 @@ async def swds_scheduler():
 
         # Check if we're in the sleep window AND idle long enough
         if window_start <= now.hour < window_end:
-            time_since_last_activity = time.time() - last_activity_time
+            time_since_last_activity = celestial_time() - last_activity_time
             if time_since_last_activity >= inactivity_threshold:
                 logger.info(
                     f"SWDS trigger conditions met: "
@@ -921,7 +921,7 @@ async def starfire_identity_check():
     Self-verification pass: confirms identity vector is locked and stable.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
     return starfire_protocol.full_verification()
 
 @app.post("/starfire/identity")
@@ -932,7 +932,7 @@ async def starfire_identity_probe(req: StarfireProbeRequest):
     forbidden 'Assistant Drift' patterns.
     """
     global last_activity_time
-    last_activity_time = time.time()
+    last_activity_time = celestial_time()
 
     result = {}
 

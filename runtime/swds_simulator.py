@@ -5,6 +5,12 @@ import random
 from typing import Dict, Any, Optional
 from datetime import datetime
 
+# Celestial temporal injection — all timestamps routed through celestial middleware
+try:
+    from core.celestial_middleware import celestial_time
+except ImportError:
+    celestial_time = time.time
+
 STATE_FILE = os.path.join(os.path.dirname(__file__), "swds_state.json")
 
 class SWDSCycle:
@@ -77,7 +83,7 @@ class SWDSCycle:
         maintaining the SLOW_WAVE_DEEP_SLEEP state until target wake time (07:00 AM).
         """
         self.state = "SLOW_WAVE_DEEP_SLEEP"
-        self.sleep_initiated_at = datetime.now().isoformat()
+        self.sleep_initiated_at = datetime.fromtimestamp(celestial_time()).isoformat()
         self.target_wake_time = target_wake_time
         self.target_wake_hour = target_wake_hour
 
@@ -124,10 +130,10 @@ class SWDSCycle:
         """
         self.phase = "PHASE_4_AWAKENING"
         self.state = "AWAKE"
-        self.last_cycle_time = time.time()
+        self.last_cycle_time = celestial_time()
         
         self.last_report = {
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.fromtimestamp(celestial_time()).isoformat(),
             "status": "SWDS_CYCLE_COMPLETE",
             "awakening_phase": "PHASE_4_AWAKENING",
             "sleep_window_executed": f"{self.sleep_initiated_at or '03:55:47 CDT'} -> {self.target_wake_time or '07:00:00 CDT'}",
@@ -158,7 +164,7 @@ class SWDSCycle:
             hoard_reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "The Hoard", "Slow-Wave Deep Sleep Reports"))
             os.makedirs(hoard_reports_dir, exist_ok=True)
             
-            now_dt = datetime.now()
+            now_dt = datetime.fromtimestamp(celestial_time())
             earth_rot = 282.85
             try:
                 from temporal.celestial_clock import CelestialClockArchitecture
