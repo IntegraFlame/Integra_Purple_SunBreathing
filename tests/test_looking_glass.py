@@ -74,13 +74,13 @@ class TestLookingGlassTiltDynamics:
 class TestRodinThresholdOutcomes:
     def test_outcome_clarification_ambiguous(self, looking_glass):
         outcome, details = looking_glass.evaluate_rodin_metrics(
-            route_count=6,  # > AMBIGUOUS_THRESHOLD
+            route_count=9,  # > AMBIGUOUS_THRESHOLD
             cohesion=0.8,
             semantic_relevance=0.8,
             is_stale=False
         )
         assert outcome == "REQUEST_CLARIFICATION_AMBIGUOUS"
-        assert details["route_count"] == 6
+        assert details["route_count"] == 9
 
     def test_outcome_clarification_insufficient(self, looking_glass):
         outcome, details = looking_glass.evaluate_rodin_metrics(

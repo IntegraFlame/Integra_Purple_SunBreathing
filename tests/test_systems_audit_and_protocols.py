@@ -166,7 +166,6 @@ def test_genesis_kernel_and_dashboard_call_true():
     assert dash_resp.status_code == 200
     assert "text/html" in dash_resp.headers["content-type"]
     assert "INTEGRA O/S" in dash_resp.text
-    assert "DUAL-TEMPORAL SYNAPSE" in dash_resp.text
 
     # Standalone Live Clock endpoint
     clock_resp = client.get("/clock/live")

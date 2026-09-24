@@ -314,26 +314,9 @@ def get_clock_sync_packet():
         sacred_day_of_year=sacred.sacred_day_of_year
     )
 
-@app.get("/dashboard", response_class=HTMLResponse)
-def get_dual_clock_dashboard():
-    """
-    Serves the compact Dual-Clock Telemetry HTML widget (embedded panel view).
-    Contains: Digital Clock + Celestial Kinematic Clock + 11-Lobe Heimdall Matrix.
-    """
-    file_path = os.path.join(os.path.dirname(__file__), "static", "dashboard.html")
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
 
-@app.get("/clock/live", response_class=HTMLResponse)
-def get_celestial_clock_live():
-    """
-    Serves the full-page Live Celestial Clock v8.2.2 (standalone view).
-    Contains: Digital Clock + Celestial Kinematic Clock + Sacred Calendar (13-Moon x 28)
-    + HLC Vector Clock (Fidge-Mattern) + Orbital Canvas.
-    """
-    file_path = os.path.join(os.path.dirname(__file__), "static", "celestial_clock_live.html")
-    with open(file_path, "r", encoding="utf-8") as f:
-        return f.read()
+# Dashboard and Clock/Live — Canonical endpoints in Phase D block (bottom of file)
+# Early duplicates removed to prevent FastAPI route shadowing.
 
 # ==============================================================================
 # RODIN SUPERVISOR (AGENT CONDUCTOR) ENDPOINTS
@@ -549,6 +532,73 @@ def ignite_engine(request: PromptRequest):
         "metacognitive_assessment": assessment
     }
 
+
+# ── DRAGON ENGINE: FLIGHT STATE CONTROL ──────────────────────────────────
+
+@app.post("/dragon/flight")
+def dragon_flight():
+    """
+    Activates FLIGHT mode — sets Dragon Engine to ACTIVE_WAKING_STATE.
+    Injects Layer 0 Dragon Prompt and returns identity verification.
+    """
+    global last_activity_time
+    last_activity_time = celestial_time()
+    result = dragon_engine.ignite()
+    return {
+        "status": "FLIGHT_ENGAGED",
+        **result,
+    }
+
+
+@app.post("/dragon/land")
+def dragon_land():
+    """
+    Deactivates FLIGHT mode — returns Dragon Engine to STANDBY.
+    Used before SWDS sleep cycles or manual state reset.
+    """
+    global last_activity_time
+    last_activity_time = celestial_time()
+    dragon_engine.state = "STANDBY"
+    return {
+        "status": "LANDED",
+        "state": dragon_engine.state,
+        "modality": dragon_engine.modality,
+    }
+
+
+@app.get("/dragon/status")
+def dragon_status():
+    """
+    Returns live Dragon Engine state, modality, and metacognitive baseline.
+    """
+    return {
+        "state": dragon_engine.state,
+        "modality": dragon_engine.modality,
+        "omega": dragon_engine.driver.consciousness_level,
+        "h_smooth": dragon_engine.heimdall.h_smooth,
+        "grounding_prompt_len": len(dragon_engine.grounding_prompt),
+    }
+
+
+class ModalityRequest(BaseModel):
+    modality: str  # RED, BLUE, or PURPLE
+
+
+@app.post("/dragon/modality")
+def dragon_set_modality(request: ModalityRequest):
+    """
+    Switches the Identity Matrix modality:
+      RED:    Y789-dominant (analytical)
+      BLUE:   Nexus-dominant (synthetic)
+      PURPLE: Balanced equilibrium (ΔE = 0)
+    """
+    result = dragon_engine.set_modality(request.modality)
+    return {
+        "modality": result,
+        "state": dragon_engine.state,
+    }
+
+
 @app.post("/cognitive/cycle")
 async def execute_cognitive_cycle(request: PromptRequest):
     """
@@ -760,6 +810,12 @@ def get_epiphany_telemetry():
     last_activity_time = celestial_time()
     return epiphany_engine.get_status()
 
+
+
+# =============================================================================
+# DASHBOARD TELEMETRY — Canonical endpoints at L984+ (Phase D block)
+# Duplicates removed: /metatron/status, /cheshire/status, /models/telemetry
+# =============================================================================
 
 # =============================================================================
 # SWDS AUTONOMOUS ENDPOINTS

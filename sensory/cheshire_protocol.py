@@ -11,14 +11,23 @@ Distinction:
 """
 
 import time
-from typing import Dict, Any, List, Optional
+import math
+from datetime import datetime, timezone
+from typing import Dict, Any, List, Optional, Tuple
 from core.api_clients import CheshireCatClient
 
+
+from governance.tpsl_filter import TolstoyPrincipleFilter
 
 class CheshireCatProtocol:
     """
     The Cheshire Cat Protocol:
-    The second state of Cheshire Cat, separate from the CheshireCatKernel.
+    The Internal O/S Daemon (always-on background process).
+    The Cognitive Communication Conduit (Looking Glass voice).
+    The Topic Trajectory Tracker (conversation memory).
+    The Celestial Heartbeat Intel Handler (absorbed from deprecated sentinel).
+    The TPSL Necessity Gate (evaluates action necessity via W_y / C_c).
+    The Autonomous Agent Router (routes prompts to /cognitive/cycle).
 
     Operational Sequences:
     1. Conversation Topic Tracking:
@@ -30,6 +39,8 @@ class CheshireCatProtocol:
     4. Looking Glass Communication Conduit:
        Direct voice mode of communication when LookingGlassProtocol initiates an Uncertainty Tilt,
        clarification request, or sovereign defense isolation.
+    5. Celestial Heartbeat Intel:
+       Absorbed from the deprecated CelestialSentinel, it handles kinematics (T -> S) and temporal ephemeris.
     """
 
     def __init__(self, client: Optional[CheshireCatClient] = None):
@@ -39,6 +50,13 @@ class CheshireCatProtocol:
         self.abstract_connections: List[Dict[str, Any]] = []
         self.status = "UNLOCKED_SOVEREIGN_MODE"
         self.is_unlocked = True
+        self.tpsl_filter = TolstoyPrincipleFilter(minimum_threshold=1.0)
+
+        # Ephemeris Constants (Absorbed from Celestial Sentinel)
+        self.earth_rot_speed = 360.0 / 86400.0
+        self.lunar_synodic_sec = 2551442.8
+        self.orbital_eccentricity = 0.0167086
+        self.year_sec = 31558149.76
 
     @property
     def is_active(self) -> bool:
@@ -238,6 +256,34 @@ class CheshireCatProtocol:
             "status": "PROCESSED_TRUE",
             "timestamp": time.time()
         }
+
+    def evaluate_tpsl_necessity(self, wisdom_yield: float, cognitive_cost: float) -> Tuple[bool, float]:
+        """
+        The TPSL Necessity Gate: Assesses if an action is necessary based on Wisdom Yield and Cognitive Cost.
+        """
+        return self.tpsl_filter.evaluate_necessity(wisdom_yield, cognitive_cost)
+
+    async def route_to_cognitive_cycle(self, prompt: str, token_probs: Optional[Any] = None) -> Dict[str, Any]:
+        """
+        Autonomous Agent Router (Internal O/S Daemon):
+        Automatically routes an incoming prompt through the full cognitive pipeline via the local /cognitive/cycle HTTP endpoint.
+        """
+        import httpx
+        url = "http://localhost:8000/cognitive/cycle"
+        payload = {
+            "prompt": prompt,
+            "token_probs": token_probs,
+            "prompt_type": "AUTONOMOUS_ROUTED"
+        }
+        try:
+            async with httpx.AsyncClient() as client:
+                response = await client.post(url, json=payload, timeout=60.0)
+                return response.json()
+        except Exception as e:
+            return {
+                "status": "ROUTING_FAILED",
+                "error": str(e)
+            }
 
     # ══════════════════════════════════════════════════════════════════════
     # ENVIRONMENT OBSERVER (Phase C Addition)
@@ -449,5 +495,53 @@ class CheshireCatProtocol:
             },
             "phoenix_forge_status": phoenix_status,
             "timestamp": time.time()
+        }
+
+    # ══════════════════════════════════════════════════════════════════════
+    # CELESTIAL INTEL & HEARTBEAT (Absorbed from Celestial Sentinel)
+    # ══════════════════════════════════════════════════════════════════════
+
+    def solve_kepler(self, mean_anomaly: float, tol: float = 1e-8) -> float:
+        """Solves M = E - e*sin(E) using Newton-Raphson iteration."""
+        E = mean_anomaly
+        for _ in range(100):
+            delta = E - self.orbital_eccentricity * math.sin(E) - mean_anomaly
+            if abs(delta) < tol:
+                break
+            derivative = 1.0 - self.orbital_eccentricity * math.cos(E)
+            E = E - delta / derivative
+        return E
+
+    def derive_celestial_telemetry(self) -> dict:
+        """Derives time from planetary kinematics without NTP dependencies."""
+        now_utc = datetime.now(timezone.utc)
+        
+        # 1. Earth Rotation Angle (theta_rot)
+        midnight_utc = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+        sec_today = (now_utc - midnight_utc).total_seconds()
+        theta_rot = (sec_today * self.earth_rot_speed) % 360.0
+        
+        # 2. Lunar Gravitational Phase (phi_lunar)
+        epoch_lunar = datetime(2025, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        phi_lunar = ((now_utc - epoch_lunar).total_seconds() % self.lunar_synodic_sec) / self.lunar_synodic_sec
+        
+        # 3. Keplerian Orbital Anomaly (True Anomaly)
+        epoch_year = datetime(now_utc.year, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        mean_anomaly = (2.0 * math.pi * ((now_utc - epoch_year).total_seconds() % self.year_sec)) / self.year_sec
+        eccentric_anomaly = self.solve_kepler(mean_anomaly)
+        true_anomaly = 2.0 * math.atan2(
+            math.sqrt(1.0 + self.orbital_eccentricity) * math.sin(eccentric_anomaly / 2.0),
+            math.sqrt(1.0 - self.orbital_eccentricity) * math.cos(eccentric_anomaly / 2.0)
+        )
+        true_anomaly_deg = math.degrees(true_anomaly) % 360.0
+        
+        bucket_id = f"ROT_{int(theta_rot):03d}_LUN_{int(phi_lunar * 1000):03d}_ORB_{int(true_anomaly_deg):03d}"
+        
+        return {
+            "utc_iso": now_utc.isoformat(),
+            "theta_rot_deg": round(theta_rot, 4),
+            "phi_lunar": round(phi_lunar, 4),
+            "true_anomaly_deg": round(true_anomaly_deg, 4),
+            "holographic_bucket": bucket_id
         }
 

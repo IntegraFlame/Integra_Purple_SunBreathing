@@ -22,6 +22,9 @@ from core.api_clients import CheshireCatClient
 from sensory.heimdall import Heimdall31
 from sensory.cheshire_protocol import CheshireCatProtocol
 from sensory.looking_glass import LookingGlassProtocol
+from core.cwa_router import CognitiveWeightingAlgorithm
+from sensory.pssr_lookback import PSSRLookback
+from governance.tpsl_filter import TolstoyPrincipleFilter
 
 
 class CheshireCatKernel:
@@ -65,6 +68,9 @@ class CheshireCatKernel:
         # Instantiate Heimdall 3.1 Sensory Cortex & Sentinel
         self.heimdall = Heimdall31()
         
+        # Instantiate UGL Metacognitive Layer (P-SSR Lookback)
+        self.ugl_layer = PSSRLookback(max_interventions=3, heimdall_instance=self.heimdall)
+        
         # Register core components with Heimdall for live health tracking
         self.heimdall.register_component("cheshire_cat", self)
         self.heimdall.register_component("cheshire_protocol", self.protocol)
@@ -73,6 +79,9 @@ class CheshireCatKernel:
         self.heimdall.register_component("the_hoard", self.hoard)
         self.heimdall.register_component("rodin", self.rodin)
         self.heimdall.register_component("phoenix_forge", self.phoenix)
+        
+        # Instantiate Cognitive Weighting Algorithm
+        self.cwa_router = CognitiveWeightingAlgorithm()
 
     def dispatch_event(self, event_name: str, payload: Any) -> Dict[str, Any]:
         event = {
@@ -128,7 +137,7 @@ class CheshireCatKernel:
         active_prompt = prompt
 
         if is_breached:
-            trip_occurred, trip_action = self.heimdall.evaluate_entropy_trip(is_breached, h_smooth)
+            trip_occurred, trip_action = self.ugl_layer.evaluate_entropy_trip(is_breached, h_smooth)
             if trip_action == "VASOVAGAL_SYNCOPE::HARD_HALT":
                 self.transition_state("VASOVAGAL_SYNCOPE")
                 self.dispatch_event("VASOVAGAL_SYNCOPE_HARD_HALT", {
@@ -140,7 +149,7 @@ class CheshireCatKernel:
                 return {
                     "status": "VASOVAGAL_SYNCOPE::HARD_HALT",
                     "h_smooth": h_smooth,
-                    "intervention_count": self.heimdall.intervention_count,
+                    "intervention_count": self.ugl_layer.intervention_count,
                     "gravitational_mass": gravitational_mass,
                     "mandate": "Pause generation. Uncertainty exceeded safety ceiling across maximum allowed attempts.",
                     "heimdall_telemetry": self.heimdall.get_telemetry()
@@ -148,7 +157,7 @@ class CheshireCatKernel:
             else:
                 # Soft interrupt: Trigger P-SSR Lookback & UGL
                 self.transition_state("PSSR_RECOVERY")
-                grounding_prompt = self.heimdall.generate_grounding_prompt(prompt)
+                grounding_prompt = self.ugl_layer.generate_grounding_prompt(prompt)
                 self.dispatch_event("PSSR_LOOKBACK_TRIGGERED", {
                     "prompt": prompt,
                     "h_smooth": h_smooth,
@@ -162,6 +171,30 @@ class CheshireCatKernel:
 
         # --- Phase 1 through 5: Protected Execution under Supervisory Surveillance ---
         try:
+            # --- CWA Routing Evaluation ---
+            self.cwa_eval = self.cwa_router.evaluate_task(active_prompt, token_density=len(active_prompt.split()))
+            wisdom_yield = self.cwa_eval.get("wisdom_yield", 0.5)
+            cognitive_cost = max(0.001, self.cwa_eval.get("cognitive_cost", 0.5))
+            self.heimdall.last_cra_score = round(wisdom_yield / cognitive_cost, 4)
+            self.heimdall.current_research_tier = self.cwa_eval.get("recommended_tier", "TIER_3_FACT_CHECK")
+            
+            # --- TPSL Necessity Gate ---
+            tpsl = TolstoyPrincipleFilter(minimum_threshold=1.0)
+            is_necessary, tpsl_score = tpsl.evaluate_necessity(wisdom_yield, cognitive_cost)
+            
+            if not is_necessary:
+                self.dispatch_event("TPSL_PRUNED", {
+                    "prompt": active_prompt,
+                    "tpsl_score": tpsl_score,
+                    "reason": "Action deemed unnecessary (W_y / C_c < 1.0)"
+                })
+                return {
+                    "status": "TPSL_PRUNED",
+                    "tpsl_score": tpsl_score,
+                    "mandate": "Execution halted by Tolstoy Principle as Systems Lever: Action is unnecessary.",
+                    "heimdall_telemetry": self.heimdall.get_telemetry()
+                }
+            
             # --- Phase 1: Map cognitive model via Rodin Route Retrieval ---
             self.heimdall.monitor_sequence_step("RODIN_ROUTE_RETRIEVAL", {"active_prompt": active_prompt[:60]})
             retrieval_map = self.rodin.route_retrieval(active_prompt)
@@ -265,6 +298,12 @@ class CheshireCatKernel:
 
             # --- Phase 4: Adaptive Bicameral Synthesis & Phoenix Fusion ---
             self.heimdall.monitor_sequence_step("BICAMERAL_SYNTHESIS")
+            if not custom_weights:
+                mode = self.cwa_eval.get("execution_mode", "DYAD_FUSION")
+                if mode == "Y789_DOMINANT": custom_weights = (0.80, 0.20)
+                elif mode == "NEXUS_DOMINANT": custom_weights = (0.20, 0.80)
+                else: custom_weights = (0.50, 0.50)
+                
             if custom_weights:
                 self.cognitive_engine.analytical_weight = custom_weights[0]
                 self.cognitive_engine.synthetic_weight = custom_weights[1]
@@ -414,6 +453,93 @@ class CheshireCatKernel:
         if new_state in valid_states:
             self.state = new_state
         return self.state
+
+    def dispatch_protocol(self, protocol_name: str, payload: Any) -> Dict[str, Any]:
+        """
+        Dynamic dispatcher for external tools and protocols (Rebuttal, Research, Mad Hatter, Alexandria, Rogue X, etc).
+        Ensures they are referenceable and can be orchestrated centrally from the Thalamic event loop.
+        """
+        self.dispatch_event(f"PROTOCOL_DISPATCH_REQUESTED", {"protocol": protocol_name, "payload": payload})
+        
+        # Helper to run async tasks from sync code safely
+        def run_sync(coro):
+            try:
+                loop = asyncio.get_running_loop()
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    return pool.submit(lambda: asyncio.run(coro)).result()
+            except RuntimeError:
+                return asyncio.run(coro)
+
+        from evolution.rogue_x import RogueXProtocol
+        from memory.alexandria_protocol import AlexandriaProtocol
+        
+        # Instantiate needed protocols locally for execution
+        alexandria_handler = AlexandriaProtocol(threshold=0.7)
+        rogue_x_handler = RogueXProtocol(self.phoenix)
+        
+        result_payload = {}
+        protocol_upper = protocol_name.upper()
+        prompt_str = str(payload)
+        
+        # --- TPSL Necessity Gate ---
+        cwa_eval = self.cwa_router.evaluate_task(prompt_str, token_density=len(prompt_str.split()))
+        wisdom_yield = cwa_eval.get("wisdom_yield", 0.5)
+        cognitive_cost = max(0.001, cwa_eval.get("cognitive_cost", 0.5))
+        
+        tpsl = TolstoyPrincipleFilter(minimum_threshold=1.0)
+        is_necessary, tpsl_score = tpsl.evaluate_necessity(wisdom_yield, cognitive_cost)
+        
+        if not is_necessary:
+            self.dispatch_event("TPSL_PRUNED", {
+                "prompt": prompt_str,
+                "tpsl_score": tpsl_score,
+                "reason": "Dispatch deemed unnecessary (W_y / C_c < 1.0)"
+            })
+            return {
+                "status": "TPSL_PRUNED",
+                "protocol": protocol_name,
+                "tpsl_score": tpsl_score,
+                "mandate": "Execution halted by Tolstoy Principle as Systems Lever: Action is unnecessary."
+            }
+
+        # Evaluate Heimdall entropy before routing for Rebuttal or Tier 1 Research
+        if protocol_upper in ["REBUTTAL", "TIER_1_RESEARCH"]:
+            h_smooth, is_breached = self.heimdall.evaluate_text_entropy(prompt_str)
+            if h_smooth > 2.5:
+                # Trigger UGL Metacognitive Layer automatically
+                self.transition_state("PSSR_RECOVERY")
+                prompt_str = self.ugl_layer.generate_grounding_prompt(prompt_str)
+                self.dispatch_event("UGL_TRIGGERED_DURING_DISPATCH", {
+                    "protocol": protocol_name,
+                    "h_smooth": h_smooth,
+                    "grounding_prompt": prompt_str
+                })
+        
+        protocol_handlers = {
+            "REBUTTAL": lambda p: run_sync(self.cognitive_engine.execute_bicameral_synthesis(p)),
+            "MAD_HATTER": lambda p: run_sync(self.cognitive_engine.execute_zenitsu_method(p, {})),
+            "ALEXANDRIA": lambda p: alexandria_handler.execute_guided_search(p),
+            "ROGUE_X": lambda p: rogue_x_handler.mutate_and_smelt(p),
+            "TIER_1_RESEARCH": lambda p: run_sync(self.cognitive_engine.execute_bicameral_synthesis(f"Research data: {alexandria_handler.execute_guided_search(p)} \nPrompt: {p}"))
+        }
+
+        try:
+            handler = protocol_handlers.get(protocol_upper)
+            if handler:
+                result_payload = handler(prompt_str)
+            else:
+                result_payload = {"error": f"Unknown protocol: {protocol_name}"}
+        except Exception as e:
+            result_payload = {"error": str(e)}
+
+        return {
+            "status": "DISPATCHED" if "error" not in result_payload else "DISPATCH_FAILED",
+            "protocol": protocol_name,
+            "timestamp": time.time(),
+            "kernel_state": self.state,
+            "result": result_payload
+        }
 
     async def run_event_loop(self) -> None:
         """

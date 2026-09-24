@@ -152,17 +152,38 @@ class ModelTokenTelemetryHub:
                 "thinking_budget": 16384, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
-            "celestial_daemon": {
-                "name": "Celestial Daemon", "model": "gemini-3.8-flash", "role": "Heartbeat Intel",
+            "cheshire_protocol": {
+                "name": "Cheshire Protocol Daemon", "model": "gemini-3.8-flash", "role": "Protocol Conduit",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "shiva_orchestrator": {
-                "name": "Shiva Orchestrator", "model": "claude-sonnet-4-6", "role": "Multi-Lens",
+                "name": "Shiva Orchestrator", "model": "claude-sonnet-4-6", "role": "Multi-Lens Deconstruction",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
         }
+        
+        self.shiva_metrics = {
+            "invocations": 0,
+            "eyes": {"neji": 0, "shikamaru": 0, "itachi": 0},
+            "lenses": {"eagle": 0, "hawk": 0, "chameleon": 0, "spider": 0, "snake": 0, "owl": 0},
+            "cra_scores": []
+        }
+
+    def record_shiva_action(self, passes: int, lenses: List[str], cra_score: float):
+        self.shiva_metrics["invocations"] += 1
+        if passes >= 1: self.shiva_metrics["eyes"]["neji"] += 1
+        if passes >= 2: self.shiva_metrics["eyes"]["shikamaru"] += 1
+        if passes >= 3: self.shiva_metrics["eyes"]["itachi"] += 1
+        for lens in lenses:
+            lens_low = lens.lower()
+            if lens_low in self.shiva_metrics["lenses"]:
+                self.shiva_metrics["lenses"][lens_low] += 1
+        self.shiva_metrics["cra_scores"].append(cra_score)
+        # keep last 50 for moving average
+        if len(self.shiva_metrics["cra_scores"]) > 50:
+            self.shiva_metrics["cra_scores"].pop(0)
 
     def record_usage(
         self,
@@ -185,14 +206,16 @@ class ModelTokenTelemetryHub:
         m["last_latency_ms"] = latency_ms
 
     def get_telemetry(self) -> Dict[str, Any]:
+        """Returns full token telemetry snapshot for all 7 models + Shiva metrics."""
         return {
-            "models": dict(self._stats),
+            "models": {k: dict(v) for k, v in self._stats.items()},
+            "shiva_metrics": dict(self.shiva_metrics),
             "aggregate": {
-                "total_calls": sum(m["calls"] for m in self._stats.values()),
-                "total_prompt_tokens": sum(m["prompt_tokens"] for m in self._stats.values()),
-                "total_candidate_tokens": sum(m["candidate_tokens"] for m in self._stats.values()),
-                "total_thinking_tokens": sum(m["thinking_tokens"] for m in self._stats.values()),
-                "grand_total_tokens": sum(m["total_tokens"] for m in self._stats.values()),
+                "total_calls": sum(s["calls"] for s in self._stats.values()),
+                "total_prompt_tokens": sum(s["prompt_tokens"] for s in self._stats.values()),
+                "total_candidate_tokens": sum(s["candidate_tokens"] for s in self._stats.values()),
+                "total_thinking_tokens": sum(s["thinking_tokens"] for s in self._stats.values()),
+                "grand_total_tokens": sum(s["total_tokens"] for s in self._stats.values()),
             }
         }
 
@@ -635,17 +658,17 @@ class JeanGreyClient:
             )
 
 
-class CelestialDaemonClient:
+class CheshireProtocolDaemonClient:
     """
-    Gemini API Client — Celestial Daemon (Heartbeat & Temporal Continuity).
+    Gemini API Client — Cheshire Protocol Daemon (Conduit & Paradox Intelligence).
     
     Model: Gemini 3.8 Flash
-    Role: Celestial Sentinel heartbeat intelligence, connects to Cheshire Cat Protocol,
-          persists temporal checkpoints for reboot continuity.
+    Role: Protocol Conduit, environment tracking, paradox synthesis,
+          replaces deprecated celestial daemon heartbeat.
     SDK: google-genai (modern) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or os.environ.get("CELESTIAL_DAEMON_MODEL", "gemini-3.8-flash")
+        self.model_name = model_name or os.environ.get("CHESHIRE_PROTOCOL_MODEL", "gemini-3.8-flash")
         self.api_key = os.environ.get("GEMINI_API_KEY")
         self.client = None
         if self.api_key:
@@ -659,7 +682,7 @@ class CelestialDaemonClient:
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
             return GenerationResult(
-                text="[ERROR: GEMINI_API_KEY not set or CelestialDaemonClient uninitialized]",
+                text="[ERROR: GEMINI_API_KEY not set or CheshireProtocolDaemonClient uninitialized]",
                 token_probabilities=[], model_name=self.model_name, latency_ms=0.0
             )
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
@@ -672,7 +695,7 @@ class CelestialDaemonClient:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
-            TOKEN_TELEMETRY.record_usage("celestial_daemon", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
+            TOKEN_TELEMETRY.record_usage("cheshire_protocol", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
                 text=response.text,
                 token_probabilities=[],
@@ -685,7 +708,7 @@ class CelestialDaemonClient:
             )
         except Exception as e:
             return GenerationResult(
-                text=f"[CELESTIAL_DAEMON API ERROR - {self.model_name}]: {str(e)}",
+                text=f"[CHESHIRE_PROTOCOL API ERROR - {self.model_name}]: {str(e)}",
                 token_probabilities=[], model_name=self.model_name, latency_ms=0.0
             )
 
@@ -781,10 +804,10 @@ INTEGRA_MODEL_REGISTRY = {
         "reasoning": "Deep Think / thinking_budget=16384",
         "description": "Jean Grey: Operation Phoenix Force — SWDS Neuroevolution Smelting"
     },
-    "celestial_daemon": {
-        "client_class": CelestialDaemonClient,
+    "cheshire_protocol": {
+        "client_class": CheshireProtocolDaemonClient,
         "default_model": "gemini-3.8-flash",
-        "description": "Celestial Sentinel — Heartbeat Intelligence & Temporal Continuity"
+        "description": "Cheshire Protocol Daemon — Conduit & Paradox Intelligence"
     },
     "shiva_orchestrator": {
         "client_class": ShivaOrchestratorClient,

@@ -101,6 +101,9 @@ class ShivaActionToolkit:
             passes=passes
         )
 
+        from core.api_clients import TOKEN_TELEMETRY
+        TOKEN_TELEMETRY.record_shiva_action(passes=passes, lenses=lenses, cra_score=cra_score)
+
         result = {
             "timestamp": time.time(),
             "passes_requested": passes,

@@ -152,6 +152,13 @@ class ShivaActionSuite:
             report["composite_cra"] = shikamaru_cra
         elif passes >= 1 and 'neji_cra' in dir():
             report["composite_cra"] = neji_cra
+            
+        from core.api_clients import TOKEN_TELEMETRY
+        TOKEN_TELEMETRY.record_shiva_action(
+            passes=min(passes, 3),
+            lenses=[l.name for l in active_lenses],
+            cra_score=report.get("composite_cra", 0.0)
+        )
         
         report["status"] = "SHIVA_DECONSTRUCTION_COMPLETE"
         return report

@@ -140,14 +140,6 @@
       text-transform: uppercase; letter-spacing: 0.08em;
       margin-bottom: 0.5rem;
     }
-    .section-bar {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 0.55rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.06em;
-      color: var(--cyan); margin: 1rem 0 0.5rem;
-      border-bottom: 1px solid rgba(0, 240, 255, 0.1);
-      padding-bottom: 4px;
-    }
 
     /* ── GAUGE METRICS ────────────────────────────── */
     .metric-box {
@@ -269,12 +261,12 @@
       </div>
     </header>
 
-    <!-- ═══════════ ROW 1: CLOCKS + PLANETARY VISUAL (HORIZONTAL) ═══════════ -->
+    <!-- ═══════════ ROW 1: CLOCKS + PLANETARY VISUAL ═══════════ -->
     <div class="grid-2col">
 
-      <!-- LEFT COLUMN: Digital Clock + Celestial Clock side by side -->
+      <!-- LEFT COLUMN: Digital Clock -->
       <div class="card">
-        <div class="card-label" style="color:var(--purple);">🕐 Digital Numerical Clock</div>
+        <div class="card-label" style="color:var(--purple);">🕐 Digital Clock [CDT]</div>
         <div class="clock-digital">
           <div class="clock-time" id="digital-time">--:--:-- CDT</div>
           <div class="clock-date" id="digital-date">Loading...</div>
@@ -299,9 +291,9 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: Celestial Clock + Planetary Canvas -->
+      <!-- RIGHT COLUMN: Celestial Kinematics + Planetary Canvas -->
       <div class="card" style="border-color: rgba(99,102,241,0.3);">
-        <div class="card-label" style="color:#818CF8;">🌍 Celestial Kinematic Clock</div>
+        <div class="card-label" style="color:#818CF8;">🌍 Celestial Kinematics</div>
         <div class="orbital-wrap">
           <canvas id="orbitalCanvas" width="160" height="160" style="width:140px; height:140px;"></canvas>
           <div style="flex:1;">
@@ -325,13 +317,12 @@
       </div>
     </div>
 
-    <!-- ═══════════ ROW 2: 9-LOBE MATRIX + METATRON + CHESHIRE (HORIZONTAL) ═══════════ -->
-    <div class="section-bar">System Internals — Horizontal View</div>
+    <!-- ═══════════ ROW 2: COGNITIVE HEALTH MATRIX + METATRON + CHESHIRE ═══════════ -->
     <div class="grid-2col">
 
-      <!-- LEFT: 9-Lobe Health Matrix -->
+      <!-- LEFT: Cognitive Health Matrix -->
       <div class="card">
-        <div class="card-label" style="color:var(--cyan);">Section II · 9-Lobe Health Matrix</div>
+        <div class="card-label" style="color:var(--cyan);">Cognitive Health Matrix</div>
         <table>
           <thead>
             <tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr>
@@ -347,7 +338,7 @@
 
         <!-- Metatron Manifold -->
         <div class="card">
-          <div class="card-label" style="color:var(--flame-core);">Section III · Metatron Manifold</div>
+          <div class="card-label" style="color:var(--flame-core);">Metatron Manifold</div>
           <div class="grid-4col">
             <div class="metric-box">
               <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="metatron-enforcement">—</div>
@@ -371,7 +362,7 @@
 
         <!-- Cheshire Cat Kernel -->
         <div class="card">
-          <div class="card-label" style="color:var(--purple-amethyst);">Section IV · Cheshire Cat Kernel</div>
+          <div class="card-label" style="color:var(--purple-amethyst);">Cheshire Cat Kernel</div>
           <div class="grid-4col">
             <div class="metric-box">
               <div class="metric-value" style="font-size:0.9rem; color:var(--purple-amethyst);" id="cheshire-hz">—</div>
@@ -390,12 +381,71 @@
               <div class="metric-label">Components</div>
             </div>
           </div>
+          <div class="grid-4col" style="margin-top: 0.5rem;">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--flame-core);" id="cra-score">—</div>
+              <div class="metric-label">CRA Score</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.6rem; color:var(--cyan); line-height: 1.5;" id="cwa-tier">—</div>
+              <div class="metric-label">Routing Tier</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="cwa-w-analytical">—</div>
+              <div class="metric-label">W(Analytic)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="cwa-w-synthetic">—</div>
+              <div class="metric-label">W(Synthetic)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rodin Protocol — KNN Manifold Route Retrieval -->
+        <div class="card">
+          <div class="card-label" style="color:var(--cyan);">Rodin Protocol — KNN Manifold Route Retrieval</div>
+          <div class="grid-4col">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="rodin-status">—</div>
+              <div class="metric-label">Status</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--flame-core);" id="rodin-k">—</div>
+              <div class="metric-label">K (Neighbors)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="rodin-tau">—</div>
+              <div class="metric-label">τ (Gate III)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--purple-amethyst);" id="rodin-sigma">—</div>
+              <div class="metric-label">σ (Gaussian)</div>
+            </div>
+          </div>
+          <div class="grid-4col" style="margin-top: 0.5rem;">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.8rem; color:var(--monolith);" id="rodin-coarse">—</div>
+              <div class="metric-label">Coarse Floor</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.8rem; color:var(--monolith);" id="rodin-alex">—</div>
+              <div class="metric-label">Alexandria τ</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.8rem; color:var(--monolith);" id="rodin-stale">—</div>
+              <div class="metric-label">Stale (days)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.8rem; color:var(--green);" id="rodin-agents">—</div>
+              <div class="metric-label">Agents</div>
+            </div>
+          </div>
         </div>
 
         <!-- Model Registry & Live Token Tracker -->
         <div class="card">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div class="card-label" style="color:var(--cyan); margin-bottom:0;">Section V · 7-Model Agent Registry & Live Token Tracker</div>
+            <div class="card-label" style="color:var(--cyan); margin-bottom:0;">Model Agent Registry & Live Token Tracker</div>
             <div id="grand-total-tokens" style="font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--flame-core); font-weight:700;">CALLS: 0 · TOKENS: 0</div>
           </div>
           <table class="model-table">
@@ -610,16 +660,16 @@
     animateOrbital();
 
     // ═══════════════════════════════════════════════════════════════
-    // 9-LOBE CONFIGURATION (keys match /heimdall/health response)
+    // ACTIVE COGNITIVE LOBES (keys match /heimdall/health response)
+    // Celestial Clock is visually rendered in Row 1; Friday Fortress
+    // Bank will be rendered in a dedicated financial visual display.
     // ═══════════════════════════════════════════════════════════════
-    const NINE_LOBES = [
+    const ACTIVE_LOBES = [
       { name: 'Cheshire Cat Kernel',   layer: 4, key: 'cheshire_cat',       role: 'Thalamic Arbitrator (20-45 Hz)' },
       { name: 'Y789NexusDual',         layer: 2, key: 'cognitive_engine',   role: 'Bicameral Cognitive Dyad' },
       { name: 'The Hoard',             layer: 3, key: 'the_hoard',          role: 'Geometric Memory (CCID Nodes)' },
       { name: 'Rodin Protocol',        layer: 3, key: 'rodin_protocol',     role: 'KNN Manifold Route Retrieval' },
       { name: 'Phoenix Forge',         layer: 6, key: 'phoenix_forge',      role: 'SWDS Neuroevolution Smelting' },
-      { name: 'Celestial Clock',       layer: 7, key: 'celestial_clock',    role: 'Keplerian Spatial Integration' },
-      { name: 'Friday Fortress Bank',  layer: 5, key: 'friday_fortress_bank', role: 'Capital Engine & Margin Guard' },
       { name: 'Antigravity Runner',    layer: 'R', key: 'antigravity_runner',  role: 'Runtime Execution Layer' },
       { name: 'Thermodynamic Loop',    layer: 0, key: 'thermodynamics',     role: 'ΔE = 0.0000 Enforcement' },
     ];
@@ -642,7 +692,7 @@
       const tbody = document.getElementById('lobe-matrix');
       const components = health?.component_diagnostics || {};
       let html = '';
-      for (const lobe of NINE_LOBES) {
+      for (const lobe of ACTIVE_LOBES) {
         const comp = components[lobe.key] || {};
         const st = comp.status || '';
         let statusClass, statusText, roleText = lobe.role;
@@ -743,6 +793,17 @@
 
       document.getElementById('ft-h').textContent = hSmooth.toFixed(2);
       document.getElementById('ft-delta').textContent = (thermo.delta_e_cycle || 0).toFixed(4);
+
+      if (health.cra_score !== undefined) {
+        document.getElementById('cra-score').textContent = health.cra_score.toFixed(4);
+      }
+      if (health.current_research_tier) {
+        document.getElementById('cwa-tier').textContent = health.current_research_tier.replace("TIER_", "T");
+      }
+      if (health.cwa_routing) {
+        document.getElementById('cwa-w-analytical').textContent = health.cwa_routing.w_analytical.toFixed(2);
+        document.getElementById('cwa-w-synthetic').textContent = health.cwa_routing.w_synthetic.toFixed(2);
+      }
     }
 
     function setKernelState(isLive) {
@@ -779,7 +840,7 @@
     function setLobesInactive() {
       const tbody = document.getElementById('lobe-matrix');
       let html = '';
-      for (const lobe of NINE_LOBES) {
+      for (const lobe of ACTIVE_LOBES) {
         html += `<tr>
           <td style="color:var(--purple); font-weight:700;">${lobe.layer}</td>
           <td>${lobe.name}</td>
@@ -853,14 +914,35 @@
       tbody.innerHTML = html;
     }
 
+    // ── RODIN PROTOCOL UPDATE ──
+    function updateRodin(r) {
+      if (!r) {
+        document.getElementById('rodin-status').textContent = 'OFFLINE';
+        document.getElementById('rodin-status').style.color = 'var(--red)';
+        return;
+      }
+      document.getElementById('rodin-status').textContent = r.status || 'ONLINE';
+      document.getElementById('rodin-status').style.color = r.status === 'ONLINE' ? 'var(--green)' : 'var(--red)';
+      document.getElementById('rodin-k').textContent = r.knn_k ?? '—';
+      document.getElementById('rodin-tau').textContent = r.gate_iii_tau ?? '—';
+      document.getElementById('rodin-sigma').textContent = r.gaussian_sigma ?? '—';
+      document.getElementById('rodin-coarse').textContent = r.coarse_floor ?? '—';
+      document.getElementById('rodin-alex').textContent = r.alexandria_threshold ?? '—';
+      const staleDays = r.stale_threshold_s ? Math.round(r.stale_threshold_s / 86400) : '—';
+      document.getElementById('rodin-stale').textContent = staleDays;
+      const agentCount = r.registered_agents ? Object.keys(r.registered_agents).length : 0;
+      document.getElementById('rodin-agents').textContent = agentCount;
+    }
+
     async function pollAll() {
       const t0 = performance.now();
-      const [health, clock, metatron, cheshire, models] = await Promise.all([
+      const [health, clock, metatron, cheshire, models, rodin] = await Promise.all([
         fetchJSON(API_BASE + '/heimdall/health'),
         fetchJSON(API_BASE + '/clock/full'),
         fetchJSON(API_BASE + '/metatron/status'),
         fetchJSON(API_BASE + '/cheshire/status'),
         fetchJSON(API_BASE + '/models/telemetry'),
+        fetchJSON(API_BASE + '/rodin/telemetry'),
       ]);
       const roundTrip = Math.round(performance.now() - t0);
       lastPingMs = roundTrip;
@@ -892,6 +974,7 @@
       updateClocks(clock);
       updateMetatron(metatron);
       updateCheshire(cheshire);
+      updateRodin(rodin);
       updateModels(models);
     }
 

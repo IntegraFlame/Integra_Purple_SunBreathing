@@ -57,6 +57,8 @@ class Heimdall31:
         self.telemetry_history: List[Dict[str, Any]] = []
         self.registered_components: Dict[str, Any] = {}
         self.step_audit_log: List[Dict[str, Any]] = []
+        self.last_cra_score = 0.0
+        self.current_research_tier = "TIER_3_FACT_CHECK"
 
     def calculate_instant_entropy(self, probs: List[float]) -> float:
         """
@@ -629,6 +631,12 @@ class Heimdall31:
             "intervention_count": self.intervention_count,
             "last_gravitational_mass": round(self.last_gravitational_mass, 4),
             "component_diagnostics": diagnostics,
+            "cra_score": self.last_cra_score,
+            "current_research_tier": self.current_research_tier,
+            "cwa_routing": {
+                "w_analytical": getattr(self.registered_components.get("cognitive_engine", None), "analytical_weight", 0.5),
+                "w_synthetic": getattr(self.registered_components.get("cognitive_engine", None), "synthetic_weight", 0.5)
+            },
             "timestamp": time.time()
         }
 
@@ -713,6 +721,12 @@ class Heimdall31:
             "last_gravitational_mass": round(self.last_gravitational_mass, 4),
             "monitored_components": list(self.registered_components.keys()),
             "audit_step_count": len(self.step_audit_log),
+            "cra_score": self.last_cra_score,
+            "current_research_tier": self.current_research_tier,
+            "cwa_routing": {
+                "w_analytical": getattr(self.registered_components.get("cognitive_engine", None), "analytical_weight", 0.5),
+                "w_synthetic": getattr(self.registered_components.get("cognitive_engine", None), "synthetic_weight", 0.5)
+            },
             "all_systems_true": True,
             "timestamp": time.time()
         }
