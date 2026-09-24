@@ -395,6 +395,7 @@ class Heimdall31:
         diagnostics: Dict[str, Any] = {}
         all_healthy = True
         has_critical = False
+        _health_check_start = time.perf_counter()  # L_t measurement
 
         # 1. Cheshire Cat Thalamus Check
         if "cheshire_cat" in target_components:
@@ -543,27 +544,52 @@ class Heimdall31:
                 all_healthy = False
 
         # 9. Thermodynamic Loop Closure Invariant Check
-        if "purple_modality" in target_components:
+        #    ΔE is now LIVE from Metatron Manifold SQLite (last_loop.net_energy_loss)
+        #    L_t is LIVE measured wall-clock impedance of this health check cycle
+        l_t = round(time.perf_counter() - _health_check_start, 6)  # Real impedance latency
+
+        # Pull real ΔE from Metatron's physical thermodynamic_loops table
+        delta_e = 0.0
+        metatron_source = "PURPLE_MODALITY"  # default source label
+        loop_id = None
+        try:
+            from memory.database.metatron_deploy import get_connection as _metatron_conn
+            _mconn = _metatron_conn()
+            _row = _mconn.execute(
+                "SELECT loop_id, net_energy_loss FROM thermodynamic_loops "
+                "ORDER BY loop_id DESC LIMIT 1"
+            ).fetchone()
+            if _row:
+                loop_id = _row[0]
+                delta_e = round(float(_row[1]), 6)
+                metatron_source = "METATRON_MECHANICAL"
+        except Exception:
+            pass  # Degrade to PurpleModality default if Metatron unavailable
+
+        # Fall through to PurpleModality if Metatron had no data
+        if metatron_source != "METATRON_MECHANICAL" and "purple_modality" in target_components:
             pm = target_components["purple_modality"]
             constraints = pm.enforce_constraints()
             delta_e = constraints.get("delta_e_cycle", 0.0)
-            l_t = constraints.get("mechanical_latency_s", 0.0)
-            diagnostics["thermodynamics"] = {
-                "status": "HEALTHY",
-                "delta_e_cycle": delta_e,
-                "impedance_latency_L_t": l_t,
-                "loop_closure_sealed": True,
-                "purple_modality_active": constraints.get("purple_modality_active", True)
-            }
-        else:
-            delta_e = 0.0
-            l_t = 0.0
-            diagnostics["thermodynamics"] = {
-                "status": "HEALTHY",
-                "delta_e_cycle": delta_e,
-                "impedance_latency_L_t": l_t,
-                "loop_closure_sealed": True
-            }
+
+        # Update PurpleModality with real values so it stays in sync
+        if "purple_modality" in target_components:
+            pm = target_components["purple_modality"]
+            pm.red_light.delta_e_cycle = delta_e
+            pm.red_light.mechanical_latency_s = l_t
+
+        thermo_healthy = delta_e <= 0.001  # Allow up to 0.001 net energy loss
+        diagnostics["thermodynamics"] = {
+            "status": "HEALTHY" if thermo_healthy else "DEGRADED",
+            "delta_e_cycle": delta_e,
+            "impedance_latency_L_t": l_t,
+            "loop_closure_sealed": thermo_healthy,
+            "purple_modality_active": True,
+            "source": metatron_source,
+            "last_loop_id": loop_id,
+        }
+        if not thermo_healthy:
+            all_healthy = False
 
         # Determine overall system health state
         if self.recovery_state == "VASOVAGAL_SYNCOPE" or has_critical:
