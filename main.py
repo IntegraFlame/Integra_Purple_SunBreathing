@@ -985,7 +985,7 @@ def get_cheshire_status():
         "state": kernel.state,
         "queue_depth": len(kernel.event_queue),
         "h_smooth": getattr(kernel.heimdall, 'h_smooth', 0.0) if kernel.heimdall else 0.0,
-        "components_registered": len(kernel.heimdall.components) if hasattr(kernel.heimdall, 'components') else 0,
+        "components_registered": len(kernel.heimdall.registered_components) if hasattr(kernel.heimdall, 'registered_components') else 0,
     }
 
 
