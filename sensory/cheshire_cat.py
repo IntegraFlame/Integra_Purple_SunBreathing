@@ -23,6 +23,7 @@ from sensory.heimdall import Heimdall31
 from sensory.cheshire_protocol import CheshireCatProtocol
 from sensory.looking_glass import LookingGlassProtocol
 from core.cwa_router import CognitiveWeightingAlgorithm
+from core.rrf_bridge import ReciprocalRankFusionBridge
 from sensory.pssr_lookback import PSSRLookback
 from governance.tpsl_filter import TolstoyPrincipleFilter
 
@@ -82,6 +83,9 @@ class CheshireCatKernel:
         
         # Instantiate Cognitive Weighting Algorithm
         self.cwa_router = CognitiveWeightingAlgorithm()
+        
+        # Instantiate RRF Corpus Callosum Bridge (Layer 2 inter-hemispheric fusion)
+        self.rrf_bridge = ReciprocalRankFusionBridge(k_constant=60)
 
     def dispatch_event(self, event_name: str, payload: Any) -> Dict[str, Any]:
         event = {
@@ -346,18 +350,51 @@ class CheshireCatKernel:
                 f"Conduit: {lg_eval.get('cheshire_conduit', {}).get('conduit_message', 'Nominal Flow')}"
             )
 
-            # Phoenix Synthesis (Crystallize Hoard Node)
+            # --- Phase 4b: RRF Corpus Callosum Fusion ---
+            # Fuse Y789 (analytical) and Nexus (synthetic) ranked streams through the
+            # Reciprocal Rank Fusion bridge, weighted by CWA 3.0 hemisphere routing.
+            # Rodin retrieval paths serve as the memory-grounded third stream.
+            self.heimdall.monitor_sequence_step("RRF_CORPUS_CALLOSUM_FUSION")
+            
+            # Convert retrieved_paths to strings (Rodin may return dicts from ChromaDB/Hoard)
+            raw_paths = retrieval_map.get("retrieved_paths", [])
+            string_paths = [
+                p.get("ccid", str(p)) if isinstance(p, dict) else str(p)
+                for p in raw_paths
+            ]
+            y789_stream = string_paths
+            nexus_stream = list(reversed(string_paths)) if string_paths else []
+            rodin_stream = string_paths
+            
+            rrf_w_analytical = engine_result.get("y789_weight", 0.50)
+            rrf_w_synthetic = engine_result.get("nexus_weight", 0.50)
+            rrf_w_rodin = 0.15 if rodin_stream else 0.0
+            
+            rrf_fused = self.rrf_bridge.fuse_rankings(
+                y789_items=y789_stream,
+                nexus_items=nexus_stream,
+                rodin_items=rodin_stream if rrf_w_rodin > 0 else None,
+                w_analytical=rrf_w_analytical,
+                w_synthetic=rrf_w_synthetic,
+                w_rodin=rrf_w_rodin,
+            )
+            
+            rrf_top_concept = rrf_fused[0]["concept"] if rrf_fused else "No fusion output"
+            rrf_top_score = rrf_fused[0]["fused_score"] if rrf_fused else 0.0
+            rrf_agreement = rrf_fused[0]["agreement"] if rrf_fused else 0
+
+            # Phoenix Synthesis (Crystallize Hoard Node) — fed by RRF-fused output
             self.heimdall.monitor_sequence_step("PHOENIX_FUSION")
             synthesized_node = self.phoenix.synthesize_hoard_node(
-                analytical_data=analytical_data,
-                synthetic_data=synthetic_data
+                analytical_data=f"{analytical_data} | RRF_Top: {rrf_top_concept} Score: {rrf_top_score}",
+                synthetic_data=f"{synthetic_data} | RRF_Agreement: {rrf_agreement} Fused_Items: {len(rrf_fused)}"
             )
 
             # --- Phase 5: Commit into The Hoard Physical Substrate ---
             self.heimdall.monitor_sequence_step("HOARD_COMMIT")
             ccid = f"CCID_{int(time.time())}"
             
-            # Enrich payload with Looking Glass and Cheshire Cat Protocol metadata
+            # Enrich payload with Looking Glass, Cheshire Protocol, and RRF metadata
             node_payload = {
                 "fused_knowledge": synthesized_node["payload"],
                 "looking_glass_telemetry": {
@@ -370,6 +407,16 @@ class CheshireCatKernel:
                     "topic": topic_record["topic"],
                     "paradox_detected": paradox_eval.get("has_paradox", False),
                     "abstract_bridge": abstract_connection
+                },
+                "rrf_corpus_callosum_telemetry": {
+                    "top_concept": rrf_top_concept,
+                    "top_fused_score": rrf_top_score,
+                    "top_agreement": rrf_agreement,
+                    "total_fused_items": len(rrf_fused),
+                    "w_analytical": rrf_w_analytical,
+                    "w_synthetic": rrf_w_synthetic,
+                    "w_rodin": rrf_w_rodin,
+                    "k_constant": self.rrf_bridge.k,
                 }
             }
 
@@ -409,6 +456,13 @@ class CheshireCatKernel:
             "paradox": paradox_eval,
             "abstract_connection": abstract_connection
         }
+        commit_receipt["rrf_fusion"] = {
+            "top_concept": rrf_top_concept,
+            "top_fused_score": rrf_top_score,
+            "top_agreement": rrf_agreement,
+            "total_fused_items": len(rrf_fused),
+            "bridge_telemetry": self.rrf_bridge.get_telemetry(),
+        }
         commit_receipt["heimdall_telemetry"] = telemetry
         commit_receipt["system_health_status"] = health_report["system_health_status"]
         commit_receipt["gravitational_mass"] = gravitational_mass
@@ -419,6 +473,7 @@ class CheshireCatKernel:
             "retrieval": retrieval_map,
             "engine": engine_result,
             "looking_glass": lg_eval,
+            "rrf_fusion": commit_receipt["rrf_fusion"],
             "commit": commit_receipt,
             "heimdall": telemetry,
             "gravitational_mass": gravitational_mass
@@ -435,6 +490,7 @@ class CheshireCatKernel:
             "cheshire_state": self.state,
             "polling_hz": self.polling_hz,
             "event_queue_depth": len(self.event_queue),
+            "rrf_bridge": self.rrf_bridge.get_telemetry(),
             "heimdall_telemetry": self.heimdall.get_telemetry(),
             "system_health": health_report
         }

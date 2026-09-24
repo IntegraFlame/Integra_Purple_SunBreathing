@@ -89,6 +89,26 @@ def run_sync(coro: Any) -> Any:
         return asyncio.run(coro)
 
 
+def _create_genai_client(api_key: Optional[str] = None) -> Any:
+    """
+    Creates a google.genai Client.
+    Prioritizes Vertex AI mode (using gcloud ADC project/location) when USE_VERTEXAI=true,
+    or falls back to direct API key.
+    """
+    try:
+        from google import genai
+        use_vertex = os.environ.get("USE_VERTEXAI", "true").lower() in ("true", "1", "yes")
+        project = os.environ.get("GOOGLE_CLOUD_PROJECT", "integra-deployment-package")
+        location = os.environ.get("GOOGLE_CLOUD_LOCATION", "global")
+        if use_vertex:
+            return genai.Client(vertexai=True, project=project, location=location)
+        elif api_key:
+            return genai.Client(api_key=api_key)
+    except Exception:
+        pass
+    return None
+
+
 # ──────────────────────────────────────────────────────────────
 # Central Model Token Telemetry Hub (All 7 Agents)
 # ──────────────────────────────────────────────────────────────
@@ -128,37 +148,37 @@ class ModelTokenTelemetryHub:
     def __init__(self):
         self._stats: Dict[str, Dict[str, Any]] = {
             "y789_left": {
-                "name": "Y789 (Left)", "model": "gemini-3.1-pro", "role": "Deep Think / Spock",
+                "name": "Y789 (Left)", "model": os.environ.get("Y789_MODEL", "gemini-3.1-pro-preview"), "role": "Deep Think / Spock",
                 "thinking_budget": 8192, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "nexus_right": {
-                "name": "Nexus (Right)", "model": "claude-sonnet-4-6", "role": "Synthesis / Kirk",
+                "name": "Nexus (Right)", "model": os.environ.get("NEXUS_MODEL", "claude-sonnet-4-6"), "role": "Synthesis / Kirk",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "cheshire_cat": {
-                "name": "Cheshire Cat", "model": "gemini-3.8-flash", "role": "Thalamic Arbitrator",
+                "name": "Cheshire Cat", "model": os.environ.get("CHESHIRE_MODEL", "gemini-3.8-flash"), "role": "Thalamic Arbitrator",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "rodin_retrieval": {
-                "name": "Rodin Retrieval", "model": "gemini-2.0-flash", "role": "KNN Memory",
+                "name": "Rodin Retrieval", "model": os.environ.get("RODIN_MODEL", "gemini-3.6-flash"), "role": "KNN Memory",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "jean_grey_phoenix": {
-                "name": "Jean Grey", "model": "gemini-3.1-pro", "role": "Phoenix (16384)",
+                "name": "Jean Grey", "model": os.environ.get("JEAN_GREY_MODEL", "gemini-3.1-pro-preview"), "role": "Phoenix (16384)",
                 "thinking_budget": 16384, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "cheshire_protocol": {
-                "name": "Cheshire Protocol Daemon", "model": "gemini-3.8-flash", "role": "Protocol Conduit",
+                "name": "Cheshire Protocol Daemon", "model": os.environ.get("CHESHIRE_PROTOCOL_MODEL", "gemini-3.8-flash"), "role": "Protocol Conduit",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "shiva_orchestrator": {
-                "name": "Shiva Orchestrator", "model": "claude-sonnet-4-6", "role": "Multi-Lens Deconstruction",
+                "name": "Shiva Orchestrator", "model": os.environ.get("SHIVA_MODEL", "claude-sonnet-4-6"), "role": "Multi-Lens Deconstruction",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
@@ -243,28 +263,22 @@ class Y789Client:
         enable_thinking: bool = True,
         thinking_budget: int = 8192
     ):
-        self.model_name = model_name or os.environ.get("Y789_MODEL", "gemini-3.1-pro")
+        self.model_name = model_name or os.environ.get("Y789_MODEL", "gemini-3.1-pro-preview")
         self.enable_thinking = enable_thinking
         self.thinking_budget = int(os.environ.get("THINKING_BUDGET", str(thinking_budget)))
         self.api_key = os.environ.get("GEMINI_API_KEY")
         
-        self.client = None
+        self.client = _create_genai_client(self.api_key)
         self._config = None
-        if self.api_key:
+        if self.client and self.enable_thinking:
             try:
-                from google import genai
                 from google.genai import types
-                self.client = genai.Client(api_key=self.api_key)
-                
-                # Configure Deep Think / Extended Thinking via ThinkingConfig
-                if self.enable_thinking:
-                    self._config = types.GenerateContentConfig(
-                        thinking_config=types.ThinkingConfig(
-                            thinking_budget=self.thinking_budget
-                        )
+                self._config = types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(
+                        thinking_budget=self.thinking_budget
                     )
+                )
             except Exception as e:
-                self.client = None
                 self._init_error = str(e)
         
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
@@ -348,12 +362,19 @@ class NexusClient:
         self.model_name = model_name or os.environ.get("NEXUS_MODEL", "claude-sonnet-4-6")
         self.max_tokens = max_tokens
         self.api_key = os.environ.get("CLAUDE_API_KEY")
+        self.workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID") or os.environ.get("CLAUDE_WORKSPACE_ID")
         
         self.client = None
         if self.api_key:
             try:
                 from anthropic import AsyncAnthropic
-                self.client = AsyncAnthropic(api_key=self.api_key)
+                headers = {}
+                if self.workspace_id:
+                    headers["anthropic-workspace-id"] = self.workspace_id
+                self.client = AsyncAnthropic(
+                    api_key=self.api_key,
+                    default_headers=headers if headers else None
+                )
             except Exception as e:
                 self.client = None
                 self._init_error = str(e)
@@ -447,15 +468,7 @@ class CheshireCatClient:
     ):
         self.model_name = model_name or os.environ.get("CHESHIRE_MODEL", "gemini-3.8-flash")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        
-        self.client = None
-        if self.api_key:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
-            except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+        self.client = _create_genai_client(self.api_key)
                 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
@@ -526,17 +539,10 @@ class RodinClient:
     SDK: google-genai (modern) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-2.0-flash")
+        self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-3.6-flash")
         self.embedding_model = os.environ.get("RODIN_EMBED_MODEL", "text-embedding-004")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = None
-        if self.api_key:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
-            except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+        self.client = _create_genai_client(self.api_key)
 
     async def embed(self, text: str, model_name: Optional[str] = None) -> List[float]:
         """Generates a text embedding vector via Gemini embed_content API."""
@@ -605,23 +611,20 @@ class JeanGreyClient:
     SDK: google-genai (modern) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None, thinking_budget: int = 16384):
-        self.model_name = model_name or os.environ.get("JEAN_GREY_MODEL", "gemini-3.1-pro")
+        self.model_name = model_name or os.environ.get("JEAN_GREY_MODEL", "gemini-3.1-pro-preview")
         self.thinking_budget = int(os.environ.get("JEAN_GREY_THINKING_BUDGET", str(thinking_budget)))
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = None
+        self.client = _create_genai_client(self.api_key)
         self._config = None
-        if self.api_key:
+        if self.client:
             try:
-                from google import genai
                 from google.genai import types
-                self.client = genai.Client(api_key=self.api_key)
                 self._config = types.GenerateContentConfig(
                     thinking_config=types.ThinkingConfig(
                         thinking_budget=self.thinking_budget
                     )
                 )
             except Exception as e:
-                self.client = None
                 self._init_error = str(e)
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
@@ -670,14 +673,7 @@ class CheshireProtocolDaemonClient:
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or os.environ.get("CHESHIRE_PROTOCOL_MODEL", "gemini-3.8-flash")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = None
-        if self.api_key:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
-            except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+        self.client = _create_genai_client(self.api_key)
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
@@ -725,11 +721,18 @@ class ShivaOrchestratorClient:
         self.model_name = model_name or os.environ.get("SHIVA_MODEL", "claude-sonnet-4-6")
         self.max_tokens = max_tokens
         self.api_key = os.environ.get("CLAUDE_API_KEY")
+        self.workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID") or os.environ.get("CLAUDE_WORKSPACE_ID")
         self.client = None
         if self.api_key:
             try:
                 from anthropic import AsyncAnthropic
-                self.client = AsyncAnthropic(api_key=self.api_key)
+                headers = {}
+                if self.workspace_id:
+                    headers["anthropic-workspace-id"] = self.workspace_id
+                self.client = AsyncAnthropic(
+                    api_key=self.api_key,
+                    default_headers=headers if headers else None
+                )
             except Exception as e:
                 self.client = None
                 self._init_error = str(e)
@@ -779,7 +782,7 @@ CheshireClient = CheshireCatClient
 INTEGRA_MODEL_REGISTRY = {
     "left_hemisphere": {
         "client_class": Y789Client,
-        "default_model": "gemini-3.1-pro",
+        "default_model": "gemini-3.1-pro-preview",
         "reasoning": "Deep Think / Extended Thinking",
         "description": "Analytical Engine (Spock) / Deconstruction & Formal Verification"
     },
@@ -795,12 +798,12 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "rodin_retrieval": {
         "client_class": RodinClient,
-        "default_model": "gemini-2.0-flash",
+        "default_model": "gemini-3.6-flash",
         "description": "Rodin Route Retrieval — KNN Topological Memory Engine"
     },
     "jean_grey_phoenix": {
         "client_class": JeanGreyClient,
-        "default_model": "gemini-3.1-pro",
+        "default_model": "gemini-3.1-pro-preview",
         "reasoning": "Deep Think / thinking_budget=16384",
         "description": "Jean Grey: Operation Phoenix Force — SWDS Neuroevolution Smelting"
     },

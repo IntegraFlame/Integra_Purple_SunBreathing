@@ -21,7 +21,7 @@ CANONICAL_MODELS = {
         "role": "Thalamic Arbitrator, Fast Routing, & Paradox Detection",
     },
     "left_hemisphere": {
-        "model": "gemini-3.1-pro",
+        "model": "gemini-3.1-pro-preview",
         "role": "Analytical Engine (Spock) / Deconstruction & Formal Verification",
         "deep_think": True,
         "extended_thinking": True,
@@ -31,13 +31,25 @@ CANONICAL_MODELS = {
         "model": "claude-sonnet-4-6",
         "role": "Synthetic Engine (Kirk) / Emergence & Generative Fusion",
     },
+    "rodin": {
+        "model": "gemini-3.6-flash",
+        "role": "Rodin Route Retrieval (KNN Manifold Grounding)",
+    },
 }
 
 DEFAULT_ENV_VARS = {
     "CHESHIRE_MODEL": "gemini-3.8-flash",
-    "Y789_MODEL": "gemini-3.1-pro",
+    "Y789_MODEL": "gemini-3.1-pro-preview",
+    "RODIN_MODEL": "gemini-3.6-flash",
+    "JEAN_GREY_MODEL": "gemini-3.1-pro-preview",
+    "CHESHIRE_PROTOCOL_MODEL": "gemini-3.8-flash",
     "NEXUS_MODEL": "claude-sonnet-4-6",
+    "SHIVA_MODEL": "claude-sonnet-4-6",
     "THINKING_BUDGET": "8192",
+    "USE_VERTEXAI": "true",
+    "GOOGLE_CLOUD_PROJECT": "integra-deployment-package",
+    "GOOGLE_CLOUD_LOCATION": "global",
+    "ANTHROPIC_WORKSPACE_ID": "wrkspc_019uQ92HuyisPaqUcYiDvDay",
 }
 
 
@@ -162,6 +174,8 @@ def verify_env() -> Dict[str, bool]:
         "Y789_MODEL",
         "NEXUS_MODEL",
         "THINKING_BUDGET",
+        "ANTHROPIC_WORKSPACE_ID",
+        "USE_VERTEXAI",
         "FIRECRAWL_API_KEY",
         "CHROMA_API_KEY",
         "Git_personal_access",
