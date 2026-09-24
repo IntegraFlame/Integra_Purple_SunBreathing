@@ -490,19 +490,37 @@ class Heimdall31:
             if not has_retrieval:
                 all_healthy = False
 
-        # 5. Phoenix Forge Check
+        # 5. Phoenix Forge Check — CONDITIONAL on SWDS state
+        #    STANDBY when AWAKE (forge exists but not smelting)
+        #    HEALTHY (ACTIVE) only during SLOW_WAVE_DEEP_SLEEP
         if "phoenix_forge" in target_components:
             phoenix = target_components["phoenix_forge"]
             gen = getattr(phoenix, "evolution_generation", 0)
             has_synth = hasattr(phoenix, "synthesize_hoard_node")
-            phoenix_healthy = has_synth and gen >= 0
-            diagnostics["phoenix_forge"] = {
-                "status": "HEALTHY" if phoenix_healthy else "DEGRADED",
-                "evolution_generation": gen,
-                "zenkai_boost_active": True
-            }
-            if not phoenix_healthy:
+            phoenix_capable = has_synth and gen >= 0
+
+            # Query live SWDS state to determine if Phoenix is actively smelting
+            swds_state = "AWAKE"
+            try:
+                from runtime.swds_simulator import swds_engine as _swds
+                swds_state = getattr(_swds, "state", "AWAKE")
+            except ImportError:
+                pass
+
+            if not phoenix_capable:
+                phoenix_status = "DEGRADED"
                 all_healthy = False
+            elif swds_state == "SLOW_WAVE_DEEP_SLEEP":
+                phoenix_status = "HEALTHY"  # Actively smelting
+            else:
+                phoenix_status = "STANDBY"  # Healthy but idle — SWDS not in session
+
+            diagnostics["phoenix_forge"] = {
+                "status": phoenix_status,
+                "evolution_generation": gen,
+                "zenkai_boost_active": swds_state == "SLOW_WAVE_DEEP_SLEEP",
+                "swds_state": swds_state
+            }
 
         # 6. Celestial Clock Kinematics Check (Layer 7)
         if "celestial_clock" in target_components or "celestial" in target_components:

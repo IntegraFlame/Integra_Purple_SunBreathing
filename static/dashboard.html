@@ -218,6 +218,7 @@
     }
     tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
     .lobe-active { color: var(--green); font-weight: 700; }
+    .lobe-standby { color: var(--flame-core); font-weight: 700; }
     .lobe-offline { color: var(--red); font-weight: 700; }
 
     /* ── MODEL REGISTRY TABLE ────────────────────── */
@@ -643,14 +644,30 @@
       let html = '';
       for (const lobe of NINE_LOBES) {
         const comp = components[lobe.key] || {};
-        const active = comp.status === 'HEALTHY';
-        const statusClass = active ? 'lobe-active' : 'lobe-offline';
-        const statusText = active ? '● ACTIVE' : '○ INACTIVE';
+        const st = comp.status || '';
+        let statusClass, statusText, roleText = lobe.role;
+
+        if (st === 'HEALTHY') {
+          statusClass = 'lobe-active';
+          statusText = '● ACTIVE';
+        } else if (st === 'STANDBY') {
+          statusClass = 'lobe-standby';
+          statusText = '◑ STANDBY';
+        } else {
+          statusClass = 'lobe-offline';
+          statusText = '○ INACTIVE';
+        }
+
+        // Append live SWDS state detail for Phoenix Forge
+        if (lobe.key === 'phoenix_forge' && comp.swds_state) {
+          roleText += ` [${comp.swds_state}]`;
+        }
+
         html += `<tr>
           <td style="color:var(--purple); font-weight:700;">${lobe.layer}</td>
           <td>${lobe.name}</td>
           <td class="${statusClass}">${statusText}</td>
-          <td style="color:var(--monolith-dim); font-size:0.55rem;">${lobe.role}</td>
+          <td style="color:var(--monolith-dim); font-size:0.55rem;">${roleText}</td>
         </tr>`;
       }
       tbody.innerHTML = html;
