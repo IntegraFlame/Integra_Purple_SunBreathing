@@ -18,7 +18,10 @@ from evolution.phoenix_forge import PhoenixForge
 from memory.the_hoard import TheHoard
 from memory.rodin_protocol import RodinProtocol
 from core.cognitive_engine import Y789NexusEngine
-from core.api_clients import CheshireCatClient
+from core.api_clients import (
+    CheshireCatClient, RodinClient, JeanGreyClient,
+    CheshireProtocolDaemonClient, ShivaOrchestratorClient
+)
 from sensory.heimdall import Heimdall31
 from sensory.cheshire_protocol import CheshireCatProtocol
 from sensory.looking_glass import LookingGlassProtocol
@@ -56,6 +59,10 @@ class CheshireCatKernel:
         # Instantiate unified cognitive components
         self.cognitive_engine = Y789NexusEngine()
         self.client = CheshireCatClient()  # Gemini 3.8 Flash Thalamic Delegator
+        self.rodin_client = RodinClient()  # Gemini 3.6 Flash — Semantic Query Expansion
+        self.jean_grey_client = JeanGreyClient()  # Gemini 3.1 Pro — Phoenix Crystallization (16384 think budget)
+        self.protocol_client = CheshireProtocolDaemonClient()  # Gemini 3.8 Flash — LLM Paradox Intelligence
+        self.shiva_client = ShivaOrchestratorClient()  # Claude Sonnet 4.6 — Multi-Lens Synthesis
         self.hoard = TheHoard()
         self.rodin = RodinProtocol(self.hoard)
         self.phoenix = PhoenixForge()
@@ -124,6 +131,19 @@ class CheshireCatKernel:
         })
         
         gravitational_mass = self.heimdall.calculate_gravitational_mass(prompt)
+        
+        # Phase 0a: Cheshire Cat Thalamic Routing (LLM) — Gemini 3.8 Flash
+        # Fast classification of prompt intent, priority, and cognitive routing signals.
+        # This invocation drives live token accumulation for the Cheshire Cat model slot.
+        cheshire_routing = None
+        try:
+            cheshire_result = await self.client.generate(
+                prompt=f"[THALAMIC ROUTING] Classify this prompt's cognitive domain, urgency (0-1), and recommended hemisphere balance (analytical vs synthetic). Respond in 2-3 sentences.\n\nPROMPT: {prompt[:500]}",
+                system_prompt="You are the Cheshire Cat Thalamic Arbitrator. Classify incoming cognitive requests rapidly."
+            )
+            cheshire_routing = cheshire_result.text if cheshire_result else None
+        except Exception:
+            cheshire_routing = None
         
         # Check if token_probs is a streaming sequence of distributions: List[List[float]]
         if token_probs is not None:
@@ -201,7 +221,22 @@ class CheshireCatKernel:
             
             # --- Phase 1: Map cognitive model via Rodin Route Retrieval ---
             self.heimdall.monitor_sequence_step("RODIN_ROUTE_RETRIEVAL", {"active_prompt": active_prompt[:60]})
-            retrieval_map = self.rodin.route_retrieval(active_prompt)
+            
+            # Phase 1a: Rodin LLM Semantic Query Expansion — Gemini 3.6 Flash
+            # Expands the prompt into a richer semantic query for topological retrieval.
+            # Drives live token accumulation for the Rodin Retrieval model slot.
+            rodin_expanded_query = active_prompt
+            try:
+                rodin_expansion = await self.rodin_client.generate(
+                    prompt=f"[RODIN SEMANTIC EXPANSION] Extract 5-8 key conceptual nodes and their relational edges from this prompt for topological memory retrieval. Return as a dense semantic summary.\n\nPROMPT: {active_prompt[:500]}",
+                    system_prompt="You are Rodin Route Retrieval, a topological memory engine. Extract key conceptual nodes for KNN search."
+                )
+                if rodin_expansion and rodin_expansion.text and not rodin_expansion.text.startswith("["):
+                    rodin_expanded_query = f"{active_prompt} | RODIN_EXPANSION: {rodin_expansion.text[:300]}"
+            except Exception:
+                pass  # Fall through to original prompt on failure
+            
+            retrieval_map = self.rodin.route_retrieval(rodin_expanded_query)
             retrieved_paths = retrieval_map.get("retrieved_paths", [])
             route_count = len(retrieved_paths)
             cohesion = float(retrieval_map.get("cohesion", 0.85 if route_count > 0 else 0.0))
@@ -211,6 +246,32 @@ class CheshireCatKernel:
             # --- Phase 2: Paradox & Missing Data Assessment (Cheshire Cat Protocol) ---
             self.heimdall.monitor_sequence_step("PARADOX_DETECTION")
             paradox_eval = self.protocol.detect_paradox_or_missing_data(active_prompt, retrieved_paths)
+            
+            # Phase 2a: Cheshire Protocol Daemon LLM Paradox Intelligence — Gemini 3.8 Flash
+            # Deep LLM-powered paradox, contradiction, and gap analysis.
+            # Drives live token accumulation for the Cheshire Protocol Daemon model slot.
+            protocol_analysis = None
+            try:
+                protocol_result = await self.protocol_client.generate(
+                    prompt=(
+                        f"[PARADOX INTELLIGENCE] Analyze this prompt for logical contradictions, "
+                        f"missing data dependencies, and inferential gaps. Identify any self-referential "
+                        f"paradoxes or unstated assumptions. Respond concisely.\n\n"
+                        f"PROMPT: {active_prompt[:400]}\n"
+                        f"LOCAL_PARADOX_DETECTED: {paradox_eval.get('has_paradox', False)}\n"
+                        f"RETRIEVED_CONTEXT_COUNT: {route_count}"
+                    ),
+                    system_prompt="You are the Cheshire Protocol Daemon — paradox intelligence and environmental conduit."
+                )
+                if protocol_result and protocol_result.text:
+                    protocol_analysis = protocol_result.text
+                    # If LLM detects a paradox that local detection missed, elevate it
+                    if not paradox_eval.get("has_paradox") and any(
+                        kw in protocol_result.text.lower() for kw in ["paradox", "contradiction", "inconsisten"]
+                    ):
+                        paradox_eval["llm_paradox_elevated"] = True
+            except Exception:
+                protocol_analysis = None
 
             # --- Phase 3: Looking Glass Supervisory Evaluation ---
             self.heimdall.monitor_sequence_step("LOOKING_GLASS_SUPERVISORY")
@@ -383,12 +444,62 @@ class CheshireCatKernel:
             rrf_top_score = rrf_fused[0]["fused_score"] if rrf_fused else 0.0
             rrf_agreement = rrf_fused[0]["agreement"] if rrf_fused else 0
 
+            # --- Phase 4c: Shiva Orchestrator Multi-Lens Synthesis — Claude Sonnet 4.6 ---
+            # Applies multi-lens deconstruction (Neji/Shikamaru/Itachi) to the RRF-fused output.
+            # Drives live token accumulation for the Shiva Orchestrator model slot.
+            shiva_synthesis = None
+            try:
+                shiva_result = await self.shiva_client.generate(
+                    prompt=(
+                        f"[SHIVA MULTI-LENS SYNTHESIS] Apply the Shiva Action Suite triple-lens deconstruction to this fused cognitive output.\n"
+                        f"1. Neji Eye (Owl Lens): Identify boundary structures and truth nodes.\n"
+                        f"2. Shikamaru Eye (Spider Lens): Map the relational dependency graph.\n"
+                        f"3. Itachi Eye (Snake Lens): Trace dynamic temporal processes.\n\n"
+                        f"RRF_TOP_CONCEPT: {rrf_top_concept}\n"
+                        f"RRF_SCORE: {rrf_top_score}\n"
+                        f"ANALYTICAL_WEIGHT: {engine_result.get('y789_weight', 0.50)}\n"
+                        f"SYNTHETIC_WEIGHT: {engine_result.get('nexus_weight', 0.50)}\n"
+                        f"ORIGINAL_PROMPT: {active_prompt[:300]}\n\n"
+                        f"Provide a concise 3-paragraph multi-lens synthesis."
+                    ),
+                    system_prompt="You are the Shiva Orchestrator — multi-lens deconstruction engine for transdisciplinary fusion."
+                )
+                if shiva_result and shiva_result.text:
+                    shiva_synthesis = shiva_result.text
+            except Exception:
+                shiva_synthesis = None
+
             # Phoenix Synthesis (Crystallize Hoard Node) — fed by RRF-fused output
             self.heimdall.monitor_sequence_step("PHOENIX_FUSION")
             synthesized_node = self.phoenix.synthesize_hoard_node(
                 analytical_data=f"{analytical_data} | RRF_Top: {rrf_top_concept} Score: {rrf_top_score}",
                 synthetic_data=f"{synthetic_data} | RRF_Agreement: {rrf_agreement} Fused_Items: {len(rrf_fused)}"
             )
+
+            # --- Phase 4d: Jean Grey Phoenix Crystallization — Gemini 3.1 Pro (Deep Think 16384) ---
+            # Deep-thinking crystallization pass that distills the synthesized node into
+            # a high-fidelity knowledge crystal. Uses the highest thinking budget (16384)
+            # to perform exhaustive deep reasoning before Hoard commit.
+            # Drives live token accumulation for the Jean Grey Phoenix model slot.
+            jean_grey_crystal = None
+            try:
+                jean_grey_result = await self.jean_grey_client.generate(
+                    prompt=(
+                        f"[PHOENIX CRYSTALLIZATION] You are Jean Grey — Operation Phoenix Force.\n"
+                        f"Deep-synthesize this cognitive output into a crystallized knowledge node.\n"
+                        f"Identify the core invariant truth, map the conceptual manifold topology,\n"
+                        f"and produce a Zenkai Boost assessment (what new capability emerged).\n\n"
+                        f"SYNTHESIZED_PAYLOAD: {str(synthesized_node.get('payload', ''))[:500]}\n"
+                        f"RRF_CONCEPT: {rrf_top_concept}\n"
+                        f"SHIVA_LENS: {(shiva_synthesis or 'N/A')[:300]}\n\n"
+                        f"Provide a 2-3 paragraph crystallization."
+                    ),
+                    system_prompt="You are Jean Grey — Phoenix Force neuroevolution engine. Perform deep crystallization synthesis with maximum thinking depth."
+                )
+                if jean_grey_result and jean_grey_result.text:
+                    jean_grey_crystal = jean_grey_result.text
+            except Exception:
+                jean_grey_crystal = None
 
             # --- Phase 5: Commit into The Hoard Physical Substrate ---
             self.heimdall.monitor_sequence_step("HOARD_COMMIT")
@@ -406,6 +517,8 @@ class CheshireCatKernel:
                 "cheshire_protocol_telemetry": {
                     "topic": topic_record["topic"],
                     "paradox_detected": paradox_eval.get("has_paradox", False),
+                    "llm_paradox_elevated": paradox_eval.get("llm_paradox_elevated", False),
+                    "protocol_analysis": (protocol_analysis or "N/A")[:200],
                     "abstract_bridge": abstract_connection
                 },
                 "rrf_corpus_callosum_telemetry": {
@@ -417,7 +530,10 @@ class CheshireCatKernel:
                     "w_synthetic": rrf_w_synthetic,
                     "w_rodin": rrf_w_rodin,
                     "k_constant": self.rrf_bridge.k,
-                }
+                },
+                "cheshire_routing_telemetry": (cheshire_routing or "N/A")[:200],
+                "shiva_synthesis_telemetry": (shiva_synthesis or "N/A")[:200],
+                "jean_grey_crystal_telemetry": (jean_grey_crystal or "N/A")[:200],
             }
 
             commit_receipt = self.hoard.commit_node(
