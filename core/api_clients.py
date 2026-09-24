@@ -3,7 +3,7 @@ import json
 import re
 import asyncio
 import time
-from typing import AsyncGenerator, Optional, Dict, Any, Callable
+from typing import AsyncGenerator, Optional, Dict, Any, Callable, List
 from core.tpsl_types import GenerationResult, IterativeToken
 
 # CRITICAL: Load .env files into os.environ BEFORE any API key lookups
@@ -69,6 +69,24 @@ async def call_with_backoff(
             await asyncio.sleep(delay)
             delay *= backoff_factor
     raise last_err
+
+
+def run_sync(coro: Any) -> Any:
+    """
+    Universally executes an async coroutine synchronously.
+    Handles running event loops (FastAPI, asyncio tasks, worker threads) safely.
+    """
+    import concurrent.futures
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+            return pool.submit(asyncio.run, coro).result()
+    else:
+        return asyncio.run(coro)
 
 
 # ──────────────────────────────────────────────────────────────
@@ -357,6 +375,7 @@ class RodinClient:
     """
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-2.0-flash")
+        self.embedding_model = os.environ.get("RODIN_EMBED_MODEL", "text-embedding-004")
         self.api_key = os.environ.get("GEMINI_API_KEY")
         self.client = None
         if self.api_key:
@@ -366,6 +385,30 @@ class RodinClient:
             except Exception as e:
                 self.client = None
                 self._init_error = str(e)
+
+    async def embed(self, text: str, model_name: Optional[str] = None) -> List[float]:
+        """Generates a text embedding vector via Gemini embed_content API."""
+        if not self.client:
+            return []
+        embed_model = model_name or self.embedding_model
+        async def _call():
+            return await self.client.aio.models.embed_content(
+                model=embed_model,
+                contents=text
+            )
+        try:
+            res = await call_with_backoff(_call)
+            if hasattr(res, 'embedding') and hasattr(res.embedding, 'values'):
+                return list(res.embedding.values)
+            elif hasattr(res, 'embeddings') and res.embeddings:
+                return list(res.embeddings[0].values)
+            return []
+        except Exception:
+            return []
+
+    def embed_sync(self, text: str, model_name: Optional[str] = None) -> List[float]:
+        """Synchronous wrapper for embed()."""
+        return run_sync(self.embed(text, model_name))
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:

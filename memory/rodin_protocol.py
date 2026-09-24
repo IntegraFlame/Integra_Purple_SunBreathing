@@ -323,25 +323,19 @@ class RodinProtocol:
         try:
             from core.api_clients import RodinClient
             client = RodinClient()
-            # RodinClient wraps Gemini 2.0 Flash — use it for fast embedding
-            # The client's generate method returns text; we use the hash of
-            # the semantic response as a higher-quality embedding seed
-            response = client.generate(
-                prompt=f"Generate a semantic fingerprint for retrieval: {prompt[:200]}",
-                system_instruction="You are a semantic fingerprint engine. Output a dense, precise summary of the input's core meaning in exactly 50 words."
-            )
-            if response and hasattr(response, 'text') and response.text:
-                # Use the semantic response as embedding seed
-                import hashlib
-                combined = f"{prompt}|||{response.text}"
-                hash_bytes = hashlib.sha512(combined.encode()).digest()
-                raw = list(hash_bytes) * (self.fine_dim // len(hash_bytes) + 1)
-                vec = [float(b) / 255.0 for b in raw[:self.fine_dim]]
-                # Normalize to unit vector for cosine similarity
-                norm = math.sqrt(sum(v * v for v in vec))
-                if norm > 0:
-                    vec = [v / norm for v in vec]
-                return vec
+            if client.client is not None:
+                vec = client.embed_sync(prompt)
+                if vec and len(vec) > 0:
+                    # Align to fine_dim (768)
+                    if len(vec) < self.fine_dim:
+                        vec = vec + [0.0] * (self.fine_dim - len(vec))
+                    else:
+                        vec = vec[:self.fine_dim]
+                    # Normalize to unit vector for cosine similarity
+                    norm = math.sqrt(sum(v * v for v in vec))
+                    if norm > 0:
+                        vec = [v / norm for v in vec]
+                    return vec
         except Exception:
             pass  # Fall back to hash-based embedding
 
@@ -350,6 +344,9 @@ class RodinProtocol:
         hash_bytes = hashlib.sha256(prompt.encode()).digest()
         raw = list(hash_bytes) * (self.fine_dim // len(hash_bytes) + 1)
         vec = [float(b) / 255.0 for b in raw[:self.fine_dim]]
+        norm = math.sqrt(sum(v * v for v in vec))
+        if norm > 0:
+            vec = [v / norm for v in vec]
         return vec
 
     # ─────────────────────────────────────────────

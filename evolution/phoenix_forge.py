@@ -357,7 +357,8 @@ class PhoenixForge:
                     f"3. Zenkai Boost opportunity (what capability gain this failure enables)\n\n"
                     f"End with a synthesis: the single most important system improvement."
                 )
-                result = asyncio.get_event_loop().run_until_complete(
+                from core.api_clients import run_sync
+                result = run_sync(
                     jean.generate(smelt_prompt, system_prompt="Phoenix Forge Deep Think Smelting")
                 )
                 if result.text and not result.text.startswith("[ERROR"):
