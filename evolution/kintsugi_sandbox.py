@@ -334,6 +334,79 @@ class KintsugiProtocol:
             "all_systems_true": True,
         }
 
+    # ─────────────────────────────────────────────
+    #  BLOCK 7: HYPERVISOR POLLING LOOP (Phase D)
+    # ─────────────────────────────────────────────
+
+    async def run_hypervisor_loop(self, poll_interval: float = 5.0):
+        """
+        Asynchronous background polling loop that reads unprocessed anomalies
+        from the Metatron Manifold (entropy_inversion_anomalies table) and
+        routes them into the Mirror Maze Sandbox for Phoenix smelting.
+
+        Game Theory: anomalies are NOT errors to be suppressed — they are
+        un-cleared Tetris blocks. The Hypervisor moves them into a position
+        where the Phoenix Forge can smelt them into structural gold.
+
+        Args:
+            poll_interval: Seconds between polls. Default 5.0s.
+        """
+        import asyncio
+        import logging
+        logger = logging.getLogger("integra-kintsugi-hypervisor")
+        logger.info(
+            f"Kintsugi Hypervisor started (poll_interval={poll_interval}s, "
+            f"z_threshold={self.z_threshold})"
+        )
+
+        while True:
+            try:
+                from memory.database.metatron_deploy import query_anomalies, mark_anomaly_processed
+
+                anomalies = query_anomalies(unprocessed_only=True)
+                if anomalies:
+                    logger.info(f"Kintsugi Hypervisor: {len(anomalies)} unprocessed anomalies found")
+
+                for anomaly in anomalies:
+                    anomaly_id = anomaly.get("anomaly_id")
+                    momentum_delta = anomaly.get("momentum_delta", 0.0)
+                    session_id = anomaly.get("session_id", "UNKNOWN")
+
+                    # Compute Z-score from momentum delta
+                    z_score = abs(momentum_delta) / max(self.z_threshold * 0.0001, 1e-10)
+
+                    # Route into the Mirror Maze Sandbox
+                    # _isolate_to_sandbox(metric_name, z_score, observed_val, mean_val, std_dev, context)
+                    self._isolate_to_sandbox(
+                        metric_name=f"momentum_delta_loop_{anomaly_id}",
+                        z_score=z_score,
+                        observed_val=momentum_delta,
+                        mean_val=0.0,       # Ideal ΔE = 0.0
+                        std_dev=0.0001,     # Tight tolerance (thermodynamic closure)
+                        context={
+                            "source": "metatron_manifold",
+                            "anomaly_id": anomaly_id,
+                            "session_id": session_id,
+                            "action_taken": anomaly.get("action_taken", "P-SSR"),
+                            "original_record": anomaly,
+                        },
+                    )
+
+                    # Mark as processed so we don't re-ingest
+                    mark_anomaly_processed(anomaly_id)
+                    logger.info(
+                        f"  Anomaly {anomaly_id} (δ={momentum_delta:.6f}) → "
+                        f"Mirror Maze Sandbox (depth={self.sandbox_depth()})"
+                    )
+
+            except ImportError:
+                # Metatron Manifold not yet deployed — skip gracefully
+                pass
+            except Exception as e:
+                logger.warning(f"Kintsugi Hypervisor poll error: {e}")
+
+            await asyncio.sleep(poll_interval)
+
 
 # ─────────────────────────────────────────────
 #  BACKWARD COMPATIBILITY ALIAS

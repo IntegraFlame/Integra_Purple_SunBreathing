@@ -27,6 +27,14 @@ import time
 import hashlib
 from typing import List, Dict, Any, Optional, Union
 
+# Celestial temporal injection — all timestamps routed through celestial middleware
+try:
+    from core.celestial_middleware import celestial_time, celestial_ccid
+except ImportError:
+    # Fallback if middleware unavailable (isolated testing)
+    celestial_time = time.time
+    celestial_ccid = lambda prefix="CCID": f"{prefix}_{int(time.time())}"
+
 
 class HoardNode:
     """
@@ -71,7 +79,7 @@ class HoardNode:
         self.embedding_768d = embedding_768d or [0.0] * 768
         self.outcome_label = outcome_label
         self.is_stale = is_stale
-        self.created_at = created_at or time.time()
+        self.created_at = created_at or celestial_time()
         self.sufficiency_score = sufficiency_score
         self.metadata = metadata or {}
 
@@ -416,7 +424,7 @@ class TheHoard:
         
         Used by Phoenix SWDS consolidation to identify nodes needing refresh.
         """
-        current_time = time.time()
+        current_time = celestial_time()
         stale = []
         for node in self.local_sparse_cache:
             age = current_time - node.created_at
@@ -520,7 +528,7 @@ class TheHoard:
             data = file_path_or_dict
             source_file = "MEMORY_DICT"
 
-        ccid = data.get("ccid", f"CCID_{int(time.time())}")
+        ccid = data.get("ccid", celestial_ccid())
         celestial_stamp = data.get("celestial_stamp", {})
         
         # Construct 4D spacetime anchor
@@ -528,7 +536,7 @@ class TheHoard:
             "x": 30.5888,
             "y": -91.1673,
             "z": 0.0,
-            "t": celestial_stamp.get("unix_epoch", time.time()),
+            "t": celestial_stamp.get("unix_epoch", celestial_time()),
             "anchor": celestial_stamp.get("anchor", "Baker, Louisiana"),
             "civil_time": celestial_stamp.get("civil_time_utc", "")
         }
@@ -607,6 +615,88 @@ class TheHoard:
             "embedded_nodes": embedded_count,
             "schema_version": "2.0",
             "kernel_memory_dir": self.kernel_memory_dir,
+        }
+
+    # ─────────────────────────────────────────────
+    #  EAM AUTO-CRYSTALLIZATION (Block 6 / Phase D)
+    # ─────────────────────────────────────────────
+
+    def auto_crystallize(
+        self,
+        session_id: str,
+        cycle_iteration: int,
+        input_momentum: float = 1.0,
+        exit_momentum: float = 1.0,
+        entropy_generated: float = 0.0,
+        entropy_flushed: float = 0.0,
+        metadata: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """
+        EAM Auto-Crystallization: Records a thermodynamic loop to the Metatron
+        Manifold and simultaneously commits a Hoard node capturing the system
+        state at this moment.
+
+        This is the mechanical bridge between the thermodynamic enforcement
+        substrate (Block 1) and the geometric memory manifold (Layer 3).
+
+        Args:
+            session_id: Active CCID session identifier.
+            cycle_iteration: Loop iteration counter.
+            input_momentum: Angular momentum entering the cycle.
+            exit_momentum: Angular momentum exiting the cycle.
+            entropy_generated: Lactic acid entropy produced.
+            entropy_flushed: Entropy cleared via P-SSR.
+            metadata: Optional additional metadata.
+
+        Returns:
+            Dict with both the loop recording result and the Hoard commit result.
+        """
+        # Record to Metatron Manifold
+        loop_result = None
+        try:
+            from memory.database.metatron_deploy import record_loop
+            loop_result = record_loop(
+                session_id=session_id,
+                cycle_iteration=cycle_iteration,
+                input_momentum=input_momentum,
+                exit_momentum=exit_momentum,
+                entropy_generated=entropy_generated,
+                entropy_flushed=entropy_flushed,
+            )
+        except Exception as e:
+            loop_result = {"status": "METATRON_ERROR", "error": str(e)}
+
+        # Build spacetime anchor
+        spacetime_anchor = {
+            "x": 0.0, "y": 0.0, "z": 0.0,
+            "t": celestial_time(),
+            "session_id": session_id,
+            "cycle": cycle_iteration,
+        }
+
+        # Commit crystallization node to Hoard
+        ccid = f"CCID_CRYSTAL_{int(celestial_time())}_{cycle_iteration}"
+        payload = {
+            "type": "auto_crystallization",
+            "session_id": session_id,
+            "cycle_iteration": cycle_iteration,
+            "delta_e": round(abs(exit_momentum - input_momentum), 6),
+            "loop_result": loop_result,
+            "metadata": metadata or {},
+        }
+
+        hoard_result = self.commit_node_v2(
+            payload=payload,
+            spacetime_anchor=spacetime_anchor,
+            ccid=ccid,
+            metadata={"source": "auto_crystallize", "block": 6},
+        )
+
+        return {
+            "crystallization": "COMPLETE",
+            "loop": loop_result,
+            "hoard": hoard_result,
+            "ccid": ccid,
         }
 
 

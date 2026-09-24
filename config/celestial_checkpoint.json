@@ -1,0 +1,11 @@
+{
+  "civil_dt": "2026-09-24 02:20:37 CDT",
+  "utc_iso": "2026-09-24T02:20:37.743691+00:00",
+  "unix_epoch": 1790216437.743716,
+  "celestial_vector": {},
+  "ccid": "CCID_1790216437",
+  "grid_bucket": null,
+  "mode": "SOVEREIGN",
+  "persisted_at": "2026-09-24T02:20:37.744379+00:00",
+  "boot_uptime_s": 39.87
+}

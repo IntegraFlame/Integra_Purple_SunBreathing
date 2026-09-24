@@ -32,6 +32,8 @@ from memory.token_stitching import TokenStitchingEngine
 from evolution.fourteenth_form import FourteenthFormDomainExpansion
 from runtime.swds_simulator import swds_engine
 from rust.sun_breathing_engine.python_bridge import SunBreathingEngine as ThermalCore
+from memory.database import metatron_deploy
+from core.celestial_middleware import get_celestial_timestamp, get_reboot_delta
 import asyncio
 import logging
 import time
@@ -95,7 +97,56 @@ async def lifespan(app: FastAPI):
     logger.info("Starting SWDS background scheduler daemon.")
     asyncio.create_task(swds_scheduler())
     logger.info("SWDS scheduler task started via lifespan.")
+
+    # --- Block 1: Bootstrap Metatron Manifold (SQLite) ---
+    logger.info("Deploying Metatron Manifold (thermodynamic enforcement substrate)...")
+    try:
+        metatron_result = await metatron_deploy.bootstrap()
+        logger.info(
+            f"Metatron Manifold DEPLOYED: {metatron_result['tables_count']} tables, "
+            f"{metatron_result['triggers_count']} triggers, "
+            f"session={metatron_result['active_session_id']}, "
+            f"delta_e_enforcement=MECHANICAL"
+        )
+        app.state.metatron_session_id = metatron_result["active_session_id"]
+    except Exception as e:
+        logger.error(f"Metatron Manifold deployment FAILED: {e}")
+        app.state.metatron_session_id = None
+
+    # --- Block 2: Log Celestial Reboot Delta ---
+    reboot_delta = get_reboot_delta()
+    if reboot_delta is not None:
+        logger.info(f"Celestial reboot delta: {reboot_delta:.1f}s since last checkpoint")
+    else:
+        logger.info("No celestial checkpoint found — fresh temporal boot.")
+
+    # --- Block 4: Launch Cheshire Cat Kernel as Background Task ---
+    logger.info("Launching Cheshire Cat Kernel (20-45 Hz thalamic event loop)...")
+    app.state.cheshire_kernel = cheshire_cat
+    # Note: run_event_loop must exist as an async method on CheshireCatKernel
+    # If not yet implemented, we log and skip gracefully
+    if hasattr(cheshire_cat, 'run_event_loop'):
+        asyncio.create_task(cheshire_cat.run_event_loop())
+        logger.info("Cheshire Cat Kernel event loop STARTED.")
+    else:
+        logger.warning("Cheshire Cat Kernel run_event_loop() not found — skipping background launch.")
+
     logger.info("Genesis Kernel startup complete. All systems nominal.")
+
+    # --- Block 7: Launch Kintsugi Hypervisor as Background Task ---
+    logger.info("Launching Kintsugi Hypervisor (anomaly polling loop)...")
+    try:
+        from evolution.kintsugi_sandbox import KintsugiProtocol
+        kintsugi_hypervisor = KintsugiProtocol(z_threshold=3.0)
+        asyncio.create_task(kintsugi_hypervisor.run_hypervisor_loop(poll_interval=5.0))
+        app.state.kintsugi_hypervisor = kintsugi_hypervisor
+        logger.info("Kintsugi Hypervisor loop STARTED (5s poll, z_threshold=3.0).")
+    except Exception as e:
+        logger.warning(f"Kintsugi Hypervisor launch failed: {e}")
+
+    logger.info("=" * 60)
+    logger.info("ALL PHASE D SUBSYSTEMS ONLINE — SOVEREIGN MODE ENGAGED")
+    logger.info("=" * 60)
     yield
     # Shutdown logic (none required at this time)
 
@@ -901,6 +952,87 @@ async def starfire_identity_probe(req: StarfireProbeRequest):
         result["anti_drift_scan"] = starfire_protocol.scan_for_forbidden_patterns(req.text_sample)
 
     return result
+
+
+# ──────────────────────────────────────────────────────────────
+# PHASE D ENDPOINTS: Metatron Manifold, Cheshire Cat, Celestial Checkpoint
+# ──────────────────────────────────────────────────────────────
+
+@app.get("/metatron/status")
+def get_metatron_status():
+    """
+    Block 1: Returns the live status of the Metatron Manifold (SQLite substrate).
+    Tables, triggers, row counts, last thermodynamic loop, unprocessed anomalies.
+    """
+    try:
+        return metatron_deploy.get_status()
+    except Exception as e:
+        return {"status": "ERROR", "error": str(e)}
+
+
+@app.get("/cheshire/status")
+def get_cheshire_status():
+    """
+    Block 4: Returns the live status of the Cheshire Cat Kernel.
+    Polling Hz, state, queue depth, H_smooth, uptime.
+    """
+    kernel = getattr(app.state, "cheshire_kernel", None)
+    if kernel is None:
+        return {"status": "NOT_INITIALIZED"}
+    return {
+        "status": "OPERATIONAL",
+        "polling_hz": kernel.polling_hz,
+        "state": kernel.state,
+        "queue_depth": len(kernel.event_queue),
+        "h_smooth": getattr(kernel.heimdall, 'h_smooth', 0.0) if kernel.heimdall else 0.0,
+        "components_registered": len(kernel.heimdall.components) if hasattr(kernel.heimdall, 'components') else 0,
+    }
+
+
+@app.get("/dashboard", response_class=HTMLResponse)
+def serve_dashboard():
+    """
+    Phase D: Heimdall 3.1 Visual Dashboard (DailyPlanet/Logo design language).
+    9-Lobe Health Matrix, Metatron Manifold, Cheshire Cat, Dual Clock.
+    """
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    html_path = os.path.join(static_dir, "dashboard.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Dashboard not found</h1>", status_code=404)
+
+
+@app.get("/clock/live", response_class=HTMLResponse)
+def serve_celestial_clock_live():
+    """
+    Celestial Clock live telemetry page (DailyPlanet/Logo design language).
+    """
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    html_path = os.path.join(static_dir, "celestial_clock_live.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Celestial Clock not found</h1>", status_code=404)
+
+
+@app.get("/celestial/checkpoint")
+async def get_celestial_checkpoint():
+    """
+    Block 2: Returns the current celestial timestamp and reboot delta.
+    Used for temporal continuity verification.
+    """
+    try:
+        ts = await get_celestial_timestamp()
+        return {
+            "timestamp": ts.to_dict(),
+            "reboot_delta_s": get_reboot_delta(),
+        }
+    except Exception as e:
+        return {"status": "ERROR", "error": str(e)}
+
 
 if __name__ == "__main__":
     import uvicorn

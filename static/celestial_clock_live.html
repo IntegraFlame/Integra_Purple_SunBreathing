@@ -3,10 +3,61 @@
 <head>
   <meta charset="UTF-8">
   <title>Integra O/S — Live Celestial Clock</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
+    /* ── INTEGRA BRAND TOKENS (DailyPlanet / Logo Schematics) ── */
+    :root {
+      --void: #000000;
+      --monolith: #E5E7EB;
+      --monolith-dim: #9CA3AF;
+      --flame-core: #FFAA33;
+      --flame-primary: #FF7A00;
+      --flame-deep: #FF5500;
+      --cyan: #00F0FF;
+      --purple: #9D00FF;
+      --purple-dim: rgba(157, 0, 255, 0.12);
+      --card-bg: #0A0A0F;
+      --card-border: rgba(157, 0, 255, 0.2);
+      --green: #10B981;
+    }
+
+    body {
+      margin: 0; padding: 0;
+      background: var(--void);
+      color: var(--monolith);
+      font-family: 'JetBrains Mono', monospace;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Particle canvas (Logo schematics) */
+    #bg-particles {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
+    }
+
+    /* Glow ring (Logo schematics) */
+    .glow-ring-clock {
+      position: fixed; top: -80px; left: 50%;
+      transform: translateX(-50%);
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(157, 0, 255, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1; pointer-events: none;
+      animation: glowPulse 5s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    }
+
     @keyframes pulseGlow {
-      0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.4)); }        50% { opacity: 1; filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.7)); }
+      0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(157, 0, 255, 0.4)); }
+      50% { opacity: 1; filter: drop-shadow(0 0 20px rgba(157, 0, 255, 0.7)); }
     }
     @keyframes orbitalPulse {
       0%, 100% { opacity: 0.7; }
@@ -17,19 +68,35 @@
     .font-mono-data {
       font-family: 'JetBrains Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas;
     }
+
+    /* DailyPlanet header bar */
+    .clock-header-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+      font-size: 0.7rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(90deg, #00F0FF, #FFAA33, #FF7A00, #FF5500);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
   </style>
 </head>
-<body class="bg-[var(--background,#0a0a1a)] text-[var(--foreground,#f3e8ff)] antialiased p-4">
-  <div class="max-w-4xl mx-auto space-y-4">
+<body class="bg-[var(--void,#000000)] text-[var(--monolith,#E5E7EB)] antialiased p-4">
+  <canvas id="bg-particles"></canvas>
+  <div class="glow-ring-clock"></div>
 
-    <!-- Header -->
-    <div class="bg-[var(--card,#13111c)] border border-[var(--border,#2e1065)] rounded-2xl p-5 shadow-2xl">
+  <div class="max-w-4xl mx-auto space-y-4" style="position:relative; z-index:2;">
+
+    <!-- Header (DailyPlanet Brand) -->
+    <div class="bg-[var(--card-bg,#0A0A0F)] border border-[var(--card-border,rgba(157,0,255,0.2))] rounded-2xl p-5 shadow-2xl">
       <div class="flex items-center justify-between">
         <div class="flex items-center space-x-3">
           <div class="w-3.5 h-3.5 rounded-full bg-purple-500 shadow-[0_0_10px_#a855f7] animate-ping"></div>
           <div>
-            <h1 class="text-lg font-bold tracking-wider text-purple-300 flex items-center gap-2">
-              INTEGRA O/S <span class="text-xs px-2 py-0.5 rounded-md bg-purple-950/80 border border-purple-600/50 text-purple-200">LIVE CELESTIAL CLOCK v8.2.2</span>
+            <div class="clock-header-brand">INTEGRA O/S CELESTIAL INTELLIGENCE</div>
+            <h1 class="text-lg font-bold tracking-wider text-purple-300 flex items-center gap-2" style="font-family:'Orbitron',sans-serif;">
+              LIVE DUAL CLOCK <span class="text-xs px-2 py-0.5 rounded-md bg-purple-950/80 border border-purple-600/50 text-purple-200">v8.2.4</span>
             </h1>
             <p class="text-xs text-purple-400/80 font-mono-data">Anchor: Baker, Louisiana [30.5888&deg;N, -91.1673&deg;W] | Isolation: Guaranteed</p>
           </div>
@@ -456,6 +523,46 @@
         fetchServerTelemetry();
       }, 1000);
     });
+    // ─── PARTICLE SYSTEM (Logo Schematics) ──────────────────────────────
+    const bgCanvas = document.getElementById('bg-particles');
+    if (bgCanvas) {
+      const bgCtx = bgCanvas.getContext('2d');
+      let bgParticles = [];
+      function bgResize() { bgCanvas.width = window.innerWidth; bgCanvas.height = window.innerHeight; }
+      window.addEventListener('resize', bgResize);
+      bgResize();
+      class BgParticle {
+        constructor() { this.reset(); }
+        reset() {
+          this.x = Math.random() * bgCanvas.width;
+          this.y = Math.random() * bgCanvas.height;
+          this.vx = (Math.random() - 0.5) * 0.2;
+          this.vy = (Math.random() - 0.5) * 0.2;
+          this.radius = Math.random() * 1.2 + 0.2;
+          this.opacity = Math.random() * 0.3 + 0.05;
+          const colors = [[0,240,255],[157,0,255],[255,122,0],[255,170,51]];
+          const c = colors[Math.floor(Math.random() * colors.length)];
+          this.color = `rgba(${c[0]},${c[1]},${c[2]},${this.opacity})`;
+        }
+        update() {
+          this.x += this.vx; this.y += this.vy;
+          if (this.x < 0 || this.x > bgCanvas.width || this.y < 0 || this.y > bgCanvas.height) this.reset();
+        }
+        draw() {
+          bgCtx.beginPath();
+          bgCtx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+          bgCtx.fillStyle = this.color;
+          bgCtx.fill();
+        }
+      }
+      for (let i = 0; i < 50; i++) bgParticles.push(new BgParticle());
+      function animBg() {
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        bgParticles.forEach(p => { p.update(); p.draw(); });
+        requestAnimationFrame(animBg);
+      }
+      animBg();
+    }
   </script>
 </body>
 </html>

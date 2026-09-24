@@ -10,6 +10,12 @@ import json
 import time
 from typing import Dict, Any
 
+# Celestial temporal injection
+try:
+    from core.celestial_middleware import celestial_time
+except ImportError:
+    celestial_time = time.time
+
 # Ensure project root is in sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
@@ -37,7 +43,7 @@ class AntigravityRunner:
         
         # 1. Update Logical Clocks (Fidge-Mattern Axiom 1)
         state["vector_clock"][0] += 1
-        state["last_tick_utc"] = time.time()
+        state["last_tick_utc"] = celestial_time()
 
         # 2. Command Dispatcher
         if command_type == "FORTRESS_HARVEST":

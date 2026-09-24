@@ -2,334 +2,805 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Integra O/S Dual Temporal Telemetry</title>
-  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <title>Integra O/S — Heimdall 3.1 System Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    @keyframes pulseGlow {
-      0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 12px rgba(168, 85, 247, 0.4)); }
-      50% { opacity: 1; filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.7)); }
+    /* ═══════════════════════════════════════════════════════════════
+       INTEGRA O/S v8.2.4 — HEIMDALL 3.1 VISUAL DASHBOARD
+       Design Language: DailyPlanet Report + Logo Schematics
+       Layout: HORIZONTAL 2-COLUMN SOVEREIGN GRID
+       ═══════════════════════════════════════════════════════════════ */
+
+    :root {
+      --void: #000000;
+      --monolith: #E5E7EB;
+      --monolith-dim: #9CA3AF;
+      --flame-core: #FFAA33;
+      --flame-primary: #FF7A00;
+      --flame-deep: #FF5500;
+      --cyan: #00F0FF;
+      --cyan-dim: rgba(0, 240, 255, 0.15);
+      --purple: #9D00FF;
+      --purple-dim: rgba(157, 0, 255, 0.12);
+      --purple-amethyst: #B026FF;
+      --green: #10B981;
+      --red: #EF4444;
+      --card-bg: #0A0A0F;
+      --card-border: rgba(157, 0, 255, 0.2);
     }
-    .glow-purple {
-      animation: pulseGlow 4s ease-in-out infinite;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--void);
+      color: var(--monolith);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      line-height: 1.5;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    .font-mono-data {
-      font-family: 'JetBrains Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas;
+
+    /* ── PARTICLE CANVAS ─────────────────────────── */
+    #particles {
+      position: fixed; top: 0; left: 0;
+      width: 100%; height: 100%;
+      z-index: 0; pointer-events: none;
     }
+
+    /* ── GLOW RING ────────────────────────────────── */
+    .glow-ring {
+      position: fixed; top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 500px; height: 500px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(157, 0, 255, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
+      z-index: 1; pointer-events: none;
+      animation: glowPulse 5s ease-in-out infinite;
+    }
+    @keyframes glowPulse {
+      0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+    }
+    @keyframes orbitalPulse {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 1.0; }
+    }
+    @keyframes livePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* ── MAIN CONTAINER ──────────────────────────── */
+    .dashboard {
+      position: relative; z-index: 2;
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 1rem 1.5rem 2rem;
+    }
+
+    /* ── HEADER ───────────────────────────────────── */
+    .report-header {
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 0.8rem;
+      margin-bottom: 1rem;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .report-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700; font-size: 0.9rem;
+      letter-spacing: 0.08em;
+      background: linear-gradient(90deg, #00F0FF, #FFAA33, #FF7A00, #FF5500);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .report-title {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700; font-size: 1.1rem;
+      color: var(--monolith); margin-top: 2px;
+    }
+    .report-meta { font-size: 0.65rem; color: var(--monolith-dim); }
+    .report-meta .value { color: var(--monolith); font-weight: 600; }
+    .live-dot {
+      display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+      background: var(--green); box-shadow: 0 0 6px var(--green);
+      animation: livePulse 1.5s ease-in-out infinite; margin-right: 4px; vertical-align: middle;
+    }
+
+    /* ── HORIZONTAL GRID ──────────────────────────── */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+    .grid-3col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 0.6rem;
+    }
+    .grid-4col {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr 1fr;
+      gap: 0.5rem;
+    }
+    @media (max-width: 960px) {
+      .grid-2col { grid-template-columns: 1fr; }
+      .grid-3col { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* ── CARDS ────────────────────────────────────── */
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 0.8rem 1rem;
+    }
+    .card-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 0.5rem;
+    }
+    .section-bar {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.55rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      color: var(--cyan); margin: 1rem 0 0.5rem;
+      border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+      padding-bottom: 4px;
+    }
+
+    /* ── GAUGE METRICS ────────────────────────────── */
+    .metric-box {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(157,0,255,0.15);
+      border-radius: 6px; padding: 0.4rem 0.6rem;
+      text-align: center;
+    }
+    .metric-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700; font-size: 1.1rem;
+      color: var(--flame-core);
+    }
+    .metric-label {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem; color: var(--monolith-dim);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      margin-top: 2px;
+    }
+    .metric-sub {
+      font-size: 0.55rem; color: var(--monolith-dim);
+    }
+
+    /* ── CLOCK CARDS ──────────────────────────────── */
+    .clock-digital {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(157,0,255,0.25);
+      border-radius: 8px; padding: 0.6rem 0.8rem; text-align: center;
+    }
+    .clock-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.6rem; font-weight: 700;
+      color: rgba(200,170,255,0.95);
+      text-shadow: 0 0 12px rgba(157,0,255,0.4);
+    }
+    .clock-date {
+      font-size: 0.6rem; color: var(--monolith-dim); margin-top: 2px;
+    }
+    .celestial-readout {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem; font-weight: 700;
+      color: rgba(130,170,255,0.95);
+      text-shadow: 0 0 10px rgba(99,102,241,0.3);
+    }
+
+    /* ── ORBITAL CANVAS ──────────────────────────── */
+    .orbital-wrap {
+      display: flex; align-items: center; justify-content: center;
+      gap: 0.8rem;
+    }
+    #orbitalCanvas {
+      animation: orbitalPulse 2s ease-in-out infinite;
+    }
+
+    /* ── LOBE TABLE ───────────────────────────────── */
+    table { width: 100%; border-collapse: collapse; font-size: 0.65rem; }
+    th {
+      text-align: left; padding: 4px 6px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 0.5rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.04em;
+      color: var(--cyan); background: rgba(0,240,255,0.04);
+      border-bottom: 1px solid rgba(0,240,255,0.1);
+    }
+    td {
+      padding: 3px 6px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+    }
+    tr:nth-child(even) td { background: rgba(255,255,255,0.015); }
+    .lobe-active { color: var(--green); font-weight: 700; }
+    .lobe-offline { color: var(--red); font-weight: 700; }
+
+    /* ── MODEL REGISTRY TABLE ────────────────────── */
+    .model-table td:first-child { color: var(--cyan); font-weight: 600; }
+    .model-table td:nth-child(2) { color: var(--flame-core); font-family: 'JetBrains Mono', monospace; }
+
+    /* ── FOOTER ───────────────────────────────────── */
+    .report-footer {
+      margin-top: 1rem; padding-top: 0.6rem;
+      border-top: 1px solid var(--card-border);
+      text-align: center; font-size: 0.55rem;
+    }
+    .footer-brand {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700; letter-spacing: 0.1em;
+      background: linear-gradient(90deg, #00F0FF, #FFAA33, #FF7A00, #FF5500);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .footer-telemetry { color: var(--monolith-dim); margin-top: 3px; }
   </style>
 </head>
-<body class="bg-transparent text-[var(--foreground)] antialiased p-3">
-  <div class="bg-[var(--card,#13111c)] text-[var(--foreground,#f3e8ff)] border border-[var(--border,#2e1065)] rounded-2xl p-5 shadow-2xl backdrop-blur-md">
-    
-    <!-- Header -->
-    <div class="flex items-center justify-between border-b border-[var(--border,#3b0764)] pb-4 mb-5">
-      <div class="flex items-center space-x-3">
-        <div class="w-3.5 h-3.5 rounded-full bg-purple-500 shadow-[0_0_10px_#a855f7] animate-ping"></div>
-        <div>
-          <h1 class="text-lg font-bold tracking-wider text-purple-300 flex items-center gap-2">
-            INTEGRA O/S <span class="text-xs px-2 py-0.5 rounded-md bg-purple-950/80 border border-purple-600/50 text-purple-200">DUAL-TEMPORAL SYNAPSE</span>
-          </h1>
-          <p class="text-xs text-[var(--muted-foreground,#a855f7)] font-mono-data">Anchor: Baker, Louisiana [30.5888°N, -91.1673°W] | Isolation: Guaranteed</p>
+<body>
+  <canvas id="particles"></canvas>
+  <div class="glow-ring"></div>
+
+  <div class="dashboard">
+
+    <!-- ═══════════ HEADER ═══════════ -->
+    <header class="report-header">
+      <div>
+        <div class="report-brand">INTEGRA O/S HEIMDALL 3.1</div>
+        <div class="report-title">Sovereign System Dashboard</div>
+        <div class="report-meta">
+          <span class="live-dot" id="live-dot"></span><span class="value" id="meta-status">LOADING</span>
+          &nbsp;·&nbsp; Baker, Louisiana [30.5888°N, -91.1673°W]
+          &nbsp;·&nbsp; v8.2.4 Purple Epiphany
+          &nbsp;·&nbsp; Poll: 1 Hz
         </div>
       </div>
-      <div class="text-right">
-        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-950/60 border border-emerald-500/40 text-emerald-400">
-          ● GENESIS KERNEL ONLINE
-        </span>
+      <div style="text-align:right; display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+        <div id="kernel-badge" style="display:inline-flex; align-items:center; gap:5px; padding:4px 12px; border-radius:20px; font-family:'Orbitron',sans-serif; font-size:0.6rem; font-weight:700; letter-spacing:0.06em; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.4); color:#10B981;">
+          <span id="kernel-dot" style="width:8px; height:8px; border-radius:50%; background:#10B981; box-shadow:0 0 8px #10B981; animation:livePulse 1.5s ease-in-out infinite;"></span>
+          <span id="kernel-label">CONNECTING...</span>
+        </div>
+        <div style="font-family:'JetBrains Mono',monospace; font-size:0.65rem; color:var(--monolith-dim);">
+          UPTIME: <span id="uptime-display" style="color:var(--green); font-weight:700;">--h --m --s</span>
+        </div>
       </div>
-    </div>
+    </header>
 
-    <!-- Dual Clock Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <!-- ═══════════ ROW 1: CLOCKS + PLANETARY VISUAL (HORIZONTAL) ═══════════ -->
+    <div class="grid-2col">
 
-      <!-- 1. Digital Numerical Clock (Human Comprehension Frame) -->
-      <div class="bg-purple-950/20 border border-purple-800/40 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute -right-10 -bottom-10 w-36 h-36 bg-purple-600/10 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs uppercase font-semibold tracking-wider text-purple-400 flex items-center gap-1.5">
-              <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Digital Numerical Clock
-            </span>
-            <span class="text-[10px] bg-purple-900/40 px-2 py-0.5 rounded border border-purple-700/40 text-purple-300 font-mono-data">CDT (UTC-5)</span>
+      <!-- LEFT COLUMN: Digital Clock + Celestial Clock side by side -->
+      <div class="card">
+        <div class="card-label" style="color:var(--purple);">🕐 Digital Numerical Clock</div>
+        <div class="clock-digital">
+          <div class="clock-time" id="digital-time">--:--:-- CDT</div>
+          <div class="clock-date" id="digital-date">Loading...</div>
+        </div>
+        <div class="grid-2col" style="gap:0.4rem; margin-top:0.5rem;">
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.85rem; color:var(--cyan);" id="gauge-omega">1.00</div>
+            <div class="metric-label">Omega (ω)</div>
           </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.85rem; color:var(--green);" id="gauge-delta-e">0.0000</div>
+            <div class="metric-label">ΔE Cycle</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.85rem; color:var(--cyan);" id="gauge-h-smooth">0.0000</div>
+            <div class="metric-label">H<sub>smooth</sub></div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.85rem; color:var(--flame-core);" id="gauge-latency">0.000</div>
+            <div class="metric-label">L<sub>t</sub> (s)</div>
+          </div>
+        </div>
+      </div>
 
-          <!-- Main Digital Readout -->
-          <div class="my-2 py-3 px-4 bg-black/40 rounded-lg border border-purple-900/50 text-center glow-purple">
-            <div id="digital-time-12" class="text-3xl sm:text-4xl font-extrabold tracking-widest text-purple-100 font-mono-data">
-              --:--:-- --
+      <!-- RIGHT COLUMN: Celestial Clock + Planetary Canvas -->
+      <div class="card" style="border-color: rgba(99,102,241,0.3);">
+        <div class="card-label" style="color:#818CF8;">🌍 Celestial Kinematic Clock</div>
+        <div class="orbital-wrap">
+          <canvas id="orbitalCanvas" width="160" height="160" style="width:140px; height:140px;"></canvas>
+          <div style="flex:1;">
+            <div style="font-size:0.55rem; color:rgba(129,140,248,0.7);">EARTH AXIAL ROTATION</div>
+            <div class="celestial-readout" id="celestial-rot">---.----°</div>
+            <div style="font-size:0.55rem; color:rgba(129,140,248,0.6); margin-top:4px;">
+              Kepler Orbital: <span id="celestial-orb" style="color:#C7D2FE;">0.----</span>
             </div>
-            <div id="digital-date" class="text-xs text-purple-300/80 font-medium mt-1 font-mono-data tracking-wide">
-              Loading date...
+            <div style="font-size:0.55rem; color:rgba(129,140,248,0.6); margin-top:2px;">
+              Lunar Phase: <span id="celestial-lunar" style="color:#C7D2FE;">0.----</span>
             </div>
-          </div>
-        </div>
-
-        <!-- Telemetry Details -->
-        <div class="grid grid-cols-2 gap-2 text-xs font-mono-data mt-4 pt-3 border-t border-purple-900/40">
-          <div>
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">24-HOUR MILITARY</span>
-            <span id="digital-time-24" class="text-purple-200 font-semibold">--:--:--</span>
-          </div>
-          <div>
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">ISO-8601 UTC</span>
-            <span id="digital-utc" class="text-purple-200 font-semibold">--Z</span>
-          </div>
-          <div class="mt-1">
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">UNIX EPOCH SEC</span>
-            <span id="digital-unix" class="text-purple-400 font-semibold">--------.--</span>
-          </div>
-          <div class="mt-1">
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">ACTIVE UPTIME</span>
-            <span id="digital-uptime" class="text-emerald-400 font-semibold">--h --m --s</span>
-          </div>
-        </div>
-      </div>
-
-      <!-- 2. Celestial Space-Time Kinematic Clock (Keplerian Frame) -->
-      <div class="bg-indigo-950/20 border border-indigo-800/40 rounded-xl p-4 flex flex-col justify-between relative overflow-hidden">
-        <div class="absolute -left-10 -bottom-10 w-36 h-36 bg-indigo-600/10 rounded-full blur-2xl pointer-events-none"></div>
-
-        <div>
-          <div class="flex items-center justify-between mb-3">
-            <span class="text-xs uppercase font-semibold tracking-wider text-indigo-400 flex items-center gap-1.5">
-              <svg class="w-4 h-4 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-              Celestial Kinematic Clock
-            </span>
-            <span class="text-[10px] bg-indigo-900/40 px-2 py-0.5 rounded border border-indigo-700/40 text-indigo-300 font-mono-data">Pure Space (T &rarr; S)</span>
-          </div>
-
-          <!-- Canvas & Orbital Graphic -->
-          <div class="my-2 py-2 px-3 bg-black/40 rounded-lg border border-indigo-900/50 flex items-center justify-between">
-            <canvas id="celestialCanvas" width="100" height="100" class="w-20 h-20"></canvas>
-            <div class="text-right flex-1 pl-4">
-              <div class="text-[11px] text-indigo-300/80 font-mono-data">EARTH AXIAL ROTATION</div>
-              <div id="celestial-rot" class="text-2xl font-bold font-mono-data text-indigo-200">
-                ---.----&deg;
-              </div>
-              <div class="text-[10px] text-indigo-400/90 font-mono-data mt-0.5">
-                Kepler Velocity: <span id="celestial-orb" class="text-indigo-200">0.----</span>
-              </div>
+            <div style="font-size:0.55rem; color:rgba(129,140,248,0.6); margin-top:2px;">
+              Grid: <span id="celestial-bucket" style="color:#C7D2FE;">ROT_---_ORB_--</span>
             </div>
           </div>
         </div>
-
-        <!-- Celestial Telemetry Details -->
-        <div class="grid grid-cols-2 gap-2 text-xs font-mono-data mt-4 pt-3 border-t border-indigo-900/40">
-          <div>
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">LUNAR PHASE RATIO</span>
-            <span id="celestial-lunar" class="text-indigo-300 font-semibold">0.----</span>
-          </div>
-          <div>
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">SPIRAL DEPTH</span>
-            <span class="text-indigo-300 font-semibold">1.0000 &Phi;</span>
-          </div>
-          <div class="mt-1">
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">DELTA E CYCLE</span>
-            <span class="text-emerald-400 font-semibold">0.0000 J</span>
-          </div>
-          <div class="mt-1">
-            <span class="text-[var(--muted-foreground,#9ca3af)] block text-[10px]">ISOLATION PRINCIPLE</span>
-            <span class="text-indigo-300 font-semibold">UNSYNCED / RAW</span>
-          </div>
-        </div>
-      </div>
-
-    <!-- 11-Lobe Sensory & Health Matrix -->
-    <div class="mt-5 p-4 bg-purple-950/25 border border-purple-800/40 rounded-xl">
-      <div class="flex items-center justify-between mb-3 border-b border-purple-900/40 pb-2">
-        <div class="flex items-center gap-2">
-          <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399] animate-pulse"></span>
-          <span class="text-xs uppercase font-semibold tracking-wider text-purple-300 font-mono-data">Heimdall 3.1 &bull; 11-Lobe Sensory Surveillance Matrix</span>
-        </div>
-        <span id="system-overall-badge" class="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950/80 border border-emerald-500/50 text-emerald-300 font-mono-data font-semibold">HEALTHY_OPTIMAL</span>
-      </div>
-
-      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 text-[11px] font-mono-data" id="lobeGrid">
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">CHESHIRE KERNEL</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● 30 Hz Standby</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">CHESHIRE PROTOCOL</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● Conduit Ready</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">LOOKING GLASS</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● C_235 Lock</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">COGNITIVE ENGINE</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● Dyad Invariant</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">THE HOARD</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● Decoupled RAM</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">RODIN PROTOCOL</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● 3-Phase Tree</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">PHOENIX FORGE</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● Zenkai Boost</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">CELESTIAL CLOCK</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● T&rarr;S Isolation</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">FRIDAY FORTRESS</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● $20k Lock OK</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">ANTIGRAVITY</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● Master Synced</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">THERMODYNAMICS</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● &Delta;E = 0.0000</span>
-        </div>
-        <div class="p-2 rounded bg-black/40 border border-purple-900/50 flex flex-col justify-between">
-          <span class="text-purple-400 text-[10px]">IMPEDANCE</span>
-          <span class="text-emerald-400 font-semibold flex items-center gap-1">● L_t = 0.000 s</span>
+        <div style="margin-top:0.5rem; text-align:center;">
+          <span id="gauge-enforcement" style="font-size:0.6rem; color:var(--green); font-weight:700;">—</span>
+          <span style="font-size:0.5rem; color:var(--monolith-dim);"> · Dual Sync Isolation: ACTIVE</span>
         </div>
       </div>
     </div>
 
-    <!-- Bottom Status Bar -->
-    <div class="mt-5 pt-3 border-t border-[var(--border,#2e1065)] flex flex-wrap items-center justify-between text-[11px] text-purple-400 font-mono-data">
-      <div>Invariant: <span class="text-purple-200">Celestial clock progresses via Keplerian spatial integration; Digital clock provides human chronological alignment.</span></div>
-      <div class="flex items-center gap-2 mt-1 sm:mt-0">
-        <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
-        <span class="text-purple-300">Dual Sync Isolation: Active</span>
+    <!-- ═══════════ ROW 2: 9-LOBE MATRIX + METATRON + CHESHIRE (HORIZONTAL) ═══════════ -->
+    <div class="section-bar">System Internals — Horizontal View</div>
+    <div class="grid-2col">
+
+      <!-- LEFT: 9-Lobe Health Matrix -->
+      <div class="card">
+        <div class="card-label" style="color:var(--cyan);">Section II · 9-Lobe Health Matrix</div>
+        <table>
+          <thead>
+            <tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr>
+          </thead>
+          <tbody id="lobe-matrix">
+            <!-- JS populated -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- RIGHT: Metatron + Cheshire + Model Registry stacked -->
+      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+
+        <!-- Metatron Manifold -->
+        <div class="card">
+          <div class="card-label" style="color:var(--flame-core);">Section III · Metatron Manifold</div>
+          <div class="grid-4col">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="metatron-enforcement">—</div>
+              <div class="metric-label">Enforcement</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem;" id="metatron-tables">0</div>
+              <div class="metric-label">Tables</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem;" id="metatron-triggers">0</div>
+              <div class="metric-label">Triggers</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="metatron-anomalies">0</div>
+              <div class="metric-label">Anomalies</div>
+            </div>
+          </div>
+          <div id="metatron-rows" style="font-size:0.55rem; color:var(--monolith-dim); margin-top:0.4rem;">Loading...</div>
+        </div>
+
+        <!-- Cheshire Cat Kernel -->
+        <div class="card">
+          <div class="card-label" style="color:var(--purple-amethyst);">Section IV · Cheshire Cat Kernel</div>
+          <div class="grid-4col">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--purple-amethyst);" id="cheshire-hz">—</div>
+              <div class="metric-label">Hz</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="cheshire-state">—</div>
+              <div class="metric-label">State</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem;" id="cheshire-queue">—</div>
+              <div class="metric-label">Queue</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem;" id="cheshire-components">—</div>
+              <div class="metric-label">Components</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Model Registry -->
+        <div class="card">
+          <div class="card-label" style="color:var(--cyan);">Section V · 7-Model Agent Registry</div>
+          <table class="model-table">
+            <thead><tr><th>Role</th><th>Model</th><th>Type</th></tr></thead>
+            <tbody>
+              <tr><td>Y789 (Left)</td><td>gemini-3.1-pro</td><td>Deep Think / Spock</td></tr>
+              <tr><td>Nexus (Right)</td><td>claude-sonnet-4-6</td><td>Synthesis / Kirk</td></tr>
+              <tr><td>Cheshire Cat</td><td>gemini-3.8-flash</td><td>Thalamic Arbitrator</td></tr>
+              <tr><td>Rodin Retrieval</td><td>gemini-2.0-flash</td><td>KNN Memory</td></tr>
+              <tr><td>Jean Grey</td><td>gemini-3.1-pro</td><td>Phoenix (16384)</td></tr>
+              <tr><td>Celestial Daemon</td><td>gemini-3.8-flash</td><td>Heartbeat Intel</td></tr>
+              <tr><td>Shiva Orchestrator</td><td>claude-sonnet-4-6</td><td>Multi-Lens</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
+    <!-- ═══════════ FOOTER ═══════════ -->
+    <footer class="report-footer">
+      <div class="footer-brand">INTEGRA — INFINITE LIVING FLAME</div>
+      <div class="footer-telemetry">
+        ω = <span id="ft-omega">1.00</span> · ΔE = <span id="ft-delta">0.0000</span> · H<sub>smooth</sub> = <span id="ft-h">0.00</span> · DUAL SYNC ISOLATION: ACTIVE
+      </div>
+    </footer>
   </div>
 
   <script>
-    // Constants for Baker, Louisiana & Kepler calculations
+    // ═══════════════════════════════════════════════════════════════
+    // PARTICLE SYSTEM (Logo Schematics)
+    // ═══════════════════════════════════════════════════════════════
+    const canvas = document.getElementById('particles');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    window.addEventListener('resize', resize);
+    resize();
+
+    class Particle {
+      constructor() { this.reset(); }
+      reset() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.vx = (Math.random() - 0.5) * 0.2;
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.radius = Math.random() * 1.2 + 0.2;
+        this.opacity = Math.random() * 0.3 + 0.05;
+        const colors = [[0,240,255],[157,0,255],[255,122,0],[255,170,51]];
+        const c = colors[Math.floor(Math.random() * colors.length)];
+        this.color = `rgba(${c[0]},${c[1]},${c[2]},${this.opacity})`;
+      }
+      update() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width || this.y < 0 || this.y > canvas.height) this.reset();
+      }
+      draw() {
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color; ctx.fill();
+      }
+    }
+    for (let i = 0; i < 60; i++) particles.push(new Particle());
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      particles.forEach(p => { p.update(); p.draw(); });
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+    // ═══════════════════════════════════════════════════════════════
+    // CELESTIAL PHYSICS CONSTANTS (bit-identical to Python engine)
+    // ═══════════════════════════════════════════════════════════════
     const ANCHOR_LON = -91.1673;
     const EARTH_ROT_SPEED = 360.0 / 86400.0;
     const LUNAR_CYCLE_SEC = 2551442.8;
     const BASE_EPOCH = 1785052800.0;
     const SIDEREAL_YEAR = 31558149.763;
     const ECCENTRICITY = 0.0167086;
-    const bootTime = Date.now();
 
     function solveKepler(M, e) {
-      let E = M;
-      for (let i = 0; i < 30; i++) {
+      let E = (e < 0.8) ? M : Math.PI;
+      for (let i = 0; i < 100; i++) {
         let delta = (E - e * Math.sin(E) - M) / (1.0 - e * Math.cos(E));
         E -= delta;
-        if (Math.abs(delta) < 1e-7) break;
+        if (Math.abs(delta) < 1e-12) break;
       }
-      return (E / (2 * Math.PI)) % 1.0;
+      return E;
     }
 
-    function updateClocks() {
-      const now = new Date();
-      
-      // 1. Digital Clock Updates (Human Frame)
-      const options12 = { timeZone: 'America/Chicago', hour12: true, hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const options24 = { timeZone: 'America/Chicago', hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' };
-      const optionsDate = { timeZone: 'America/Chicago', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+    // ═══════════════════════════════════════════════════════════════
+    // ORBITAL CANVAS — Live Planetary Visual
+    // ═══════════════════════════════════════════════════════════════
+    let lastRotDeg = 0, lastOrbPos = 0, lastLunar = 0;
 
-      document.getElementById('digital-time-12').textContent = now.toLocaleTimeString('en-US', options12) + " CDT";
-      document.getElementById('digital-time-24').textContent = now.toLocaleTimeString('en-US', options24) + " CDT";
-      document.getElementById('digital-date').textContent = now.toLocaleDateString('en-US', optionsDate) + " • Baker, LA";
-      document.getElementById('digital-utc').textContent = now.toISOString().substring(11, 19) + "Z";
-      document.getElementById('digital-unix').textContent = (now.getTime() / 1000).toFixed(2);
+    function drawOrbitalCanvas(rotDeg, orbPos, lunarRatio) {
+      const oc = document.getElementById('orbitalCanvas');
+      if (!oc) return;
+      const cx2 = oc.getContext('2d');
+      const w = oc.width, h = oc.height;
+      cx2.clearRect(0, 0, w, h);
+      const midX = w / 2, midY = h / 2;
 
-      const elapsedSec = Math.floor((Date.now() - bootTime) / 1000);
-      const h = String(Math.floor(elapsedSec / 3600)).padStart(2, '0');
-      const m = String(Math.floor((elapsedSec % 3600) / 60)).padStart(2, '0');
-      const s = String(elapsedSec % 60).padStart(2, '0');
-      document.getElementById('digital-uptime').textContent = `${h}h ${m}m ${s}s`;
+      // Starfield background dots
+      cx2.fillStyle = 'rgba(200,200,255,0.15)';
+      for (let i = 0; i < 30; i++) {
+        const sx = ((i * 137.5) % w);
+        const sy = ((i * 97.3 + 23) % h);
+        cx2.beginPath(); cx2.arc(sx, sy, 0.5, 0, Math.PI * 2); cx2.fill();
+      }
 
-      // 2. Celestial Kinematics Calculations (Completely Unsynced Space Frame)
-      const nowUnix = now.getTime() / 1000;
-      const elapsedCosmic = nowUnix - BASE_EPOCH;
+      // Orbital ellipse path
+      cx2.strokeStyle = 'rgba(99, 102, 241, 0.3)';
+      cx2.lineWidth = 1.5;
+      cx2.setLineDash([4, 3]);
+      cx2.beginPath();
+      cx2.ellipse(midX, midY, 60, 42, 0, 0, 2 * Math.PI);
+      cx2.stroke();
+      cx2.setLineDash([]);
 
-      let rotDeg = (ANCHOR_LON + (elapsedCosmic * EARTH_ROT_SPEED)) % 360.0;
-      if (rotDeg < 0) rotDeg += 360.0;
-      const lunarRatio = ((elapsedCosmic / LUNAR_CYCLE_SEC) % 1.0 + 1.0) % 1.0;
+      // Central Sun (with glow)
+      const sunGrad = cx2.createRadialGradient(midX - 8, midY, 2, midX - 8, midY, 14);
+      sunGrad.addColorStop(0, '#f59e0b');
+      sunGrad.addColorStop(0.5, 'rgba(245,158,11,0.5)');
+      sunGrad.addColorStop(1, 'rgba(245,158,11,0)');
+      cx2.fillStyle = sunGrad;
+      cx2.beginPath();
+      cx2.arc(midX - 8, midY, 14, 0, 2 * Math.PI);
+      cx2.fill();
+      cx2.fillStyle = '#fbbf24';
+      cx2.shadowColor = '#f59e0b'; cx2.shadowBlur = 12;
+      cx2.beginPath();
+      cx2.arc(midX - 8, midY, 7, 0, 2 * Math.PI);
+      cx2.fill();
+      cx2.shadowBlur = 0;
 
-      const meanAnomaly = ((elapsedCosmic / SIDEREAL_YEAR) % 1.0) * 2 * Math.PI;
-      const orbPos = solveKepler(meanAnomaly, ECCENTRICITY);
-
-      document.getElementById('celestial-rot').textContent = rotDeg.toFixed(4) + '°';
-      document.getElementById('celestial-orb').textContent = orbPos.toFixed(4);
-      document.getElementById('celestial-lunar').textContent = lunarRatio.toFixed(4);
-
-      // Draw Orbit Canvas
-      drawCelestialCanvas(rotDeg, orbPos, lunarRatio);
-    }
-
-    function drawCelestialCanvas(rotDeg, orbPos, lunarRatio) {
-      const canvas = document.getElementById('celestialCanvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
-      const cx = w / 2;
-      const cy = h / 2;
-
-      // Draw Orbital Ellipse
-      ctx.strokeStyle = 'rgba(99, 102, 241, 0.35)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, 38, 26, 0, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      // Central Sun Anchor
-      ctx.fillStyle = '#f59e0b';
-      ctx.shadowColor = '#f59e0b';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.arc(cx - 5, cy, 5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.shadowBlur = 0;
-
-      // Earth along Keplerian path
+      // Earth along Kepler path
       const earthAngle = orbPos * 2 * Math.PI;
-      const ex = cx + 38 * Math.cos(earthAngle);
-      const ey = cy + 26 * Math.sin(earthAngle);
+      const ex = midX + 60 * Math.cos(earthAngle);
+      const ey = midY + 42 * Math.sin(earthAngle);
 
-      // Earth Body
-      ctx.fillStyle = '#60a5fa';
-      ctx.shadowColor = '#60a5fa';
-      ctx.shadowBlur = 6;
-      ctx.beginPath();
-      ctx.arc(ex, ey, 4.5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.shadowBlur = 0;
+      cx2.fillStyle = '#60a5fa';
+      cx2.shadowColor = '#60a5fa'; cx2.shadowBlur = 10;
+      cx2.beginPath();
+      cx2.arc(ex, ey, 6, 0, 2 * Math.PI);
+      cx2.fill();
+      cx2.shadowBlur = 0;
 
-      // Earth Axial Rotation Indicator
+      // Earth axial rotation indicator (purple line)
       const rotRad = (rotDeg * Math.PI) / 180;
-      ctx.strokeStyle = '#a855f7';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.moveTo(ex, ey);
-      ctx.lineTo(ex + 7 * Math.cos(rotRad), ey + 7 * Math.sin(rotRad));
-      ctx.stroke();
+      cx2.strokeStyle = '#a855f7';
+      cx2.lineWidth = 2;
+      cx2.beginPath();
+      cx2.moveTo(ex, ey);
+      cx2.lineTo(ex + 10 * Math.cos(rotRad), ey + 10 * Math.sin(rotRad));
+      cx2.stroke();
 
       // Moon orbiting Earth
       const moonAngle = lunarRatio * 2 * Math.PI;
-      const mx = ex + 10 * Math.cos(moonAngle);
-      const my = ey + 10 * Math.sin(moonAngle);
-      ctx.fillStyle = '#e2e8f0';
-      ctx.beginPath();
-      ctx.arc(mx, my, 2, 0, 2 * Math.PI);
-      ctx.fill();
+      const mx = ex + 14 * Math.cos(moonAngle);
+      const my = ey + 14 * Math.sin(moonAngle);
+      cx2.fillStyle = '#e2e8f0';
+      cx2.shadowColor = '#e2e8f0'; cx2.shadowBlur = 5;
+      cx2.beginPath();
+      cx2.arc(mx, my, 3, 0, 2 * Math.PI);
+      cx2.fill();
+      cx2.shadowBlur = 0;
+
+      // Moon orbit ring
+      cx2.strokeStyle = 'rgba(226,232,240,0.15)';
+      cx2.lineWidth = 0.5;
+      cx2.beginPath();
+      cx2.arc(ex, ey, 14, 0, 2 * Math.PI);
+      cx2.stroke();
+
+      // Baker, LA anchor label
+      cx2.fillStyle = 'rgba(168, 85, 247, 0.5)';
+      cx2.font = '8px monospace';
+      cx2.fillText('Baker, LA', 4, h - 4);
+
+      // Anchor marker on Earth (small dot at anchor longitude)
+      const anchorRad = ((ANCHOR_LON + rotDeg) * Math.PI) / 180;
+      const ax = ex + 6 * Math.cos(anchorRad);
+      const ay = ey + 6 * Math.sin(anchorRad);
+      cx2.fillStyle = '#a855f7';
+      cx2.beginPath();
+      cx2.arc(ax, ay, 1.5, 0, 2 * Math.PI);
+      cx2.fill();
     }
 
-    // Initialize and run on 1s loop
-    updateClocks();
-    setInterval(updateClocks, 1000);
+    // Continuous orbital animation at 30fps (independent of API poll)
+    function animateOrbital() {
+      const nowUnix = Date.now() / 1000;
+      const elapsed = nowUnix - BASE_EPOCH;
+      let rotDeg = (ANCHOR_LON + (elapsed * EARTH_ROT_SPEED)) % 360.0;
+      if (rotDeg < 0) rotDeg += 360.0;
+      const lunarRatio = ((elapsed / LUNAR_CYCLE_SEC) % 1.0 + 1.0) % 1.0;
+      const meanAnomaly = ((elapsed / SIDEREAL_YEAR) % 1.0) * 2 * Math.PI;
+      const E = solveKepler(meanAnomaly, ECCENTRICITY);
+      const orbPos = (E / (2 * Math.PI)) % 1.0;
+
+      lastRotDeg = rotDeg; lastOrbPos = orbPos; lastLunar = lunarRatio;
+      drawOrbitalCanvas(rotDeg, orbPos, lunarRatio);
+      requestAnimationFrame(animateOrbital);
+    }
+    animateOrbital();
+
+    // ═══════════════════════════════════════════════════════════════
+    // 9-LOBE CONFIGURATION (keys match /heimdall/health response)
+    // ═══════════════════════════════════════════════════════════════
+    const NINE_LOBES = [
+      { name: 'Cheshire Cat Kernel',   layer: 4, key: 'cheshire_cat',       role: 'Thalamic Arbitrator (20-45 Hz)' },
+      { name: 'Y789NexusDual',         layer: 2, key: 'cognitive_engine',   role: 'Bicameral Cognitive Dyad' },
+      { name: 'The Hoard',             layer: 3, key: 'the_hoard',          role: 'Geometric Memory (CCID Nodes)' },
+      { name: 'Rodin Protocol',        layer: 3, key: 'rodin_protocol',     role: 'KNN Manifold Route Retrieval' },
+      { name: 'Phoenix Forge',         layer: 6, key: 'phoenix_forge',      role: 'SWDS Neuroevolution Smelting' },
+      { name: 'Celestial Clock',       layer: 7, key: 'celestial_clock',    role: 'Keplerian Spatial Integration' },
+      { name: 'Friday Fortress Bank',  layer: 5, key: 'friday_fortress_bank', role: 'Capital Engine & Margin Guard' },
+      { name: 'Antigravity Runner',    layer: 'R', key: 'antigravity_runner',  role: 'Runtime Execution Layer' },
+      { name: 'Thermodynamic Loop',    layer: 0, key: 'thermodynamics',     role: 'ΔE = 0.0000 Enforcement' },
+    ];
+
+    // ═══════════════════════════════════════════════════════════════
+    // DATA FETCHING & DOM UPDATES
+    // ═══════════════════════════════════════════════════════════════
+    const API_BASE = (window.location.protocol === 'file:' || !window.location.host)
+      ? 'http://localhost:8000' : '';
+
+    async function fetchJSON(url) {
+      try {
+        const r = await fetch(url, { signal: AbortSignal.timeout(3000) });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch { return null; }
+    }
+
+    function renderLobeMatrix(health) {
+      const tbody = document.getElementById('lobe-matrix');
+      const components = health?.component_diagnostics || {};
+      let html = '';
+      for (const lobe of NINE_LOBES) {
+        const comp = components[lobe.key] || {};
+        const active = comp.status === 'HEALTHY';
+        const statusClass = active ? 'lobe-active' : 'lobe-offline';
+        const statusText = active ? '● ACTIVE' : '○ INACTIVE';
+        html += `<tr>
+          <td style="color:var(--purple); font-weight:700;">${lobe.layer}</td>
+          <td>${lobe.name}</td>
+          <td class="${statusClass}">${statusText}</td>
+          <td style="color:var(--monolith-dim); font-size:0.55rem;">${lobe.role}</td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
+    function updateClocks(clock) {
+      if (!clock) return;
+      const dig = clock.digital_clock || {};
+      const cel = clock.celestial_clock || {};
+
+      // Digital clock: parse local_time_12h "2026-09-23 08:36:31 PM CDT"
+      const time12 = dig.local_time_12h || '—';
+      const parts = time12.split(' ');
+      if (parts.length >= 4) {
+        document.getElementById('digital-time').textContent = parts[1] + ' ' + parts[2] + ' ' + parts[3];
+        document.getElementById('digital-date').textContent = parts[0] + ' · Baker, LA · ' + (dig.uptime || '');
+      } else {
+        document.getElementById('digital-time').textContent = time12;
+        document.getElementById('digital-date').textContent = dig.local_time_24h || '—';
+      }
+
+      // Celestial readouts
+      if (cel.earth_rotation_deg != null)
+        document.getElementById('celestial-rot').textContent = cel.earth_rotation_deg.toFixed(4) + '°';
+      if (cel.lunar_cycle_ratio != null)
+        document.getElementById('celestial-lunar').textContent = cel.lunar_cycle_ratio.toFixed(4);
+      if (cel.orbital_trajectory_pos != null)
+        document.getElementById('celestial-orb').textContent = cel.orbital_trajectory_pos.toFixed(4);
+      if (cel.grid_bucket)
+        document.getElementById('celestial-bucket').textContent = cel.grid_bucket;
+    }
+
+    function updateMetatron(m) {
+      if (!m) return;
+      const enf = m.delta_e_enforcement || m.status || '—';
+      document.getElementById('metatron-enforcement').textContent = enf;
+      document.getElementById('metatron-enforcement').style.color = enf === 'MECHANICAL' ? 'var(--green)' : 'var(--red)';
+      document.getElementById('gauge-enforcement').textContent = enf;
+
+      document.getElementById('metatron-tables').textContent = m.tables?.length || 0;
+      document.getElementById('metatron-triggers').textContent = m.triggers?.length || 0;
+
+      const anomalies = m.unprocessed_anomalies || 0;
+      const el = document.getElementById('metatron-anomalies');
+      el.textContent = anomalies;
+      el.style.color = anomalies === 0 ? 'var(--green)' : 'var(--red)';
+
+      const rc = m.row_counts || {};
+      document.getElementById('metatron-rows').textContent =
+        Object.entries(rc).map(([k,v]) => `${k}: ${v}`).join(' · ') || 'No data';
+    }
+
+    function updateCheshire(c) {
+      if (!c) return;
+      document.getElementById('cheshire-hz').textContent = c.polling_hz || '—';
+      document.getElementById('cheshire-state').textContent = c.state || c.status || '—';
+      document.getElementById('cheshire-queue').textContent = c.queue_depth !== undefined ? c.queue_depth : '—';
+      document.getElementById('cheshire-components').textContent = c.components_registered !== undefined ? c.components_registered : '—';
+    }
+
+    function updateGauges(health) {
+      if (!health) return;
+      const hSmooth = health.current_h_smooth || 0;
+      document.getElementById('gauge-h-smooth').textContent = hSmooth.toFixed(4);
+      const hEl = document.getElementById('gauge-h-smooth');
+      if (hSmooth > 2.5) { hEl.style.color = 'var(--red)'; }
+      else if (hSmooth > 1.5) { hEl.style.color = 'var(--flame-primary)'; }
+      else { hEl.style.color = 'var(--cyan)'; }
+
+      const thermo = health.component_diagnostics?.thermodynamics || {};
+      document.getElementById('gauge-delta-e').textContent = (thermo.delta_e_cycle || 0).toFixed(4);
+      document.getElementById('gauge-latency').textContent = (thermo.impedance_latency_L_t || 0).toFixed(3);
+
+      document.getElementById('ft-h').textContent = hSmooth.toFixed(2);
+      document.getElementById('ft-delta').textContent = (thermo.delta_e_cycle || 0).toFixed(4);
+    }
+
+    function setKernelState(isLive) {
+      const badge = document.getElementById('kernel-badge');
+      const dot = document.getElementById('kernel-dot');
+      const label = document.getElementById('kernel-label');
+      const liveDot = document.getElementById('live-dot');
+
+      if (isLive) {
+        badge.style.background = 'rgba(16,185,129,0.1)';
+        badge.style.borderColor = 'rgba(16,185,129,0.5)';
+        badge.style.color = '#10B981';
+        dot.style.background = '#10B981';
+        dot.style.boxShadow = '0 0 8px #10B981';
+        dot.style.animation = 'livePulse 1.5s ease-in-out infinite';
+        label.textContent = 'LIVE';
+        liveDot.style.background = 'var(--green)';
+        liveDot.style.boxShadow = '0 0 6px var(--green)';
+        liveDot.style.animation = 'livePulse 1.5s ease-in-out infinite';
+      } else {
+        badge.style.background = 'rgba(239,68,68,0.1)';
+        badge.style.borderColor = 'rgba(239,68,68,0.4)';
+        badge.style.color = '#EF4444';
+        dot.style.background = '#EF4444';
+        dot.style.boxShadow = '0 0 6px #EF4444';
+        dot.style.animation = 'none';
+        label.textContent = 'INACTIVE';
+        liveDot.style.background = 'var(--red)';
+        liveDot.style.boxShadow = '0 0 6px var(--red)';
+        liveDot.style.animation = 'none';
+      }
+    }
+
+    function setLobesInactive() {
+      const tbody = document.getElementById('lobe-matrix');
+      let html = '';
+      for (const lobe of NINE_LOBES) {
+        html += `<tr>
+          <td style="color:var(--purple); font-weight:700;">${lobe.layer}</td>
+          <td>${lobe.name}</td>
+          <td class="lobe-offline">○ INACTIVE</td>
+          <td style="color:var(--monolith-dim); font-size:0.55rem;">${lobe.role}</td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
+    async function pollAll() {
+      const [health, clock, metatron, cheshire] = await Promise.all([
+        fetchJSON(API_BASE + '/heimdall/health'),
+        fetchJSON(API_BASE + '/clock/full'),
+        fetchJSON(API_BASE + '/metatron/status'),
+        fetchJSON(API_BASE + '/cheshire/status'),
+      ]);
+
+      const kernelAlive = !!(health && clock);
+
+      // ── KERNEL LIVE / INACTIVE STATE ──
+      setKernelState(kernelAlive);
+
+      if (health) {
+        document.getElementById('meta-status').textContent = health.system_health_status || 'OPERATIONAL';
+        renderLobeMatrix(health);
+        updateGauges(health);
+      } else {
+        document.getElementById('meta-status').textContent = 'INACTIVE';
+        setLobesInactive();
+      }
+
+      // ── UPTIME ──
+      if (clock && clock.digital_clock && clock.digital_clock.uptime) {
+        document.getElementById('uptime-display').textContent = clock.digital_clock.uptime;
+        document.getElementById('uptime-display').style.color = 'var(--green)';
+      } else {
+        document.getElementById('uptime-display').textContent = '-- OFF --';
+        document.getElementById('uptime-display').style.color = 'var(--red)';
+      }
+
+      updateClocks(clock);
+      updateMetatron(metatron);
+      updateCheshire(cheshire);
+    }
+
+    // Initial poll + 1 Hz refresh
+    pollAll();
+    setInterval(pollAll, 1000);
   </script>
 </body>
 </html>

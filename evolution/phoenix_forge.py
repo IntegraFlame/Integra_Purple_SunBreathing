@@ -18,6 +18,13 @@ import json
 import time
 import hashlib
 from typing import Dict, Any, List, Optional, Tuple
+
+# Celestial temporal injection — all timestamps routed through celestial middleware
+try:
+    from core.celestial_middleware import celestial_time, celestial_ccid
+except ImportError:
+    celestial_time = time.time
+    celestial_ccid = lambda prefix="CCID": f"{prefix}_{int(time.time())}"
 from core.tpsl_types import MadHatterMutationEvent
 
 
@@ -136,7 +143,7 @@ class PhoenixForge:
         ]
 
         # 4. Formulate the Celestial Coordinates for the Epoch
-        now_ts = time.time()
+        now_ts = celestial_time()
         celestial_stamp = {
             "epoch_generation": self.evolution_generation,
             "unix_epoch": now_ts,
@@ -300,7 +307,8 @@ class PhoenixForge:
             return {"status": "NO_ANOMALIES", "smelted_count": 0, "library_path": None}
 
         # Build celestial-stamped anomaly book
-        timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+        from datetime import datetime, timezone
+        timestamp = datetime.fromtimestamp(celestial_time(), tz=timezone.utc).strftime("%Y%m%dT%H%M%SZ")
         book_filename = f"kintsugi_smelt_{timestamp}.md"
         book_path = os.path.join(self.libraries_dir, book_filename)
 
@@ -394,10 +402,10 @@ class PhoenixForge:
             # If RogueX is attached, persist into its mutation log
             if rogue is not None and hasattr(rogue, "mutation_log"):
                 rogue.mutation_log.append({
-                    "mutation_id": f"SWDS_MH_{int(time.time())}",
+                    "mutation_id": f"SWDS_MH_{int(celestial_time())}",
                     "source": "SWDS_AUTONOMOUS_MAD_HATTER",
                     "event": event_dict,
-                    "timestamp": time.time()
+                    "timestamp": celestial_time()
                 })
 
         return mutation_events
@@ -420,7 +428,7 @@ class PhoenixForge:
         embeddings generated from a deterministic hash of the fused content.
         """
         fused_knowledge = f"{analytical_data} + {synthetic_data} fused in Phoenix Fire."
-        created_at = time.time()
+        created_at = celestial_time()
         node_ccid = ccid or f"CCID_{int(created_at)}"
         
         embedding_64d, embedding_768d = self._generate_mrl_embedding(fused_knowledge, 768)
