@@ -989,6 +989,16 @@ def get_cheshire_status():
     }
 
 
+@app.get("/models/telemetry")
+def get_model_telemetry():
+    """
+    Returns live cumulative token metrics and call statistics for all 7 registered AI models.
+    Includes prompt tokens, candidate tokens, thinking tokens, and total tokens.
+    """
+    from core.api_clients import TOKEN_TELEMETRY
+    return TOKEN_TELEMETRY.get_telemetry()
+
+
 @app.get("/dashboard", response_class=HTMLResponse)
 def serve_dashboard():
     """

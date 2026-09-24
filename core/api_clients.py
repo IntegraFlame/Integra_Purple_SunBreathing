@@ -90,6 +90,117 @@ def run_sync(coro: Any) -> Any:
 
 
 # ──────────────────────────────────────────────────────────────
+# Central Model Token Telemetry Hub (All 7 Agents)
+# ──────────────────────────────────────────────────────────────
+
+def _extract_gemini_tokens(response: Any) -> tuple[int, int, int, int]:
+    """Extracts (prompt_tokens, candidate_tokens, thinking_tokens, total_tokens) from Gemini response."""
+    p_tok, c_tok, th_tok, tot_tok = 0, 0, 0, 0
+    if hasattr(response, 'usage_metadata') and response.usage_metadata:
+        um = response.usage_metadata
+        p_tok = getattr(um, 'prompt_token_count', 0) or 0
+        c_tok = getattr(um, 'candidates_token_count', 0) or 0
+        th_tok = getattr(um, 'thoughts_token_count', 0) or 0
+        tot_tok = getattr(um, 'total_token_count', 0) or 0
+        if tot_tok == 0:
+            tot_tok = p_tok + c_tok + th_tok
+    return p_tok, c_tok, th_tok, tot_tok
+
+
+def _extract_anthropic_tokens(response: Any) -> tuple[int, int, int, int]:
+    """Extracts (prompt_tokens, candidate_tokens, thinking_tokens, total_tokens) from Claude response."""
+    p_tok, c_tok, th_tok, tot_tok = 0, 0, 0, 0
+    if hasattr(response, 'usage') and response.usage:
+        u = response.usage
+        p_tok = getattr(u, 'input_tokens', 0) or 0
+        c_tok = getattr(u, 'output_tokens', 0) or 0
+        th_tok = getattr(u, 'thinking_tokens', 0) or 0
+        tot_tok = p_tok + c_tok + th_tok
+    return p_tok, c_tok, th_tok, tot_tok
+
+
+class ModelTokenTelemetryHub:
+    """
+    Central Token & Latency Telemetry Hub for all 7 Integra O/S Models.
+    Tracks live cumulative prompt tokens, candidate tokens, deep-thinking tokens,
+    and total token consumption across every API invocation.
+    """
+    def __init__(self):
+        self._stats: Dict[str, Dict[str, Any]] = {
+            "y789_left": {
+                "name": "Y789 (Left)", "model": "gemini-3.1-pro", "role": "Deep Think / Spock",
+                "thinking_budget": 8192, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+            "nexus_right": {
+                "name": "Nexus (Right)", "model": "claude-sonnet-4-6", "role": "Synthesis / Kirk",
+                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+            "cheshire_cat": {
+                "name": "Cheshire Cat", "model": "gemini-3.8-flash", "role": "Thalamic Arbitrator",
+                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+            "rodin_retrieval": {
+                "name": "Rodin Retrieval", "model": "gemini-2.0-flash", "role": "KNN Memory",
+                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+            "jean_grey_phoenix": {
+                "name": "Jean Grey", "model": "gemini-3.1-pro", "role": "Phoenix (16384)",
+                "thinking_budget": 16384, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+            "celestial_daemon": {
+                "name": "Celestial Daemon", "model": "gemini-3.8-flash", "role": "Heartbeat Intel",
+                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+            "shiva_orchestrator": {
+                "name": "Shiva Orchestrator", "model": "claude-sonnet-4-6", "role": "Multi-Lens",
+                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+            },
+        }
+
+    def record_usage(
+        self,
+        model_key: str,
+        prompt_tokens: int = 0,
+        candidate_tokens: int = 0,
+        thinking_tokens: int = 0,
+        total_tokens: int = 0,
+        latency_ms: float = 0.0
+    ):
+        if model_key not in self._stats:
+            return
+        m = self._stats[model_key]
+        m["calls"] += 1
+        m["prompt_tokens"] += prompt_tokens
+        m["candidate_tokens"] += candidate_tokens
+        m["thinking_tokens"] += thinking_tokens
+        calc_total = total_tokens if total_tokens > 0 else (prompt_tokens + candidate_tokens + thinking_tokens)
+        m["total_tokens"] += calc_total
+        m["last_latency_ms"] = latency_ms
+
+    def get_telemetry(self) -> Dict[str, Any]:
+        return {
+            "models": dict(self._stats),
+            "aggregate": {
+                "total_calls": sum(m["calls"] for m in self._stats.values()),
+                "total_prompt_tokens": sum(m["prompt_tokens"] for m in self._stats.values()),
+                "total_candidate_tokens": sum(m["candidate_tokens"] for m in self._stats.values()),
+                "total_thinking_tokens": sum(m["thinking_tokens"] for m in self._stats.values()),
+                "grand_total_tokens": sum(m["total_tokens"] for m in self._stats.values()),
+            }
+        }
+
+
+TOKEN_TELEMETRY = ModelTokenTelemetryHub()
+
+
+# ──────────────────────────────────────────────────────────────
 # Left Hemisphere: Y789Client (Gemini 3.1 Pro + Deep Think)
 # SDK: google-genai (modern unified SDK — replaces deprecated google-generativeai)
 # ──────────────────────────────────────────────────────────────
@@ -155,11 +266,17 @@ class Y789Client:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            TOKEN_TELEMETRY.record_usage("y789_left", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
                 text=response.text,
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=round(latency, 2)
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(
@@ -242,11 +359,17 @@ class NexusClient:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_anthropic_tokens(response)
+            TOKEN_TELEMETRY.record_usage("nexus_right", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
                 text=response.content[0].text,
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=round(latency, 2)
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(
@@ -332,11 +455,17 @@ class CheshireCatClient:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            TOKEN_TELEMETRY.record_usage("cheshire_cat", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
                 text=response.text,
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=round(latency, 2)
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(
@@ -425,9 +554,17 @@ class RodinClient:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            TOKEN_TELEMETRY.record_usage("rodin_retrieval", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text, token_probabilities=[],
-                model_name=self.model_name, latency_ms=round(latency, 2)
+                text=response.text,
+                token_probabilities=[],
+                model_name=self.model_name,
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(
@@ -479,9 +616,17 @@ class JeanGreyClient:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            TOKEN_TELEMETRY.record_usage("jean_grey_phoenix", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text, token_probabilities=[],
-                model_name=self.model_name, latency_ms=round(latency, 2)
+                text=response.text,
+                token_probabilities=[],
+                model_name=self.model_name,
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(
@@ -526,9 +671,17 @@ class CelestialDaemonClient:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            TOKEN_TELEMETRY.record_usage("celestial_daemon", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text, token_probabilities=[],
-                model_name=self.model_name, latency_ms=round(latency, 2)
+                text=response.text,
+                token_probabilities=[],
+                model_name=self.model_name,
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(
@@ -577,9 +730,17 @@ class ShivaOrchestratorClient:
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
+            p_tok, c_tok, th_tok, tot_tok = _extract_anthropic_tokens(response)
+            TOKEN_TELEMETRY.record_usage("shiva_orchestrator", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.content[0].text, token_probabilities=[],
-                model_name=self.model_name, latency_ms=round(latency, 2)
+                text=response.content[0].text,
+                token_probabilities=[],
+                model_name=self.model_name,
+                latency_ms=round(latency, 2),
+                prompt_tokens=p_tok,
+                candidate_tokens=c_tok,
+                thinking_tokens=th_tok,
+                total_tokens=tot_tok
             )
         except Exception as e:
             return GenerationResult(

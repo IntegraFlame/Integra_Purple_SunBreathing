@@ -391,19 +391,30 @@
           </div>
         </div>
 
-        <!-- Model Registry -->
+        <!-- Model Registry & Live Token Tracker -->
         <div class="card">
-          <div class="card-label" style="color:var(--cyan);">Section V · 7-Model Agent Registry</div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <div class="card-label" style="color:var(--cyan); margin-bottom:0;">Section V · 7-Model Agent Registry & Live Token Tracker</div>
+            <div id="grand-total-tokens" style="font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--flame-core); font-weight:700;">CALLS: 0 · TOKENS: 0</div>
+          </div>
           <table class="model-table">
-            <thead><tr><th>Role</th><th>Model</th><th>Type</th></tr></thead>
-            <tbody>
-              <tr><td>Y789 (Left)</td><td>gemini-3.1-pro</td><td>Deep Think / Spock</td></tr>
-              <tr><td>Nexus (Right)</td><td>claude-sonnet-4-6</td><td>Synthesis / Kirk</td></tr>
-              <tr><td>Cheshire Cat</td><td>gemini-3.8-flash</td><td>Thalamic Arbitrator</td></tr>
-              <tr><td>Rodin Retrieval</td><td>gemini-2.0-flash</td><td>KNN Memory</td></tr>
-              <tr><td>Jean Grey</td><td>gemini-3.1-pro</td><td>Phoenix (16384)</td></tr>
-              <tr><td>Celestial Daemon</td><td>gemini-3.8-flash</td><td>Heartbeat Intel</td></tr>
-              <tr><td>Shiva Orchestrator</td><td>claude-sonnet-4-6</td><td>Multi-Lens</td></tr>
+            <thead>
+              <tr>
+                <th>Agent</th>
+                <th>Model</th>
+                <th>Role / Budget</th>
+                <th style="text-align:right;">Tokens (In / Out / Think)</th>
+                <th style="text-align:right;">Total</th>
+              </tr>
+            </thead>
+            <tbody id="model-registry-body">
+              <tr><td style="color:var(--flame-core); font-weight:700;">Y789 (Left)</td><td style="color:var(--cyan);">gemini-3.1-pro</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Deep Think (8192)</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
+              <tr><td style="color:var(--flame-core); font-weight:700;">Nexus (Right)</td><td style="color:var(--cyan);">claude-sonnet-4-6</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Synthesis / Kirk</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
+              <tr><td style="color:var(--flame-core); font-weight:700;">Cheshire Cat</td><td style="color:var(--cyan);">gemini-3.8-flash</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Thalamic Arbitrator</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
+              <tr><td style="color:var(--flame-core); font-weight:700;">Rodin Retrieval</td><td style="color:var(--cyan);">gemini-2.0-flash</td><td style="color:var(--monolith-dim); font-size:0.6rem;">KNN Memory</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
+              <tr><td style="color:var(--flame-core); font-weight:700;">Jean Grey</td><td style="color:var(--cyan);">gemini-3.1-pro</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Phoenix (16384)</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
+              <tr><td style="color:var(--flame-core); font-weight:700;">Celestial Daemon</td><td style="color:var(--cyan);">gemini-3.8-flash</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Heartbeat Intel</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
+              <tr><td style="color:var(--flame-core); font-weight:700;">Shiva Orchestrator</td><td style="color:var(--cyan);">claude-sonnet-4-6</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Multi-Lens</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
             </tbody>
           </table>
         </div>
@@ -782,13 +793,57 @@
       }
     }
 
+    function updateModels(data) {
+      if (!data || !data.models) return;
+      const models = data.models;
+      const tbody = document.getElementById('model-registry-body');
+      if (!tbody) return;
+
+      if (data.aggregate) {
+        const grandTotal = (data.aggregate.grand_total_tokens || 0).toLocaleString();
+        const calls = data.aggregate.total_calls || 0;
+        document.getElementById('grand-total-tokens').textContent = `CALLS: ${calls} · TOKENS: ${grandTotal}`;
+      }
+
+      let html = '';
+      for (const [key, m] of Object.entries(models)) {
+        const calls = m.calls || 0;
+        const pTok = (m.prompt_tokens || 0).toLocaleString();
+        const cTok = (m.candidate_tokens || 0).toLocaleString();
+        const thTok = (m.thinking_tokens || 0).toLocaleString();
+        const totTok = (m.total_tokens || 0).toLocaleString();
+        
+        let tokenDetail = '—';
+        if (calls > 0 || m.total_tokens > 0) {
+          if (m.thinking_tokens > 0) {
+            tokenDetail = `<span style="color:var(--monolith-dim);">${pTok}</span> / <span style="color:var(--cyan);">${cTok}</span> / <span style="color:var(--purple); font-weight:700;">${thTok} th</span>`;
+          } else {
+            tokenDetail = `<span style="color:var(--monolith-dim);">${pTok}</span> / <span style="color:var(--cyan);">${cTok}</span>`;
+          }
+        }
+
+        const budgetStr = m.thinking_budget ? ` (${m.thinking_budget})` : '';
+        const totalColor = m.total_tokens > 0 ? 'var(--green)' : 'var(--monolith-dim)';
+
+        html += `<tr>
+          <td style="color:var(--flame-core); font-weight:700;">${m.name}</td>
+          <td style="color:var(--cyan);">${m.model}</td>
+          <td style="color:var(--monolith-dim); font-size:0.6rem;">${m.role}${budgetStr}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">${tokenDetail}</td>
+          <td style="text-align:right; font-family:'JetBrains Mono',monospace; font-weight:700; color:${totalColor}; font-size:0.65rem;">${totTok}</td>
+        </tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
     async function pollAll() {
       const t0 = performance.now();
-      const [health, clock, metatron, cheshire] = await Promise.all([
+      const [health, clock, metatron, cheshire, models] = await Promise.all([
         fetchJSON(API_BASE + '/heimdall/health'),
         fetchJSON(API_BASE + '/clock/full'),
         fetchJSON(API_BASE + '/metatron/status'),
         fetchJSON(API_BASE + '/cheshire/status'),
+        fetchJSON(API_BASE + '/models/telemetry'),
       ]);
       const roundTrip = Math.round(performance.now() - t0);
       lastPingMs = roundTrip;
@@ -820,6 +875,7 @@
       updateClocks(clock);
       updateMetatron(metatron);
       updateCheshire(cheshire);
+      updateModels(models);
     }
 
     function setPollSchedule(ms) {

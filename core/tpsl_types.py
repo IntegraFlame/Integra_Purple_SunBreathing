@@ -29,6 +29,10 @@ class GenerationResult:
     token_probabilities: List[List[float]] = field(default_factory=list)
     model_name: str = "UNKNOWN"
     latency_ms: float = 0.0
+    prompt_tokens: int = 0
+    candidate_tokens: int = 0
+    thinking_tokens: int = 0
+    total_tokens: int = 0
 
 
 @dataclass
