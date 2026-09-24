@@ -414,3 +414,65 @@ class CheshireCatKernel:
         if new_state in valid_states:
             self.state = new_state
         return self.state
+
+    async def run_event_loop(self) -> None:
+        """
+        RX-001 FIX — Thalamic 20-45 Hz Asynchronous Event Loop.
+
+        Runs perpetually as a background asyncio task (launched from main.py lifespan).
+        Each tick:
+          1. Drains the event_queue (processes all pending dispatched events).
+          2. Feeds event count as a normalized entropy signal into Heimdall H_smooth EMA.
+          3. Applies P-SSR recovery transition if H_smooth has cooled below threshold.
+          4. Sleeps for 1/polling_hz seconds (default: ~33ms at 30 Hz).
+
+        State machine:
+          INTERACTIVE_STANDBY  → 7TH_FORM_SYNTHESIS  (queue depth ≥ 1)
+          7TH_FORM_SYNTHESIS   → INTERACTIVE_STANDBY (queue drained)
+          Any state            → PSSR_RECOVERY        (H_smooth > threshold)
+          PSSR_RECOVERY        → INTERACTIVE_STANDBY  (H_smooth cooled)
+        """
+        import asyncio
+        import logging
+        _logger = logging.getLogger("integra-cheshire-loop")
+        _logger.info(
+            f"Cheshire Cat Thalamic Loop STARTED — "
+            f"{self.polling_hz} Hz | sleep_interval={self.sleep_interval:.4f}s"
+        )
+
+        while True:
+            try:
+                # --- TICK: drain event queue ---
+                pending = list(self.event_queue)
+                self.event_queue.clear()
+                queue_depth = len(pending)
+
+                # --- Transition to synthesis if events pending ---
+                if queue_depth > 0 and self.state == "INTERACTIVE_STANDBY":
+                    self.transition_state("7TH_FORM_SYNTHESIS")
+
+                # --- Feed entropy: normalize queue_depth into [0, 2.5] range ---
+                # 0 events → H ≈ 0.0 (idle); 10+ events → H approaches threshold
+                if queue_depth > 0:
+                    raw_h = min(queue_depth / 10.0, 1.0) * self.heimdall.threshold
+                    # Drive Heimdall EMA with uniform distribution proxy
+                    n_buckets = max(2, queue_depth)
+                    uniform_dist = [1.0 / n_buckets] * n_buckets
+                    self.heimdall.evaluate_probabilities(uniform_dist)
+
+                # --- P-SSR: check and recover if cooled ---
+                if self.heimdall.h_smooth > self.heimdall.threshold:
+                    if self.state != "PSSR_RECOVERY":
+                        self.transition_state("PSSR_RECOVERY")
+                elif self.state == "PSSR_RECOVERY" and self.heimdall.h_smooth <= self.heimdall.threshold * 0.4:
+                    self.transition_state("INTERACTIVE_STANDBY")
+                    self.heimdall.recovery_state = "NOMINAL_TRACKING"
+
+                # --- Return to standby when queue fully drained ---
+                if queue_depth == 0 and self.state == "7TH_FORM_SYNTHESIS":
+                    self.transition_state("INTERACTIVE_STANDBY")
+
+            except Exception as exc:
+                _logger.warning(f"Cheshire Cat loop tick error (non-fatal): {exc}")
+
+            await asyncio.sleep(self.sleep_interval)
