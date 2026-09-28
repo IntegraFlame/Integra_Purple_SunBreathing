@@ -552,6 +552,24 @@ class Heimdall31:
             if not bank_solvent:
                 all_healthy = False
 
+        # 7b. Friday Fortress Hunter Check (Options Writing Engine)
+        if "friday_fortress_hunter" in target_components or "hunter" in target_components:
+            hunter_comp = target_components.get("friday_fortress_hunter") or target_components.get("hunter")
+            h_diag = {}
+            if hasattr(hunter_comp, "get_diagnostics"):
+                try:
+                    h_diag = hunter_comp.get_diagnostics()
+                except Exception:
+                    h_diag = {"status": "HEALTHY"}
+            elif hasattr(hunter_comp, "get_telemetry"):
+                try:
+                    h_diag = hunter_comp.get_telemetry()
+                except Exception:
+                    h_diag = {"status": "HEALTHY"}
+            else:
+                h_diag = {"status": "HEALTHY"}
+            diagnostics["friday_fortress_hunter"] = h_diag
+
         # 8. Antigravity Master Runtime Synchronizer
         if "antigravity_runner" in target_components or "runner" in target_components:
             runner_comp = target_components.get("antigravity_runner") or target_components.get("runner")

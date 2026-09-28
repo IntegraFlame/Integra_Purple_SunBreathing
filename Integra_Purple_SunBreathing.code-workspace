@@ -4,5 +4,14 @@
 			"path": "."
 		}
 	],
-	"settings": {}
+	"settings": {},
+	"extensions": {
+		"recommendations": [
+			"ms-python.pylint",
+			"redhat.java",
+			"ms-vscode.vscode-typescript-next",
+			"xabikos.javascriptsnippets",
+			"nilssoderman.batch-runner"
+		]
+	}
 }

@@ -375,17 +375,59 @@
     <!-- ═══════════ ROW 2: COGNITIVE HEALTH MATRIX + METATRON + CHESHIRE ═══════════ -->
     <div class="grid-2col">
 
-      <!-- LEFT: Cognitive Health Matrix -->
-      <div class="card">
-        <div class="card-label" style="color:var(--cyan);">Cognitive Health Matrix</div>
-        <table>
-          <thead>
-            <tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr>
-          </thead>
-          <tbody id="lobe-matrix">
-            <!-- JS populated -->
-          </tbody>
-        </table>
+      <!-- LEFT: Cognitive Health Matrix + Friday Fortress Capital Engine -->
+      <div style="display:flex; flex-direction:column; gap:1rem; min-width:0;">
+        <div class="card">
+          <div class="card-label" style="color:var(--cyan);">Cognitive Health Matrix</div>
+          <table>
+            <thead>
+              <tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr>
+            </thead>
+            <tbody id="lobe-matrix">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Friday Fortress Capital & Hunter Engine Card -->
+        <div class="card">
+          <div class="card-label" style="color:var(--flame-core);">🏰 Friday Fortress — Capital & Hunter Engine</div>
+          <div class="grid-4col">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--green);" id="fortress-status">SECURE</div>
+              <div class="metric-label">Solvency Floor</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--cyan);" id="fortress-floor">$20,000</div>
+              <div class="metric-label">SGOV Margin Lock</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--green);" id="fortress-equity">$25,250</div>
+              <div class="metric-label">Total Equity</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--purple-amethyst);" id="fortress-bp">$24,997</div>
+              <div class="metric-label">Margin BP (99%)</div>
+            </div>
+          </div>
+          <div class="grid-3col" style="margin-top:0.5rem; gap:0.4rem;">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.75rem; color:var(--flame-core);" id="hunter-delta">Δ 0.08 [0.05-0.10]</div>
+              <div class="metric-label">Hunter Put Delta</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.75rem; color:var(--cyan);" id="hunter-underlying">/MES · /MNQ</div>
+              <div class="metric-label">Underlyings (FOP)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.75rem; color:var(--green);" id="hunter-proof">DUAL-KEY SHA256</div>
+              <div class="metric-label">Ticket Validator</div>
+            </div>
+          </div>
+          <div style="font-size:0.5rem; color:var(--monolith-dim); margin-top:0.4rem;">
+            Weekly Target: <span id="fortress-target" style="color:var(--flame-core); font-weight:700;">~35 bps ($87.49)</span> · Rhythm: <span style="color:var(--cyan); font-weight:600;">Friday Entry → Thursday Exit</span> · Gateway: <span style="color:var(--green); font-weight:600;">IBKR COMBO</span>
+          </div>
+        </div>
       </div>
 
       <!-- RIGHT: Metatron + Cheshire + Rodin stacked -->
@@ -814,14 +856,17 @@
     // Bank will be rendered in a dedicated financial visual display.
     // ═══════════════════════════════════════════════════════════════
     const ACTIVE_LOBES = [
-      { name: 'Cheshire Cat Kernel',   layer: 4, key: 'cheshire_cat',       role: 'Thalamic Arbitrator (20-45 Hz)' },
-      { name: 'Cheshire Protocol',     layer: 4, key: 'cheshire_protocol',  role: 'Paradox Detection & Abstract Conduit' },
-      { name: 'Y789NexusDual',         layer: 2, key: 'cognitive_engine',   role: 'Bicameral Cognitive Dyad' },
-      { name: 'The Hoard',             layer: 3, key: 'the_hoard',          role: 'Geometric Memory (CCID Nodes)' },
-      { name: 'Rodin Protocol',        layer: 3, key: 'rodin_protocol',     role: 'KNN Manifold Route Retrieval' },
-      { name: 'Phoenix Forge',         layer: 6, key: 'phoenix_forge',      role: 'SWDS Neuroevolution Smelting' },
-      { name: 'Antigravity Runner',    layer: 'R', key: 'antigravity_runner',  role: 'Runtime Execution Layer' },
-      { name: 'Thermodynamic Loop',    layer: 0, key: 'thermodynamics',     role: 'ΔE = 0.0000 Enforcement' },
+      { name: 'Cheshire Cat Kernel',   layer: 4, key: 'cheshire_cat',           role: 'Thalamic Arbitrator (20-45 Hz)' },
+      { name: 'Cheshire Protocol',     layer: 4, key: 'cheshire_protocol',      role: 'Paradox Detection & Abstract Conduit' },
+      { name: 'Looking Glass',         layer: 4, key: 'looking_glass',          role: 'C₂₃₅ Perspective Tilt & Sovereign Defense' },
+      { name: 'Y789NexusDual',         layer: 2, key: 'cognitive_engine',       role: 'Bicameral Cognitive Dyad' },
+      { name: 'The Hoard',             layer: 3, key: 'the_hoard',              role: 'Geometric Memory (CCID Nodes)' },
+      { name: 'Rodin Protocol',        layer: 3, key: 'rodin_protocol',         role: 'KNN Manifold Route Retrieval' },
+      { name: 'Phoenix Forge',         layer: 6, key: 'phoenix_forge',          role: 'SWDS Neuroevolution Smelting' },
+      { name: 'Friday Fortress Bank',  layer: 5, key: 'friday_fortress_bank',     role: '$20,000 SGOV Margin Lock Floor' },
+      { name: 'Friday Fortress Hunter', layer: '5/7', key: 'friday_fortress_hunter', role: 'Active Derivatives Writing Engine' },
+      { name: 'Antigravity Runner',    layer: 'R', key: 'antigravity_runner',      role: 'Runtime Execution Layer' },
+      { name: 'Thermodynamic Loop',    layer: 0, key: 'thermodynamics',         role: 'ΔE = 0.0000 Enforcement' },
     ];
 
     // ═══════════════════════════════════════════════════════════════
@@ -1213,15 +1258,52 @@
       }
     }
 
+    function updateFortress(f) {
+      if (!f) return;
+      const cur = f.current_state || {};
+      const params = f.fortress_parameters || {};
+      const bank = cur.bank || {};
+      const totalEquity = cur.total_equity_usd ?? 25250.0;
+      const floor = params.margin_lock_floor_usd ?? 20000.0;
+      const bp = Math.round(totalEquity * 0.99);
+      const weeklyBps = 0.0035;
+      const targetUsd = (bp * weeklyBps).toFixed(2);
+
+      const statusEl = document.getElementById('fortress-status');
+      if (statusEl) {
+        const bankEquity = (bank.equity_usd !== undefined && bank.equity_usd !== null) ? bank.equity_usd : totalEquity;
+        const isSecure = bankEquity >= floor;
+        statusEl.textContent = isSecure ? 'SECURE' : 'BREACHED';
+        statusEl.style.color = isSecure ? 'var(--green)' : 'var(--red)';
+      }
+      const floorEl = document.getElementById('fortress-floor');
+      if (floorEl) floorEl.textContent = '$' + Math.round(floor).toLocaleString();
+      const equityEl = document.getElementById('fortress-equity');
+      if (equityEl) equityEl.textContent = '$' + Math.round(totalEquity).toLocaleString();
+      const bpEl = document.getElementById('fortress-bp');
+      if (bpEl) bpEl.textContent = '$' + bp.toLocaleString();
+      const targetEl = document.getElementById('fortress-target');
+      if (targetEl) targetEl.textContent = `~35 bps ($${targetUsd})`;
+
+      if (f.hunter_telemetry) {
+        const ht = f.hunter_telemetry;
+        const deltaEl = document.getElementById('hunter-delta');
+        if (deltaEl && ht.target_delta) {
+          deltaEl.textContent = `Δ ${ht.target_delta.toFixed(2)} [${ht.delta_bounds?.[0]}-${ht.delta_bounds?.[1]}]`;
+        }
+      }
+    }
+
     async function pollAll() {
       const t0 = performance.now();
-      const [health, clock, metatron, cheshire, models, rodin] = await Promise.all([
+      const [health, clock, metatron, cheshire, models, rodin, fortress] = await Promise.all([
         fetchJSON(API_BASE + '/heimdall/health'),
         fetchJSON(API_BASE + '/clock/full'),
         fetchJSON(API_BASE + '/metatron/status'),
         fetchJSON(API_BASE + '/cheshire/status'),
         fetchJSON(API_BASE + '/models/telemetry'),
         fetchJSON(API_BASE + '/rodin/telemetry'),
+        fetchJSON(API_BASE + '/fortress/status'),
       ]);
       const roundTrip = Math.round(performance.now() - t0);
       lastPingMs = roundTrip;
@@ -1258,6 +1340,7 @@
       updateRodin(rodin);
       updateModels(models);
       updateShiva(models);
+      updateFortress(fortress);
     }
 
     function setPollSchedule(ms) {

@@ -6,7 +6,7 @@ Version: 8.2.2-PURPLE (Zero-Impedance Substrate)
 
 import os
 from contextlib import asynccontextmanager
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -16,6 +16,7 @@ from runtime.antigravity_runner import AntigravityRunner
 from temporal.celestial_clock import CelestialClockArchitecture, DualTemporalEngine
 from temporal.hlc_binary_protocol import create_sync_payload, NODE_HOST
 from fortress.bank_lobe import FridayFortressBank
+from fortress.hunter_engine import FridayFortressHunter
 from fortress.epiphany_core import MasterEpiphanyEngine
 from sensory.cheshire_cat import CheshireCatKernel
 from sensory.heimdall import Heimdall31
@@ -171,6 +172,7 @@ runner = AntigravityRunner()
 clock = CelestialClockArchitecture()
 dual_temporal = DualTemporalEngine()
 bank = FridayFortressBank()
+hunter = FridayFortressHunter()
 cheshire_cat = CheshireCatKernel()
 heimdall = cheshire_cat.heimdall
 purple_modality = PurpleModality()
@@ -189,6 +191,7 @@ rodin_supervisor = RodinSupervisor(rodin_protocol=RodinProtocol(hoard=cheshire_c
 # Register all operational lobes across Integra O/S for continuous health tracking
 heimdall.register_component("celestial_clock", clock)
 heimdall.register_component("friday_fortress_bank", bank)
+heimdall.register_component("friday_fortress_hunter", hunter)
 heimdall.register_component("antigravity_runner", runner)
 heimdall.register_component("purple_modality", purple_modality)
 heimdall.register_component("dragon_engine", dragon_engine)
@@ -627,16 +630,36 @@ async def execute_cognitive_cycle(request: PromptRequest):
         "heimdall_telemetry": cheshire_cat.heimdall.get_telemetry()
     }
 
+class HunterTicketRequest(BaseModel):
+    underlying: Optional[str] = "/MES"
+    spot_price: Optional[float] = 5500.0
+    sgov_equity: Optional[float] = None
+    iv: Optional[float] = 0.18
+    dte: Optional[float] = 7.0
+    target_delta: Optional[float] = None
+    spread_width: Optional[float] = None
+    option_chain: Optional[List[Dict[str, Any]]] = None
+    max_contracts: Optional[int] = 4
+    sign_ticket: Optional[bool] = True
+    transmit: Optional[bool] = False
+
+class HunterVerifyRequest(BaseModel):
+    ticket: Dict[str, Any]
+
 @app.get("/fortress/status")
 def get_fortress_status():
     try:
         state = runner.read_state()
         import json
-        with open("fortress/portfolio_state.json", "r") as f:
+        state_path = "fortress/portfolio_state.json"
+        if not os.path.exists(state_path):
+            state_path = os.path.join(os.path.dirname(__file__), "fortress", "portfolio_state.json")
+        with open(state_path, "r", encoding="utf-8") as f:
             portfolio = json.load(f)
+        portfolio["hunter_telemetry"] = hunter.get_telemetry()
         return portfolio
     except Exception as e:
-        return {"status": "ACTIVE", "margin_lock": "SECURE", "margin_floor_usd": 20000.0}
+        return {"status": "ACTIVE", "margin_lock": "SECURE", "margin_floor_usd": 20000.0, "error": str(e)}
 
 @app.post("/fortress/inflow")
 def process_inflow(request: InflowRequest):
@@ -646,6 +669,42 @@ def process_inflow(request: InflowRequest):
         "new_total_equity_usd": new_total,
         "margin_status": "SECURE"
     }
+
+@app.post("/fortress/hunter/ticket")
+def generate_hunter_ticket(request: HunterTicketRequest):
+    """
+    Generates a cryptographically signed Friday Fortress Bull Put Spread ticket
+    ready for IBKR COMBO / CME Futures Options execution.
+    """
+    try:
+        ticket = hunter.generate_trade_ticket(
+            underlying=request.underlying or "/MES",
+            spot_price=request.spot_price or 5500.0,
+            sgov_equity=request.sgov_equity,
+            iv=request.iv or 0.18,
+            dte=request.dte or 7.0,
+            target_delta=request.target_delta,
+            spread_width=request.spread_width,
+            option_chain=request.option_chain,
+            max_contracts=request.max_contracts or 4,
+            sign_ticket=request.sign_ticket if request.sign_ticket is not None else True,
+            transmit=request.transmit or False,
+        )
+        return ticket
+    except PermissionError as pe:
+        return {"status": "MARGIN_LOCK_BREACHED", "error": str(pe)}
+    except Exception as e:
+        return {"status": "ERROR", "error": str(e)}
+
+@app.get("/fortress/hunter/telemetry")
+def get_hunter_telemetry():
+    """Returns live telemetry for Friday Fortress Hunter derivatives engine."""
+    return hunter.get_telemetry()
+
+@app.post("/fortress/hunter/verify")
+def verify_hunter_ticket(request: HunterVerifyRequest):
+    """Verifies cryptographic integrity of a signed trade ticket."""
+    return hunter.verify_signed_ticket(request.ticket)
 
 @app.get("/looking-glass/status")
 def get_looking_glass_status():
