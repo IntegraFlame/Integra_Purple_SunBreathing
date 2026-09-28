@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790118428",
+  "timestamp": "2026-09-22T18:00:00-05:00",
+  "celestial": [296.114, 0.9885, 0.1646],
+  "epoch": "Hour 18",
+  "topic": "Negative Crude Futures (-$37.63 on April 20, 2020) \u2014 Physical Storage Constraints, Contract Settlement Dynamics, and Black-76 Breakdown",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

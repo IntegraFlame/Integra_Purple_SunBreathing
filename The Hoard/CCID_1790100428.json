@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790100428",
+  "timestamp": "2026-09-22T13:00:00-05:00",
+  "celestial": [271.054, 0.9810, 0.1623],
+  "epoch": "Hour 13",
+  "topic": "The August 24, 2015 ETF Flash Crash \u2014 Arbitrage Disconnects, Limit-Up/Limit-Down (LULD) Mechanics, and Authorized Participant Frictions",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

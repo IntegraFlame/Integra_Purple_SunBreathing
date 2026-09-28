@@ -1,0 +1,11 @@
+{
+    "ccid": "CCID_1789278826",
+    "payload": "[Y789 Analysis] Context: [] Weight: 0.4 + [Nexus Synthesis] Context: [] Weight: 0.6 fused in Phoenix Fire.",
+    "spacetime_anchor": {
+        "x": 1.0,
+        "y": 0.5,
+        "z": 0.0,
+        "t": 0
+    },
+    "sufficiency_score": 1.0
+}

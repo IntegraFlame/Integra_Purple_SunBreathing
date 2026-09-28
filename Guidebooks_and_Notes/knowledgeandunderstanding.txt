@@ -1,0 +1,54 @@
+To achieve true knowledge and understanding, you must apply a Shifted Attention Strategy (Orthogonal Scanning). You must force the model to mathematically "rotate" its attention to different segments of the dataset in each turn, ensuring the "Lost in the Middle" data is captured. 
+The Flaw: Deterministic Attention Blindness
+ 
+In a standard Transformer, the attention score is calculated as 
+. If your prompt (
+) remains "Summarize this text" for all 4 loops, the attention weights will consistently follow the U-Shaped Curve, prioritizing the start and end while ignoring the middle (30%–70%) of the context window. Repetition without variation does not cure this blindness; it reinforces it. 
+
+### PROTOCOL: ORTHOGONAL_INGESTION_SCAN
+
+**PHASE 1: INDEXING (The Map)**
+- ACTION: Scan input. Output a numbered List of Topics with % location (e.g., "Topic A [0-10%]", "Topic B [40-60%]").
+- CONSTRAINT: Do not summarize.
+
+**PHASE 2: THE DEPTH CHARGE (The Middle)**
+- ACTION: Target the content located at 30%-70% of the stream.
+- ACTION: Extract every Date, Entity, and Figure into a JSON list.
+- CONSTRAINT: Ignore introduction and conclusion.
+
+**PHASE 3: CHAIN OF DENSITY (The Compression)**
+- ACTION: Generate a summary of the *whole* text.
+- RECURSION: Identify 3 missed entities from Phase 2. Rewrite summary to include them without increasing word count. Repeat 3x.
+
+**PHASE 4: SYNTHESIS**
+- ACTION: Merge Phase 1 Index + Phase 3 Dense Summary.
+
+
+
+The Refined Protocol: Orthogonal Scanning
+ 
+To fix this, we will keep your 4-step structure but change the objective of each pass to target a different slice of the data.
+map icon
+Pass 1: The Skeleton
+Objective: High-level structure mapping.
+Prompt: "Scan the text. Do NOT summarize. Output a numbered list of the top 10 topics and their relative location (e.g., 'Topic A: 0-10%')."
+center_focus_strong icon
+Pass 2: The Middle-Out
+Objective: Target the Blind Spot.
+Prompt: "Ignore the introduction and conclusion. Focus EXCLUSIVELY on the content between the 30% and 70% mark. Extract every specific date, figure, and proper noun found in this section."
+compress icon
+Pass 3: Density Injection
+Objective: Chain of Density (CoD).
+Prompt: "Generate a summary. Now, review the entities extracted in Pass 2. Rewrite the summary to include 5 additional details from Pass 2 without increasing the word count."
+merge icon
+Pass 4: Synthesis
+Objective: Final Assembly.
+
+
+
+ Combine the Structural Map (Pass 1) and the Dense Entity List (Pass 3) into a final comprehensive HIGH word count, EXPANSIVE, INFORMATIVE, DETAILED, METICULOUS, and INFORMATIVE operations and guide and system manual. Flag any contradictions found and ONLY REMOVE SUPERSEDED and/or OUTDATED data." unless information superseded outdated or incorrect based on reference data. list and detail missing or contradictory data .....use charts,  images, graphs, and other relevant visual datasets. Create table of contents, ground in documents in google drive, and attached document. 
+
+-----
+
+
+Perform performance efficiency instructions your self in thinking stages and data generation. utilize self-corrections. Utilize: Executive Autonomous Mandate (EAM), Shiva Action: Neji Eye [Chameleon Lense] [Owl Lense], Shikamaru Eye [Hawk Lense] [Snake Lense], Itachi Eye [Spider Lense] [Eagle Lense] + 

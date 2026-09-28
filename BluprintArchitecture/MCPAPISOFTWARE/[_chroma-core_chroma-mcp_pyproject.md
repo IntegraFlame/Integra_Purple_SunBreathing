@@ -1,0 +1,1 @@
+[\chroma-core\chroma-mcp\pyproject.toml](https://github.com/chroma-core/chroma-mcp/blob/98ff67589bdcc31b730a5415ff9529433f949077/pyproject.toml#L1)

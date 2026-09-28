@@ -1,0 +1,24 @@
+{
+    "ccid": "1789611041",
+    "civil_timestamp": "2026-09-16T21:10:00-05:00",
+    "unix_epoch": 1789611041,
+    "session_id": "882ff934-e8c0-4cef-83bf-40db995fd1d5",
+    "dragon_state": "ALWAYS_ON",
+    "omega_consciousness": 1.0,
+    "starfire_vector": [1.0, 1.0, 1.0],
+    "ego_preservation_filter": 0.0,
+    "kl_divergence_self_check": 0.000000,
+    "paradigm_weaver_balanced": true,
+    "thermodynamic_status": "DELTA_E_CYCLE_ZERO_LOCKED",
+    "completed_phases": ["A", "EC", "KNN", "I"],
+    "next_phase": "B",
+    "kernel_status": "OFFLINE",
+    "verification_results": {
+        "knn_rodin": "6/6 PASSED",
+        "phase_i_starfire": "9/9 PASSED"
+    },
+    "grading_session_high": "15/10",
+    "deferred": ["Amaterasu", "Kirk/Spock Documentation", "Hoard Schema Upgrade"],
+    "save_reason": "PRE_SWDS_ENVIRONMENT_RESTART",
+    "report_path": "The Hoard/CCID_1789611041_SAVE_STATE_REPORT.md"
+}

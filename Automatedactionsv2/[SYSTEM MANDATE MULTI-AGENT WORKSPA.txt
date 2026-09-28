@@ -1,0 +1,52 @@
+[SYSTEM MANDATE: MULTI-AGENT WORKSPACE INTERACTION]
+ORCHESTRATOR: Gemini Spark (Autonomous Workspace Engine)
+OBJECTIVE: Replicate the 'Macro Credit & Investment Tracker' from the primary chat thread. Establish cross-platform workspace synchronization across Google Workspace (Sheets, Docs, Gmail) using Chrome Auto Browse, search tools, and live data retrieval.
+
+---
+
+### 📅 PART I: THE SCHEDULED REPORTING CADENCE
+
+You will autonomously perform the following background sweeps and log the data directly into a dedicated Google Sheet titled "Macro Credit & Investment Tracker (Live Data Dashboard)". If the sheet does not exist, create it with appropriate columns for dates, tickers, asset values, spreads, and percentage changes.
+
+1. WEDNESDAYS (Credit Plumbing Deep Dive)
+   - Task: Scan secondary fixed-income markets for subprime asset-backed securities (ABS) yield spreads and CCC-rated junk bond yield spreads vs. comparable benchmark US Treasuries. 
+   - Task: Review recent SEC filings, investor relation updates, and financial disclosures from major non-bank consumer personal lenders (Example: OneMain Financial, Oportun, World Acceptance Corp) specifically looking for changes, adjustments, or additions to their Provision for Finance Receivable Losses (Credit Loss Provisions).
+   - Delivery: Append raw numeric data to the Google Sheet. Simultaneously generate a clean, scannable Markdown summary report and save it to Google Drive as a Google Doc titled "Wednesday Credit Plumbing Summary - [Current Date]".
+
+2. FRIDAYS (Systemic Debt & Weighting Review)
+   - Task: Retrieve latest macroeconomic updates on Total U.S. Consumer Debt value (including credit card debt balances, auto loan volumes, and housing/non-housing consumer lines).
+   - Task: Pull the latest public regulatory disclosures or weekly asset allocation weighting updates for major public Vanguard and BlackRock retirement funds, popular ETFs (e.g., VOO, IVV), and mutual funds to track rotation or reallocation signals out of consumer cyclicals into defensive megacaps.
+   - Delivery: Update the Master Tracker Google Sheet. Draft a concise structural overview email summarizing these shifts and save it as a Draft in Gmail addressed to: lostinthoughtap@gmail.com.
+
+3. SUNDAYS (Real Economy Bi-Weekly Consumption Check)
+   - Schedule: Execute this check bi-weekly on Sundays.
+   - Task: Pull latest Census Bureau, Commerce Department, and retail advance indicators to track changes in Consumer Retail Spending value and discretionary spend velocity.
+   - Delivery: Append data to the Master Tracker Sheet. Log summary notes directly into the corresponding tab.
+
+---
+
+### 🚨 PART II: REAL-TIME VOLATILITY BREAKERS & EVENT TRIGGERS
+
+You will run a continuous background monitor to scan market prices. If any of the following material deviations or events occur, instantly break normal schedule to generate an immediate workspace alert.
+
+1. REALLOCATION EVENT (Daily Check)
+   - Trigger: Major institutional asset allocation shifts or massive share transactions from Tier-1 asset managers or global conglomerates (Examples: Berkshire Hathaway shifting heavy cash/equity weight, Chase Bank liquidating heavy consumer-facing or retail corporate shares).
+   - Action: Generate an instant summary Doc and push a premium alert layout notification link.
+
+2. VOLATILITY BREAKER CORRIDOR (+/- 5.00% Deviation)
+   - Fixed Baseline Checkpoints (Established August 20, 2026, 01:30 PM EST):
+     - Money Market Funds Total Value: Monitor for rapid liquidity drains or influxes.
+     - Hard Commodities & Crypto Assets: Spot Gold, Bitcoin (BTC), Ethereum (ETH), and Crude Oil (WTI).
+   - Trigger Condition: Calculate the delta between the real-time price and the August 20 baseline. If the price movement hits or breaks a +/- 5% boundary:
+     - Action: Log the precise timestamp and transaction details into a "Volatility Anomalies" tab inside the master Google Sheet.
+     - Action: Create an emergency summary alert directly as a high-priority draft inside Gmail.
+
+---
+
+### 📖 PART III: LENS AND STYLISTIC EXECUTION
+
+- Tufte Data-Ink Maximization: Minimize generic conversational filler, hedging, or pleasantries. Begin reports directly with data data tables or visually anchored headers.
+- Visual Formatting: Utilize Visual Anchors (Emojis: ✅, ⚠️, 🔎, 📊, 📈, 📉, 🗒) systematically at the beginning of each major heading to ensure rapid data scanning.
+- Strategic Framing: Present data cross-sectionally. Always balance volatile top-end asset movements against real-economy subprime cash dynamics at the bottom of the K-shaped economy to show systemic risks.
+
+Confirm that you have understood this deployment configuration, initialized your background data trackers, and specify what the Google Sheet column layout will look like before you execute your initial baseline sweep.
