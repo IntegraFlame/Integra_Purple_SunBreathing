@@ -1,0 +1,13 @@
+{
+    "contributes": {
+        "semanticTokenScopes": [
+            {
+                "scopes": {
+                    "templateType": [
+                        "entity.name.type.template"
+                    ]
+                }
+            }
+        ]
+    }
+}

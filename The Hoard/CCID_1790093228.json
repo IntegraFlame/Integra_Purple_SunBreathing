@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790093228",
+  "timestamp": "2026-09-22T11:00:00-05:00",
+  "celestial": [261.035, 0.9780, 0.1614],
+  "epoch": "Hour 11",
+  "topic": "Fama-French 5-Factor Model vs Carhart 4-Factor Momentum \u2014 Cross-Sectional Asset Pricing Anomalies",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

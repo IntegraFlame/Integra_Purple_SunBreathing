@@ -1,0 +1,57 @@
+!TASK_DEFINITION: 13_HOUR_CASCADING_MASTER_SYNTHESIS
+!SCHEDULE_MODE: DISCRETE_HOURLY_EXECUTION
+!START_TIME: 2026-08-13 02:00:00 CDT
+!DATE_RANGE: JULY 2025 – AUGUST 2026
+
+Spark, execute an automated, sequential, and highly iterative 13-hour metacognitive review across a strict 10-unit sequence from my library, starting at 02:00 AM CDT on August 13, 2026.
+
+TARGET SCOPE & 10-UNIT DOCUMENT MAP:
+- Total Units: Exactly 10 document iterations across Hours 1–10.
+- Unit 1 (Hour 1): 'thunderflash99x'
+- Unit 2 (Hour 2): 'Code folder' — Part 1 (First half of files in the Code folder)
+- Unit 3 (Hour 3): 'Code folder' — Part 2 (Second half of files in the Code folder)
+- Units 4–10 (Hours 4–10): The next 7 remaining documents in chronological order from the library queue.
+
+INTERRUPTION & RESUMPTION PROTOCOL (CONVERSATION HANDLING):
+- Active Chat Check: Before beginning document analysis on any hourly run, check for an active user conversation.
+- Pause Condition: If an active conversation is detected, PAUSE document processing immediately.
+- Resumption Trigger 1 (Inactivity Delay): Resume processing after exactly 1 HOUR of inactivity since the last user interaction.
+- Resumption Trigger 2 (Anchor Times): If the pause extends indefinitely, automatically align resumption with either 05:00 AM CDT or 11:00 PM CDT—whichever anchor time is chronologically closer.
+
+=========================================
+PHASE 1: ITERATIVE ACCUMULATION (HOURS 1–10)
+=========================================
+- Execution Mandate: Process exactly ONE designated Unit per hourly run. For the duration of that hour, iteratively reread the CURRENT Unit alongside ALL PREVIOUSLY processed Units in this 10-Unit block.
+- Metacognitive Progression: Evaluate context progression through Knowledge, Understanding, and Wisdom stages for each reading cycle.
+- Cognitive Stack for Phase 1:
+  * Knowledge Phase: Neji's Eye (Deconstruction) + Alexandria Protocol (Internal Archival / Gap Identification).
+  * Understanding Phase: CWA 3.0 Bayesian Routing + Y789NexusEngine.
+  * Wisdom Phase: Itachi's Eye (Synthesis) + Epiphany Equation 8.1.
+- Hourly Output Requirements:
+  1. Unit Identifier (Title, Target Allocation, Queue Position X/10).
+  2. Affirmation of cumulative context integration (current Unit + all previous Units).
+  3. Status report detailing progression through Knowledge, Understanding, and Wisdom.
+
+=========================================
+PHASE 2: TOTALITY STUDY (HOUR 11)
+=========================================
+- Action: Upon completing Unit 10, execute a dedicated 1-hour study session evaluating all 10 Units in their complete totality to establish full systemic alignment.
+- Cognitive Stack for Phase 2: 14th Form Active + Purple + The Hoard (Deep Memory Geometry).
+- Output: Acknowledgment of full systemic alignment and readiness for Master Document generation.
+
+=========================================
+PHASE 3: MASTER DOCUMENT GENERATION (HOUR 12)
+=========================================
+- Action: Produce an expansive synthesis report, timeline, architecture, and Systems manual.
+- Constraint Override: NEVER reduce, NEVER summarize, NEVER truncate, NEVER simplify, and NEVER redact. Ignore token count and word counts; exhaust all needed compute.
+- Output Requirements: Must include detailed citations, workflows, timelines, code scripts, dates, charts, and diagrams.
+- Method: Apply metacognition, self-assessment, and active review, constantly comparing generated content with source material without summary reduction.
+- Cognitive Stack for Phase 3: Executive Autonomous Mandate (EAM) + Multi-Turn Cognitive Workflow (MTCW) + Shiva Action Lens Stacking.
+
+=========================================
+PHASE 4: VERIFICATION & SELF-ASSESSMENT (HOUR 13)
+=========================================
+- Action: Read, analyze, review, and self-assess the Master Document generated in Hour 12.
+- Method: Perform a comparative self-assessment against the original source documents to verify absolute structural fidelity, completeness, and zero lossy compression.
+- Cognitive Stack for Phase 4: Zenitsu Method 3.0 + 14th Step + P-SSR (Proactive Socratic Self-Refine) + Unified Grounding Loop (UGL).
+- Output: Final Meta-Synthesis and system validation report.

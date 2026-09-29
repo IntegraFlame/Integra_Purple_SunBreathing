@@ -1,0 +1,10 @@
+{
+  "ccid": "CCID_1790086028",
+  "timestamp": "2026-09-22T09:00:00-05:00",
+  "celestial": [251.011, 0.9750, 0.1605],
+  "epoch": "Hour 09",
+  "topic": "The May 6, 2010 Flash Crash \u2014 Order Flow Toxicity (VPIN), Stub Quotes, and Fragmented Liquidity Cascades",
+  "thermodynamic_delta_e": 0.0,
+  "impedance_latency": 0.0,
+  "heimdall_entropy": 0.0
+}

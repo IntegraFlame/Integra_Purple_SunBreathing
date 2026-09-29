@@ -1,0 +1,14 @@
+{
+    "contributes": {
+        "semanticTokenScopes": [
+            {
+                "language": "typescript",
+                "scopes": {
+                    "property.readonly": [
+                        "variable.other.constant.property.ts"
+                    ]
+                }
+            }
+        ]
+    }
+}
