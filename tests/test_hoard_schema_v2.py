@@ -19,6 +19,7 @@ import time
 import tempfile
 import shutil
 from typing import Dict, Any
+from core.celestial_middleware import celestial_time
 
 
 # ═══════════════════════════════════════════════════════════════
@@ -307,7 +308,7 @@ class TestPass3_HoardWisdom:
                 ccid="STALE_001",
                 payload="old data",
                 spacetime_anchor={"t": 0},
-                created_at=time.time() - 700000,  # ~8 days old
+                created_at=celestial_time() - 700000,  # ~8 days old
             )
             hoard.local_sparse_cache.append(old_node)
             
@@ -315,7 +316,7 @@ class TestPass3_HoardWisdom:
                 ccid="FRESH_001",
                 payload="fresh data",
                 spacetime_anchor={"t": 1},
-                created_at=time.time(),
+                created_at=celestial_time(),
             )
             hoard.local_sparse_cache.append(fresh_node)
             

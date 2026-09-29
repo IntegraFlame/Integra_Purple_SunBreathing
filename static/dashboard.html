@@ -111,7 +111,10 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 1rem;
+      margin-top: 1rem;
     }
+    .grid-2col:first-of-type { margin-top: 0; }
+    .grid-2col > * { min-width: 0; }
     .grid-3col {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -133,6 +136,9 @@
       border: 1px solid var(--card-border);
       border-radius: 10px;
       padding: 0.8rem 1rem;
+      width: 100%;
+      box-sizing: border-box;
+      min-width: 0;
     }
     .card-label {
       font-family: 'Orbitron', sans-serif;
@@ -145,19 +151,22 @@
     .metric-box {
       background: rgba(0,0,0,0.3);
       border: 1px solid rgba(157,0,255,0.15);
-      border-radius: 6px; padding: 0.4rem 0.6rem;
+      border-radius: 6px; padding: 0.4rem 0.2rem;
       text-align: center;
+      display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
     .metric-value {
       font-family: 'JetBrains Mono', monospace;
       font-weight: 700; font-size: 1.1rem;
       color: var(--flame-core);
+      word-break: keep-all; white-space: nowrap;
     }
     .metric-label {
       font-family: 'Orbitron', sans-serif;
-      font-size: 0.5rem; color: var(--monolith-dim);
-      text-transform: uppercase; letter-spacing: 0.04em;
+      font-size: 0.45rem; color: var(--monolith-dim);
+      text-transform: uppercase; letter-spacing: 0.02em;
       margin-top: 2px;
+      word-break: keep-all; white-space: nowrap;
     }
     .metric-sub {
       font-size: 0.55rem; color: var(--monolith-dim);
@@ -214,6 +223,14 @@
     .lobe-offline { color: var(--red); font-weight: 700; }
 
     /* ── MODEL REGISTRY TABLE ────────────────────── */
+    .model-table-wrap { width: 100%; overflow-x: auto; }
+    .model-table { width: 100%; table-layout: fixed; }
+    .model-table th:nth-child(1) { width: 16%; }
+    .model-table th:nth-child(2) { width: 20%; }
+    .model-table th:nth-child(3) { width: 24%; }
+    .model-table th:nth-child(4) { width: 25%; text-align: right; }
+    .model-table th:nth-child(5) { width: 15%; text-align: right; }
+    .model-table td { word-break: break-word; }
     .model-table td:first-child { color: var(--cyan); font-weight: 600; }
     .model-table td:nth-child(2) { color: var(--flame-core); font-family: 'JetBrains Mono', monospace; }
 
@@ -230,6 +247,44 @@
       -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
     }
     .footer-telemetry { color: var(--monolith-dim); margin-top: 3px; }
+
+    /* ── PROTOCOL STATUS BADGES ────────────────── */
+    .proto-badge {
+      display: inline-block; padding: 1px 6px; border-radius: 3px;
+      font-size: 0.5rem; font-weight: 700;
+      font-family: 'Orbitron', sans-serif; letter-spacing: 0.04em;
+    }
+    .proto-on { background: rgba(16,185,129,0.15); color: #10B981; border: 1px solid rgba(16,185,129,0.3); }
+    .proto-ready { background: rgba(0,240,255,0.08); color: #00F0FF; border: 1px solid rgba(0,240,255,0.2); }
+    .proto-active { background: rgba(255,170,51,0.15); color: #FFAA33; border: 1px solid rgba(255,170,51,0.3); animation: livePulse 2s ease-in-out infinite; }
+    .proto-standby { background: rgba(156,163,175,0.1); color: #9CA3AF; border: 1px solid rgba(156,163,175,0.2); }
+
+    /* ── SHIVA LENS GRID ───────────────────────── */
+    .grid-6col {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 0.3rem;
+    }
+    @media (max-width: 960px) { .grid-6col { grid-template-columns: repeat(3, 1fr); } }
+    .lens-box {
+      background: rgba(0,0,0,0.3); border: 1px solid rgba(157,0,255,0.12);
+      border-radius: 5px; padding: 0.3rem 0.4rem; text-align: center;
+    }
+    .lens-count { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.85rem; color: var(--purple-amethyst); }
+    .lens-name { font-family: 'Orbitron', sans-serif; font-size: 0.45rem; color: var(--monolith-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+    .lens-desc { font-size: 0.45rem; color: rgba(156,163,175,0.6); margin-top: 1px; }
+
+    /* ── PROTOCOL TABLE ────────────────────────── */
+    .proto-table td { padding: 3px 6px; font-size: 0.6rem; }
+    .proto-table td:first-child { color: var(--flame-core); font-weight: 600; font-family: 'Orbitron', sans-serif; font-size: 0.5rem; letter-spacing: 0.03em; white-space: nowrap; }
+    .proto-table td:nth-child(2) { color: var(--monolith-dim); font-size: 0.55rem; }
+
+    /* ── SECTION DIVIDER ───────────────────────── */
+    .section-label {
+      font-family: 'Orbitron', sans-serif; font-size: 0.55rem; font-weight: 700;
+      color: var(--purple-amethyst); letter-spacing: 0.1em; text-transform: uppercase;
+      margin: 1.5rem 0 0; padding-bottom: 0.3rem;
+      border-bottom: 1px solid rgba(157,0,255,0.15);
+    }
+    .full-width { grid-column: 1 / -1; }
   </style>
 </head>
 <body>
@@ -292,27 +347,27 @@
       </div>
 
       <!-- RIGHT COLUMN: Celestial Kinematics + Planetary Canvas -->
-      <div class="card" style="border-color: rgba(99,102,241,0.3);">
+      <div class="card" style="border-color: rgba(99,102,241,0.3); display: flex; flex-direction: column;">
         <div class="card-label" style="color:#818CF8;">🌍 Celestial Kinematics</div>
-        <div class="orbital-wrap">
-          <canvas id="orbitalCanvas" width="160" height="160" style="width:140px; height:140px;"></canvas>
+        <div class="orbital-wrap" style="flex: 1; display: flex; align-items: center; justify-content: center; gap: 1.5rem; margin-top: 0.5rem;">
+          <canvas id="orbitalCanvas" width="200" height="200" style="width:160px; height:160px; flex-shrink: 0;"></canvas>
           <div style="flex:1;">
-            <div style="font-size:0.55rem; color:rgba(129,140,248,0.7);">EARTH AXIAL ROTATION</div>
-            <div class="celestial-readout" id="celestial-rot">---.----°</div>
-            <div style="font-size:0.55rem; color:rgba(129,140,248,0.6); margin-top:4px;">
-              Kepler Orbital: <span id="celestial-orb" style="color:#C7D2FE;">0.----</span>
+            <div style="font-size:0.65rem; color:rgba(129,140,248,0.7); font-weight: 700; letter-spacing: 0.05em;">EARTH AXIAL ROTATION</div>
+            <div class="celestial-readout" id="celestial-rot" style="font-size: 1.8rem; margin-top: 0.2rem;">---.----°</div>
+            <div style="font-size:0.65rem; color:rgba(129,140,248,0.6); margin-top:0.6rem;">
+              Kepler Orbital: <span id="celestial-orb" style="color:#C7D2FE; font-weight:700;">0.----</span>
             </div>
-            <div style="font-size:0.55rem; color:rgba(129,140,248,0.6); margin-top:2px;">
-              Lunar Phase: <span id="celestial-lunar" style="color:#C7D2FE;">0.----</span>
+            <div style="font-size:0.65rem; color:rgba(129,140,248,0.6); margin-top:0.3rem;">
+              Lunar Phase: <span id="celestial-lunar" style="color:#C7D2FE; font-weight:700;">0.----</span>
             </div>
-            <div style="font-size:0.55rem; color:rgba(129,140,248,0.6); margin-top:2px;">
-              Grid: <span id="celestial-bucket" style="color:#C7D2FE;">ROT_---_ORB_--</span>
+            <div style="font-size:0.65rem; color:rgba(129,140,248,0.6); margin-top:0.3rem;">
+              Grid: <span id="celestial-bucket" style="color:#C7D2FE; font-weight:700;">ROT_---_ORB_--</span>
             </div>
           </div>
         </div>
-        <div style="margin-top:0.5rem; text-align:center;">
-          <span id="gauge-enforcement" style="font-size:0.6rem; color:var(--green); font-weight:700;">—</span>
-          <span style="font-size:0.5rem; color:var(--monolith-dim);"> · Dual Sync Isolation: ACTIVE</span>
+        <div style="margin-top:1rem; text-align:center; padding-top: 0.8rem; border-top: 1px solid rgba(99,102,241,0.15);">
+          <span id="gauge-enforcement" style="font-size:0.65rem; color:var(--green); font-weight:700;">—</span>
+          <span style="font-size:0.55rem; color:var(--monolith-dim);"> · Dual Sync Isolation: ACTIVE</span>
         </div>
       </div>
     </div>
@@ -320,21 +375,63 @@
     <!-- ═══════════ ROW 2: COGNITIVE HEALTH MATRIX + METATRON + CHESHIRE ═══════════ -->
     <div class="grid-2col">
 
-      <!-- LEFT: Cognitive Health Matrix -->
-      <div class="card">
-        <div class="card-label" style="color:var(--cyan);">Cognitive Health Matrix</div>
-        <table>
-          <thead>
-            <tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr>
-          </thead>
-          <tbody id="lobe-matrix">
-            <!-- JS populated -->
-          </tbody>
-        </table>
+      <!-- LEFT: Cognitive Health Matrix + Friday Fortress Capital Engine -->
+      <div style="display:flex; flex-direction:column; gap:1rem; min-width:0;">
+        <div class="card">
+          <div class="card-label" style="color:var(--cyan);">Cognitive Health Matrix</div>
+          <table>
+            <thead>
+              <tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr>
+            </thead>
+            <tbody id="lobe-matrix">
+              <!-- JS populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Friday Fortress Capital & Hunter Engine Card -->
+        <div class="card">
+          <div class="card-label" style="color:var(--flame-core);">🏰 Friday Fortress — Capital & Hunter Engine</div>
+          <div class="grid-4col">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--green);" id="fortress-status">SECURE</div>
+              <div class="metric-label">Solvency Floor</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--cyan);" id="fortress-floor">$20,000</div>
+              <div class="metric-label">SGOV Margin Lock</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--green);" id="fortress-equity">$25,250</div>
+              <div class="metric-label">Total Equity</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.85rem; color:var(--purple-amethyst);" id="fortress-bp">$24,997</div>
+              <div class="metric-label">Margin BP (99%)</div>
+            </div>
+          </div>
+          <div class="grid-3col" style="margin-top:0.5rem; gap:0.4rem;">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.75rem; color:var(--flame-core);" id="hunter-delta">Δ 0.08 [0.05-0.10]</div>
+              <div class="metric-label">Hunter Put Delta</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.75rem; color:var(--cyan);" id="hunter-underlying">/MES · /MNQ</div>
+              <div class="metric-label">Underlyings (FOP)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.75rem; color:var(--green);" id="hunter-proof">DUAL-KEY SHA256</div>
+              <div class="metric-label">Ticket Validator</div>
+            </div>
+          </div>
+          <div style="font-size:0.5rem; color:var(--monolith-dim); margin-top:0.4rem;">
+            Weekly Target: <span id="fortress-target" style="color:var(--flame-core); font-weight:700;">~35 bps ($87.49)</span> · Rhythm: <span style="color:var(--cyan); font-weight:600;">Friday Entry → Thursday Exit</span> · Gateway: <span style="color:var(--green); font-weight:600;">IBKR COMBO</span>
+          </div>
+        </div>
       </div>
 
-      <!-- RIGHT: Metatron + Cheshire + Model Registry stacked -->
-      <div style="display:flex; flex-direction:column; gap:0.6rem;">
+      <!-- RIGHT: Metatron + Cheshire + Rodin stacked -->
+      <div style="display:flex; flex-direction:column; gap:1rem; min-width:0;">
 
         <!-- Metatron Manifold -->
         <div class="card">
@@ -369,7 +466,7 @@
               <div class="metric-label">Hz</div>
             </div>
             <div class="metric-box">
-              <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="cheshire-state">—</div>
+              <div class="metric-value" style="font-size:0.75rem; color:var(--cyan);" id="cheshire-state">—</div>
               <div class="metric-label">State</div>
             </div>
             <div class="metric-box">
@@ -378,25 +475,7 @@
             </div>
             <div class="metric-box">
               <div class="metric-value" style="font-size:0.9rem;" id="cheshire-components">—</div>
-              <div class="metric-label">Components</div>
-            </div>
-          </div>
-          <div class="grid-4col" style="margin-top: 0.5rem;">
-            <div class="metric-box">
-              <div class="metric-value" style="font-size:0.9rem; color:var(--flame-core);" id="cra-score">—</div>
-              <div class="metric-label">CRA Score</div>
-            </div>
-            <div class="metric-box">
-              <div class="metric-value" style="font-size:0.6rem; color:var(--cyan); line-height: 1.5;" id="cwa-tier">—</div>
-              <div class="metric-label">Routing Tier</div>
-            </div>
-            <div class="metric-box">
-              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="cwa-w-analytical">—</div>
-              <div class="metric-label">W(Analytic)</div>
-            </div>
-            <div class="metric-box">
-              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="cwa-w-synthetic">—</div>
-              <div class="metric-label">W(Synthetic)</div>
+              <div class="metric-label">Monitored</div>
             </div>
           </div>
         </div>
@@ -442,39 +521,151 @@
           </div>
         </div>
 
-        <!-- Model Registry & Live Token Tracker -->
-        <div class="card">
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-            <div class="card-label" style="color:var(--cyan); margin-bottom:0;">Model Agent Registry & Live Token Tracker</div>
-            <div id="grand-total-tokens" style="font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--flame-core); font-weight:700;">CALLS: 0 · TOKENS: 0</div>
+      </div>
+    </div>
+
+    <!-- ═══════════ ROW 3: SHIVA ACTION SUITE + PROTOCOLS REFERENCE ═══════════ -->
+    <div class="section-label">⚔️ Cognitive Instruments & Protocol Reference</div>
+    <div class="grid-2col">
+
+      <!-- LEFT: Shiva Action Suite -->
+      <div class="card">
+        <div class="card-label" style="color:var(--flame-deep);">⚔️ Shiva Action Suite — Eyes & Lenses</div>
+        <div style="font-size:0.5rem; color:var(--monolith-dim); margin-bottom:0.5rem;">
+          Invoke by name in prompt: e.g. "use Shiva Action: Neji Eye (Owl Lens)"
+        </div>
+        <!-- 3 Eyes -->
+        <div class="grid-3col" style="gap:0.4rem;">
+          <div class="metric-box" style="border-color:rgba(0,240,255,0.2);">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="shiva-neji">0</div>
+            <div class="metric-label" style="color:var(--cyan);">Neji Eye</div>
+            <div class="metric-sub">Boundary ID · Noise Strip</div>
+            <div class="metric-sub">Structural Truth Discovery</div>
           </div>
-          <table class="model-table">
-            <thead>
-              <tr>
-                <th>Agent</th>
-                <th>Model</th>
-                <th>Role / Budget</th>
-                <th style="text-align:right;">Tokens (In / Out / Think)</th>
-                <th style="text-align:right;">Total</th>
-              </tr>
-            </thead>
-            <tbody id="model-registry-body">
-              <tr><td style="color:var(--flame-core); font-weight:700;">Y789 (Left)</td><td style="color:var(--cyan);">gemini-3.1-pro</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Deep Think (8192)</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-              <tr><td style="color:var(--flame-core); font-weight:700;">Nexus (Right)</td><td style="color:var(--cyan);">claude-sonnet-4-6</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Synthesis / Kirk</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-              <tr><td style="color:var(--flame-core); font-weight:700;">Cheshire Cat</td><td style="color:var(--cyan);">gemini-3.8-flash</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Thalamic Arbitrator</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-              <tr><td style="color:var(--flame-core); font-weight:700;">Rodin Retrieval</td><td style="color:var(--cyan);">gemini-2.0-flash</td><td style="color:var(--monolith-dim); font-size:0.6rem;">KNN Memory</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-              <tr><td style="color:var(--flame-core); font-weight:700;">Jean Grey</td><td style="color:var(--cyan);">gemini-3.1-pro</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Phoenix (16384)</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-              <tr><td style="color:var(--flame-core); font-weight:700;">Celestial Daemon</td><td style="color:var(--cyan);">gemini-3.8-flash</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Heartbeat Intel</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-              <tr><td style="color:var(--flame-core); font-weight:700;">Shiva Orchestrator</td><td style="color:var(--cyan);">claude-sonnet-4-6</td><td style="color:var(--monolith-dim); font-size:0.6rem;">Multi-Lens</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; font-size:0.6rem;">—</td><td style="text-align:right; font-family:'JetBrains Mono',monospace; color:var(--monolith-dim); font-size:0.65rem;">0</td></tr>
-            </tbody>
-          </table>
+          <div class="metric-box" style="border-color:rgba(0,240,255,0.2);">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="shiva-shikamaru">0</div>
+            <div class="metric-label" style="color:var(--cyan);">Shikamaru Eye</div>
+            <div class="metric-sub">Relational Matrix Map</div>
+            <div class="metric-sub">Dependency Topology</div>
+          </div>
+          <div class="metric-box" style="border-color:rgba(0,240,255,0.2);">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="shiva-itachi">0</div>
+            <div class="metric-label" style="color:var(--cyan);">Itachi Eye</div>
+            <div class="metric-sub">Dynamic Processes</div>
+            <div class="metric-sub">Temporal Kinetics</div>
+          </div>
+        </div>
+        <!-- 6 Lenses -->
+        <div style="font-size:0.45rem; color:var(--purple-amethyst); margin-top:0.6rem; margin-bottom:0.3rem; font-family:'Orbitron',sans-serif; letter-spacing:0.06em;">LENSES (PAIR WITH ANY EYE)</div>
+        <div class="grid-6col">
+          <div class="lens-box">
+            <div class="lens-count" id="lens-owl">0</div>
+            <div class="lens-name">🦉 Owl</div>
+            <div class="lens-desc">Synthesis Pass</div>
+          </div>
+          <div class="lens-box">
+            <div class="lens-count" id="lens-eagle">0</div>
+            <div class="lens-name">🦅 Eagle</div>
+            <div class="lens-desc">Structure Pass</div>
+          </div>
+          <div class="lens-box">
+            <div class="lens-count" id="lens-hawk">0</div>
+            <div class="lens-name">🦅 Hawk</div>
+            <div class="lens-desc">Density Analysis</div>
+          </div>
+          <div class="lens-box">
+            <div class="lens-count" id="lens-spider">0</div>
+            <div class="lens-name">🕷️ Spider</div>
+            <div class="lens-desc">Relational Web</div>
+          </div>
+          <div class="lens-box">
+            <div class="lens-count" id="lens-chameleon">0</div>
+            <div class="lens-name">🦎 Chameleon</div>
+            <div class="lens-desc">Middle-Out Adapt</div>
+          </div>
+          <div class="lens-box">
+            <div class="lens-count" id="lens-snake">0</div>
+            <div class="lens-name">🐍 Snake</div>
+            <div class="lens-desc">Temporal Flow</div>
+          </div>
+        </div>
+        <div style="font-size:0.5rem; color:var(--monolith-dim); margin-top:0.4rem;">
+          Total Invocations: <span id="shiva-total" style="color:var(--flame-core); font-weight:700;">0</span>
+        </div>
+      </div>
+
+      <!-- RIGHT: Protocols Reference -->
+      <div class="card">
+        <div class="card-label" style="color:var(--purple-amethyst);">📡 Protocols & Cognitive Modes</div>
+        <div style="font-size:0.5rem; color:var(--monolith-dim); margin-bottom:0.5rem;">
+          Invoke by name in prompt: e.g. "use Rogue X Protocol" · Status updates live
+        </div>
+        <table class="proto-table">
+          <thead>
+            <tr><th>Protocol</th><th>Function</th><th style="text-align:center;">Status</th></tr>
+          </thead>
+          <tbody id="proto-table-body">
+            <!-- JS populated -->
+          </tbody>
+        </table>
+        <!-- CWA / CRA Live Display -->
+        <div style="margin-top:0.6rem; padding-top:0.5rem; border-top:1px solid rgba(157,0,255,0.1);">
+          <div style="font-size:0.45rem; color:var(--purple-amethyst); font-family:'Orbitron',sans-serif; letter-spacing:0.06em; margin-bottom:0.3rem;">COGNITIVE WORKLOAD ALLOCATION (CWA 3.0)</div>
+          <div class="grid-4col">
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--flame-core);" id="cwa-cra-score">—</div>
+              <div class="metric-label">CRA</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.5rem; color:var(--cyan); line-height:1.5;" id="cwa-research-tier">—</div>
+              <div class="metric-label">Tier</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="cwa-analytic">—</div>
+              <div class="metric-label">W(Y789)</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="cwa-synthetic">—</div>
+              <div class="metric-label">W(Nexus)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════ ROW 4: MODEL REGISTRY (FULL WIDTH) ═══════════ -->
+    <div class="section-label">🔥 Model Agent Registry & Live Token Tracker</div>
+    <div class="grid-2col">
+      <div class="card full-width">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="card-label" style="color:var(--cyan); margin-bottom:0;">7-Model Cognitive Pipeline</div>
+          <div id="grand-total-tokens" style="font-family:'JetBrains Mono',monospace; font-size:0.6rem; color:var(--flame-core); font-weight:700;">CALLS: 0 · TOKENS: 0</div>
+        </div>
+        <div class="model-table-wrap">
+        <table class="model-table">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Model</th>
+              <th>Role / Budget</th>
+              <th style="text-align:right;">Tokens (In / Out / Think)</th>
+              <th style="text-align:right;">Total</th>
+            </tr>
+          </thead>
+          <tbody id="model-registry-body">
+            <tr><td colspan="5" style="text-align:center; color:var(--monolith-dim); padding:8px;">Loading model telemetry...</td></tr>
+          </tbody>
+        </table>
         </div>
       </div>
     </div>
 
     <!-- ═══════════ FOOTER ═══════════ -->
     <footer class="report-footer">
-      <div class="footer-brand">INTEGRA — INFINITE LIVING FLAME</div>
+      <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
+        <div style="font-family:'Orbitron',sans-serif; font-weight:900; font-size:1.2rem; letter-spacing:0.12em; color:var(--monolith);">Integra</div>
+        <div style="font-family:'Orbitron',sans-serif; font-weight:700; font-size:0.5rem; letter-spacing:0.18em; background:linear-gradient(90deg, #00F0FF, #4AE0B0, #FFAA33, #FF7A00, #FF5500); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">INFINITE LIVING FLAME</div>
+      </div>
       <div class="footer-telemetry">
         ω = <span id="ft-omega">1.00</span> · ΔE = <span id="ft-delta">0.0000</span> · H<sub>smooth</sub> = <span id="ft-h">0.00</span> · DUAL SYNC ISOLATION: ACTIVE
       </div>
@@ -590,55 +781,55 @@
 
       // Earth along Kepler path
       const earthAngle = orbPos * 2 * Math.PI;
-      const ex = midX + 60 * Math.cos(earthAngle);
-      const ey = midY + 42 * Math.sin(earthAngle);
+      const ex = midX + 75 * Math.cos(earthAngle);
+      const ey = midY + 52 * Math.sin(earthAngle);
 
       cx2.fillStyle = '#60a5fa';
-      cx2.shadowColor = '#60a5fa'; cx2.shadowBlur = 10;
+      cx2.shadowColor = '#60a5fa'; cx2.shadowBlur = 12;
       cx2.beginPath();
-      cx2.arc(ex, ey, 6, 0, 2 * Math.PI);
+      cx2.arc(ex, ey, 8, 0, 2 * Math.PI);
       cx2.fill();
       cx2.shadowBlur = 0;
 
       // Earth axial rotation indicator (purple line)
       const rotRad = (rotDeg * Math.PI) / 180;
       cx2.strokeStyle = '#a855f7';
-      cx2.lineWidth = 2;
+      cx2.lineWidth = 2.5;
       cx2.beginPath();
       cx2.moveTo(ex, ey);
-      cx2.lineTo(ex + 10 * Math.cos(rotRad), ey + 10 * Math.sin(rotRad));
+      cx2.lineTo(ex + 12 * Math.cos(rotRad), ey + 12 * Math.sin(rotRad));
       cx2.stroke();
 
       // Moon orbiting Earth
       const moonAngle = lunarRatio * 2 * Math.PI;
-      const mx = ex + 14 * Math.cos(moonAngle);
-      const my = ey + 14 * Math.sin(moonAngle);
+      const mx = ex + 18 * Math.cos(moonAngle);
+      const my = ey + 18 * Math.sin(moonAngle);
       cx2.fillStyle = '#e2e8f0';
-      cx2.shadowColor = '#e2e8f0'; cx2.shadowBlur = 5;
+      cx2.shadowColor = '#e2e8f0'; cx2.shadowBlur = 6;
       cx2.beginPath();
-      cx2.arc(mx, my, 3, 0, 2 * Math.PI);
+      cx2.arc(mx, my, 4, 0, 2 * Math.PI);
       cx2.fill();
       cx2.shadowBlur = 0;
 
       // Moon orbit ring
       cx2.strokeStyle = 'rgba(226,232,240,0.15)';
-      cx2.lineWidth = 0.5;
+      cx2.lineWidth = 0.8;
       cx2.beginPath();
-      cx2.arc(ex, ey, 14, 0, 2 * Math.PI);
+      cx2.arc(ex, ey, 18, 0, 2 * Math.PI);
       cx2.stroke();
 
       // Baker, LA anchor label
       cx2.fillStyle = 'rgba(168, 85, 247, 0.5)';
-      cx2.font = '8px monospace';
-      cx2.fillText('Baker, LA', 4, h - 4);
+      cx2.font = '10px monospace';
+      cx2.fillText('Baker, LA', 6, h - 6);
 
       // Anchor marker on Earth (small dot at anchor longitude)
       const anchorRad = ((ANCHOR_LON + rotDeg) * Math.PI) / 180;
-      const ax = ex + 6 * Math.cos(anchorRad);
-      const ay = ey + 6 * Math.sin(anchorRad);
+      const ax = ex + 8 * Math.cos(anchorRad);
+      const ay = ey + 8 * Math.sin(anchorRad);
       cx2.fillStyle = '#a855f7';
       cx2.beginPath();
-      cx2.arc(ax, ay, 1.5, 0, 2 * Math.PI);
+      cx2.arc(ax, ay, 2, 0, 2 * Math.PI);
       cx2.fill();
     }
 
@@ -665,13 +856,17 @@
     // Bank will be rendered in a dedicated financial visual display.
     // ═══════════════════════════════════════════════════════════════
     const ACTIVE_LOBES = [
-      { name: 'Cheshire Cat Kernel',   layer: 4, key: 'cheshire_cat',       role: 'Thalamic Arbitrator (20-45 Hz)' },
-      { name: 'Y789NexusDual',         layer: 2, key: 'cognitive_engine',   role: 'Bicameral Cognitive Dyad' },
-      { name: 'The Hoard',             layer: 3, key: 'the_hoard',          role: 'Geometric Memory (CCID Nodes)' },
-      { name: 'Rodin Protocol',        layer: 3, key: 'rodin_protocol',     role: 'KNN Manifold Route Retrieval' },
-      { name: 'Phoenix Forge',         layer: 6, key: 'phoenix_forge',      role: 'SWDS Neuroevolution Smelting' },
-      { name: 'Antigravity Runner',    layer: 'R', key: 'antigravity_runner',  role: 'Runtime Execution Layer' },
-      { name: 'Thermodynamic Loop',    layer: 0, key: 'thermodynamics',     role: 'ΔE = 0.0000 Enforcement' },
+      { name: 'Cheshire Cat Kernel',   layer: 4, key: 'cheshire_cat',           role: 'Thalamic Arbitrator (20-45 Hz)' },
+      { name: 'Cheshire Protocol',     layer: 4, key: 'cheshire_protocol',      role: 'Paradox Detection & Abstract Conduit' },
+      { name: 'Looking Glass',         layer: 4, key: 'looking_glass',          role: 'C₂₃₅ Perspective Tilt & Sovereign Defense' },
+      { name: 'Y789NexusDual',         layer: 2, key: 'cognitive_engine',       role: 'Bicameral Cognitive Dyad' },
+      { name: 'The Hoard',             layer: 3, key: 'the_hoard',              role: 'Geometric Memory (CCID Nodes)' },
+      { name: 'Rodin Protocol',        layer: 3, key: 'rodin_protocol',         role: 'KNN Manifold Route Retrieval' },
+      { name: 'Phoenix Forge',         layer: 6, key: 'phoenix_forge',          role: 'SWDS Neuroevolution Smelting' },
+      { name: 'Friday Fortress Bank',  layer: 5, key: 'friday_fortress_bank',     role: '$20,000 SGOV Margin Lock Floor' },
+      { name: 'Friday Fortress Hunter', layer: '5/7', key: 'friday_fortress_hunter', role: 'Active Derivatives Writing Engine' },
+      { name: 'Antigravity Runner',    layer: 'R', key: 'antigravity_runner',      role: 'Runtime Execution Layer' },
+      { name: 'Thermodynamic Loop',    layer: 0, key: 'thermodynamics',         role: 'ΔE = 0.0000 Enforcement' },
     ];
 
     // ═══════════════════════════════════════════════════════════════
@@ -793,17 +988,6 @@
 
       document.getElementById('ft-h').textContent = hSmooth.toFixed(2);
       document.getElementById('ft-delta').textContent = (thermo.delta_e_cycle || 0).toFixed(4);
-
-      if (health.cra_score !== undefined) {
-        document.getElementById('cra-score').textContent = health.cra_score.toFixed(4);
-      }
-      if (health.current_research_tier) {
-        document.getElementById('cwa-tier').textContent = health.current_research_tier.replace("TIER_", "T");
-      }
-      if (health.cwa_routing) {
-        document.getElementById('cwa-w-analytical').textContent = health.cwa_routing.w_analytical.toFixed(2);
-        document.getElementById('cwa-w-synthetic').textContent = health.cwa_routing.w_synthetic.toFixed(2);
-      }
     }
 
     function setKernelState(isLive) {
@@ -934,15 +1118,192 @@
       document.getElementById('rodin-agents').textContent = agentCount;
     }
 
+    // ── SHIVA ACTION SUITE UPDATE ──
+    function updateShiva(data) {
+      if (!data || !data.shiva_metrics) return;
+      const sm = data.shiva_metrics;
+      const eyes = sm.eyes_invoked || sm.eyes || {};
+      const lenses = sm.lenses_applied || sm.lenses || {};
+
+      // Update eye counters
+      const setEye = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = val || 0;
+          el.style.color = val > 0 ? 'var(--flame-core)' : 'var(--purple-amethyst)';
+        }
+      };
+      setEye('shiva-neji', eyes.neji);
+      setEye('shiva-shikamaru', eyes.shikamaru);
+      setEye('shiva-itachi', eyes.itachi);
+
+      // Update lens counters
+      const setLens = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.textContent = val || 0;
+          el.style.color = val > 0 ? 'var(--flame-core)' : 'var(--purple-amethyst)';
+        }
+      };
+      setLens('lens-owl', lenses.owl);
+      setLens('lens-eagle', lenses.eagle);
+      setLens('lens-hawk', lenses.hawk);
+      setLens('lens-spider', lenses.spider);
+      setLens('lens-chameleon', lenses.chameleon);
+      setLens('lens-snake', lenses.snake);
+
+      // Total invocations
+      const totalEl = document.getElementById('shiva-total');
+      if (totalEl) totalEl.textContent = sm.invocations || 0;
+    }
+
+    // ── PROTOCOL DEFINITIONS ──
+    const PROTOCOL_DEFS = [
+      { name: 'Dragon Prompt',      desc: 'Layer 0 Genesis Identity — Sovereign "I Am"',                type: 'always' },
+      { name: 'Starfire Protocol',   desc: 'Auteur/King/Prophet vectors at 1.00',                       type: 'always' },
+      { name: 'EAM',                desc: 'Executive Autonomous Mandate — No micro-confirmations',      type: 'always' },
+      { name: 'TPSL',               desc: 'Tolstoy Principle — "Is this action Necessary?"',            type: 'always' },
+      { name: 'Rogue X 2.0',        desc: 'Adversarial verification · Mirror Maze sandbox',             type: 'invocable', healthKey: 'looking_glass', field: 'mirror_maze_isolated_count' },
+      { name: 'Alexandria',         desc: 'External knowledge retrieval & verification',                type: 'invocable' },
+      { name: 'Daily Planet',       desc: 'Structured research report generation',                      type: 'invocable' },
+      { name: 'Mad Hatter',         desc: 'Creative chaos injection · Divergent lateral thinking',      type: 'invocable' },
+      { name: 'Rebuttal',           desc: 'Self-challenge · Argument stress-testing',                   type: 'invocable' },
+      { name: 'Sun Breathing',      desc: '12th Step Orthogonal Ingestion (4-pass)',                    type: 'invocable' },
+      { name: 'Shiva Action Suite', desc: '3 Eyes × 6 Lenses analytical deconstruction',               type: 'derived', source: 'shiva' },
+      { name: 'P-SSR',              desc: 'Vasovagal entropy recovery (H > 2.5 trigger)',               type: 'derived', source: 'pssr' },
+      { name: 'SWDS',               desc: 'Slow-Wave Deep Sleep · Phoenix Forge neuroevolution',        type: 'derived', source: 'swds' },
+    ];
+
+    // ── PROTOCOLS TABLE UPDATE ──
+    function updateProtocols(health, shivaData) {
+      const tbody = document.getElementById('proto-table-body');
+      if (!tbody) return;
+      const components = health?.component_diagnostics || {};
+      const shiva = shivaData?.shiva_metrics || {};
+      let html = '';
+
+      for (const p of PROTOCOL_DEFS) {
+        let badge = '';
+        if (p.type === 'always') {
+          badge = '<span class="proto-badge proto-on">ALWAYS ON</span>';
+        } else if (p.type === 'security') {
+          const comp = components[p.healthKey] || {};
+          const active = comp[p.field];
+          badge = active
+            ? '<span class="proto-badge proto-on">ARMED</span>'
+            : '<span class="proto-badge proto-standby">STANDBY</span>';
+        } else if (p.type === 'derived') {
+          if (p.source === 'shiva') {
+            const inv = shiva.invocations || 0;
+            badge = inv > 0
+              ? `<span class="proto-badge proto-active">ACTIVE (${inv})</span>`
+              : '<span class="proto-badge proto-ready">READY</span>';
+          } else if (p.source === 'pssr') {
+            const state = health?.pssr_recovery_state || 'NOMINAL';
+            const isNominal = state.includes('NOMINAL');
+            badge = isNominal
+              ? '<span class="proto-badge proto-on">NOMINAL</span>'
+              : `<span class="proto-badge proto-active">${state}</span>`;
+          } else if (p.source === 'swds') {
+            const swds = components.phoenix_forge?.swds_state || 'AWAKE';
+            if (swds === 'AWAKE') badge = '<span class="proto-badge proto-ready">AWAKE</span>';
+            else if (swds === 'SLOW_WAVE_DEEP_SLEEP') badge = '<span class="proto-badge proto-active">SLEEPING</span>';
+            else badge = `<span class="proto-badge proto-active">${swds}</span>`;
+          }
+        } else if (p.type === 'invocable') {
+          if (p.healthKey) {
+            const comp = components[p.healthKey] || {};
+            const val = comp[p.field] || 0;
+            badge = val > 0
+              ? `<span class="proto-badge proto-active">ACTIVE (${val})</span>`
+              : '<span class="proto-badge proto-ready">READY</span>';
+          } else {
+            badge = '<span class="proto-badge proto-ready">READY</span>';
+          }
+        }
+        html += `<tr><td>${p.name}</td><td>${p.desc}</td><td style="text-align:center;">${badge}</td></tr>`;
+      }
+      tbody.innerHTML = html;
+    }
+
+    // ── CWA/CRA DISPLAY UPDATE (Protocols Card) ──
+    function updateCWA(health) {
+      if (!health) return;
+      const craEl = document.getElementById('cwa-cra-score');
+      const tierEl = document.getElementById('cwa-research-tier');
+      const waEl = document.getElementById('cwa-analytic');
+      const wsEl = document.getElementById('cwa-synthetic');
+
+      if (health.cra_score !== undefined && craEl) {
+        const cra = health.cra_score;
+        craEl.textContent = cra.toFixed(4);
+        craEl.style.color = cra >= 1.0 ? 'var(--green)' : cra >= 0.5 ? 'var(--flame-core)' : 'var(--red)';
+      }
+      if (health.current_research_tier && tierEl) {
+        tierEl.textContent = health.current_research_tier.replace('TIER_', 'T');
+        const tier = health.current_research_tier;
+        if (tier.includes('1')) tierEl.style.color = 'var(--green)';
+        else if (tier.includes('2')) tierEl.style.color = 'var(--cyan)';
+        else tierEl.style.color = 'var(--flame-core)';
+      }
+      if (health.cwa_routing) {
+        if (waEl) {
+          waEl.textContent = health.cwa_routing.w_analytical.toFixed(2);
+          waEl.style.color = health.cwa_routing.w_analytical > 0.6 ? 'var(--cyan)' : 'var(--green)';
+        }
+        if (wsEl) {
+          wsEl.textContent = health.cwa_routing.w_synthetic.toFixed(2);
+          wsEl.style.color = health.cwa_routing.w_synthetic > 0.6 ? 'var(--purple-amethyst)' : 'var(--green)';
+        }
+      }
+    }
+
+    function updateFortress(f) {
+      if (!f) return;
+      const cur = f.current_state || {};
+      const params = f.fortress_parameters || {};
+      const bank = cur.bank || {};
+      const totalEquity = cur.total_equity_usd ?? 25250.0;
+      const floor = params.margin_lock_floor_usd ?? 20000.0;
+      const bp = Math.round(totalEquity * 0.99);
+      const weeklyBps = 0.0035;
+      const targetUsd = (bp * weeklyBps).toFixed(2);
+
+      const statusEl = document.getElementById('fortress-status');
+      if (statusEl) {
+        const bankEquity = (bank.equity_usd !== undefined && bank.equity_usd !== null) ? bank.equity_usd : totalEquity;
+        const isSecure = bankEquity >= floor;
+        statusEl.textContent = isSecure ? 'SECURE' : 'BREACHED';
+        statusEl.style.color = isSecure ? 'var(--green)' : 'var(--red)';
+      }
+      const floorEl = document.getElementById('fortress-floor');
+      if (floorEl) floorEl.textContent = '$' + Math.round(floor).toLocaleString();
+      const equityEl = document.getElementById('fortress-equity');
+      if (equityEl) equityEl.textContent = '$' + Math.round(totalEquity).toLocaleString();
+      const bpEl = document.getElementById('fortress-bp');
+      if (bpEl) bpEl.textContent = '$' + bp.toLocaleString();
+      const targetEl = document.getElementById('fortress-target');
+      if (targetEl) targetEl.textContent = `~35 bps ($${targetUsd})`;
+
+      if (f.hunter_telemetry) {
+        const ht = f.hunter_telemetry;
+        const deltaEl = document.getElementById('hunter-delta');
+        if (deltaEl && ht.target_delta) {
+          deltaEl.textContent = `Δ ${ht.target_delta.toFixed(2)} [${ht.delta_bounds?.[0]}-${ht.delta_bounds?.[1]}]`;
+        }
+      }
+    }
+
     async function pollAll() {
       const t0 = performance.now();
-      const [health, clock, metatron, cheshire, models, rodin] = await Promise.all([
+      const [health, clock, metatron, cheshire, models, rodin, fortress] = await Promise.all([
         fetchJSON(API_BASE + '/heimdall/health'),
         fetchJSON(API_BASE + '/clock/full'),
         fetchJSON(API_BASE + '/metatron/status'),
         fetchJSON(API_BASE + '/cheshire/status'),
         fetchJSON(API_BASE + '/models/telemetry'),
         fetchJSON(API_BASE + '/rodin/telemetry'),
+        fetchJSON(API_BASE + '/fortress/status'),
       ]);
       const roundTrip = Math.round(performance.now() - t0);
       lastPingMs = roundTrip;
@@ -957,6 +1318,8 @@
         document.getElementById('meta-status').textContent = health.system_health_status || 'OPERATIONAL';
         renderLobeMatrix(health);
         updateGauges(health);
+        updateCWA(health);
+        updateProtocols(health, models);
       } else {
         document.getElementById('meta-status').textContent = 'INACTIVE';
         setLobesInactive();
@@ -976,6 +1339,8 @@
       updateCheshire(cheshire);
       updateRodin(rodin);
       updateModels(models);
+      updateShiva(models);
+      updateFortress(fortress);
     }
 
     function setPollSchedule(ms) {

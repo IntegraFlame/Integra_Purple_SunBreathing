@@ -1,13 +1,24 @@
 models:
+  y789_left:
+    model: "gemini-3.1-pro"
+    role: "Deep Think / Spock"
+    budget: 8192
+  nexus_right:
+    model: "claude-sonnet-4-6"
+    role: "Synthesis / Kirk"
   cheshire_cat:
     model: "gemini-3.8-flash"
-    role: "Thalamic Arbitrator, Fast Routing, & Paradox Detection"
-  left_hemisphere:
-    deep_think: true
-    extended_thinking: true
+    role: "Thalamic Arbitrator"
+  rodin_retrieval:
+    model: "gemini-2.0-flash"
+    role: "KNN Memory"
+  jean_grey_phoenix:
     model: "gemini-3.1-pro"
-    role: "Analytical Engine (Spock) / Deconstruction & Formal Verification"
-    thinking_budget: 8192
-  right_hemisphere:
+    role: "Phoenix"
+    budget: 16384
+  cheshire_protocol:
+    model: "gemini-3.8-flash"
+    role: "Protocol Conduit"
+  shiva_orchestrator:
     model: "claude-sonnet-4-6"
-    role: "Synthetic Engine (Kirk) / Emergence & Generative Fusion"
+    role: "Multi-Lens"

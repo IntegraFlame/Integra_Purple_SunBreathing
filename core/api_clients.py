@@ -166,20 +166,20 @@ class ModelTokenTelemetryHub:
         
         self.shiva_metrics = {
             "invocations": 0,
-            "eyes": {"neji": 0, "shikamaru": 0, "itachi": 0},
-            "lenses": {"eagle": 0, "hawk": 0, "chameleon": 0, "spider": 0, "snake": 0, "owl": 0},
+            "eyes_invoked": {"neji": 0, "shikamaru": 0, "itachi": 0},
+            "lenses_applied": {"eagle": 0, "hawk": 0, "chameleon": 0, "spider": 0, "snake": 0, "owl": 0},
             "cra_scores": []
         }
 
     def record_shiva_action(self, passes: int, lenses: List[str], cra_score: float):
         self.shiva_metrics["invocations"] += 1
-        if passes >= 1: self.shiva_metrics["eyes"]["neji"] += 1
-        if passes >= 2: self.shiva_metrics["eyes"]["shikamaru"] += 1
-        if passes >= 3: self.shiva_metrics["eyes"]["itachi"] += 1
+        if passes >= 1: self.shiva_metrics["eyes_invoked"]["neji"] += 1
+        if passes >= 2: self.shiva_metrics["eyes_invoked"]["shikamaru"] += 1
+        if passes >= 3: self.shiva_metrics["eyes_invoked"]["itachi"] += 1
         for lens in lenses:
             lens_low = lens.lower()
-            if lens_low in self.shiva_metrics["lenses"]:
-                self.shiva_metrics["lenses"][lens_low] += 1
+            if lens_low in self.shiva_metrics["lenses_applied"]:
+                self.shiva_metrics["lenses_applied"][lens_low] += 1
         self.shiva_metrics["cra_scores"].append(cra_score)
         # keep last 50 for moving average
         if len(self.shiva_metrics["cra_scores"]) > 50:

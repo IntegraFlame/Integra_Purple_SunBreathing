@@ -34,3 +34,13 @@ def test_antigravity_harness_endpoints():
     assert health_res.status_code == 200
     health_data = health_res.json()
     assert health_data["status"] == "HEALTHY"
+
+def test_models_telemetry_endpoint():
+    response = client.get("/models/telemetry")
+    assert response.status_code == 200
+    data = response.json()
+    assert "models" in data
+    assert "shiva_metrics" in data
+    assert "eyes_invoked" in data["shiva_metrics"]
+    assert "lenses_applied" in data["shiva_metrics"]
+    assert "cra_scores" in data["shiva_metrics"]
