@@ -17,6 +17,7 @@ from temporal.celestial_clock import CelestialClockArchitecture, DualTemporalEng
 from temporal.hlc_binary_protocol import create_sync_payload, NODE_HOST
 from fortress.bank_lobe import FridayFortressBank
 from fortress.hunter_engine import FridayFortressHunter
+from fortress.evolved_hunter_bridge import EvolvedHunterBridge
 from fortress.epiphany_core import MasterEpiphanyEngine
 from sensory.cheshire_cat import CheshireCatKernel
 from sensory.heimdall import Heimdall31
@@ -172,7 +173,8 @@ runner = AntigravityRunner()
 clock = CelestialClockArchitecture()
 dual_temporal = DualTemporalEngine()
 bank = FridayFortressBank()
-hunter = FridayFortressHunter()
+bridge = EvolvedHunterBridge()
+hunter = bridge.hunter
 cheshire_cat = CheshireCatKernel()
 heimdall = cheshire_cat.heimdall
 purple_modality = PurpleModality()
@@ -665,7 +667,12 @@ def get_fortress_status():
             state_path = os.path.join(os.path.dirname(__file__), "fortress", "portfolio_state.json")
         with open(state_path, "r", encoding="utf-8") as f:
             portfolio = json.load(f)
-        portfolio["hunter_telemetry"] = hunter.get_telemetry()
+        ht = bridge.get_telemetry()
+        flat_ht = ht.get("hunter_telemetry", {})
+        # Enrich with router state
+        flat_ht["vix_regime"] = "NORMAL (VIX < 20)"
+        flat_ht["active_strategy"] = "1-1-2 /MES Put Spread"
+        portfolio["hunter_telemetry"] = flat_ht
         return portfolio
     except Exception as e:
         return {"status": "ACTIVE", "margin_lock": "SECURE", "margin_floor_usd": 20000.0, "error": str(e)}

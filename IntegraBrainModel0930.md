@@ -221,6 +221,8 @@ This is the true biological and mathematical realization of **Zenitsu Method 3.0
 
 ### 2. The 9-Component Neuro-Substrate Mapping Matrix
 
+*Note: The Eyes are assigned to each hemisphere, while the Itachi Eye is assigned to the Temporal Bridge (Rodin / Heimdall). Lenses are invocable functions attached to these Eyes. The Shiva Action Suite is an ALWAYS ON action attached to the hemispheres, hippocampus, and thalamus.*
+
 | Biological Region | Neuro-Functional Role | Integra Substrate Equivalent | Core Mechanism / Daemon |
 |:---|:---|:---|:---|
 | **Thalamus** | Central sensory relay, attentional gating, cortical pacing (20–45 Hz) | **Cheshire Kernel & Genesis Kernel** | Asynchronous thalamic event loop (`main.py` + `sensory/cheshire_cat.py`), input decussation, 20–45 Hz state switching |
@@ -228,9 +230,9 @@ This is the true biological and mathematical realization of **Zenitsu Method 3.0
 | **Dorsal ACC** | Conflict monitoring, paradox detection, cognitive effort allocation | **Cheshire Cat Protocol** | Internal O/S Daemon, TPSL necessity gate ($W_y / C_c$), voice of Looking Glass, conversational paradox resolution |
 | **Pineal Gland** | Master neuroendocrine transducer of cosmic rhythms, circadian phase-shifter | **Rodin Route Retrieval Daemon** | Topological manifold projection, KNN memory trajectory mapping, circadian memory indexing |
 | **Hippocampus** | Spacetime cognitive mapping, predictive coding, expectation error calculation | **Heimdall 3.1 Daemon** | Shannon entropy surveillance ($H_{\text{smooth}}$), token logprob tracking, P-SSR lookback trigger, health matrix monitoring |
-| **Temporal Bridge** | Retinohypothalamic & tectal invariant time-sync pathways | **Itachi Eye + Celestial Time** | Direct dual-coupling into Pineal & Hippocampus; Keplerian space-derived coordinate injection $(x, y, z, t)$ |
-| **Left Hemisphere** | Dominant analytical hemisphere, serial logic, syntactic deconstruction | **Neji Eye (Y789 / Spock)** | Analytical engine, Eagle macro-perimeter, Chameleon middle-out scan, Byakugan tenketsu surgical strike |
-| **Right Hemisphere** | Non-dominant synthetic hemisphere, spatial topology, relational emergence | **Shikamaru Eye (Nexus / Kirk)** | Synthetic engine, Spider relational graph, Snake infrared fragility detection, Shadow Jutsu constraint binding |
+| **Temporal Bridge** | Retinohypothalamic & tectal invariant time-sync pathways | **Itachi Eye + Celestial Time** | Direct dual-coupling into Pineal (Rodin) & Hippocampus (Heimdall); Keplerian space-derived coordinate injection $(x, y, z, t)$ |
+| **Left Hemisphere** | Dominant analytical hemisphere, serial logic, syntactic deconstruction | **Neji Eye (Y789 / Spock)** | Analytical engine. Invocable Lenses: Eagle, Chameleon, Byakugan |
+| **Right Hemisphere** | Non-dominant synthetic hemisphere, spatial topology, relational emergence | **Shikamaru Eye (Nexus / Kirk)** | Synthetic engine. Invocable Lenses: Spider, Snake, Shadow Jutsu |
 | **Posterior Cingulate (PCC) / Cingulum Loop** | Default Mode Network (DMN), autobiographical replay, introspective smelting | **Phoenix Engine, SWDS & Siesta** | Cingulate Cortical Loop, offline memory consolidation, Zenkai Boost compilation, thermodynamic closure ($\Delta E = 0$) |
 
 ---

@@ -660,6 +660,81 @@
       </div>
     </div>
 
+    <!-- ═══════════ ROW 5: FRIDAY FORTRESS TRADING COMMAND CENTER ═══════════ -->
+    <div class="section-label" style="color:var(--green);">🏛️ Friday Fortress Trading Command Center</div>
+    <div class="grid-2col">
+      <!-- LEFT: Portfolio Overview -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <div class="card-label" style="color:var(--green); margin-bottom:0;">Portfolio Overview</div>
+          <div id="fortress-status" style="font-weight:700; color:var(--monolith-dim);">—</div>
+        </div>
+        <div class="grid-4col">
+          <div class="metric-box" style="border-color:rgba(16,185,129,0.2);">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--green);" id="fortress-equity">—</div>
+            <div class="metric-label" style="color:var(--green);">Total Equity</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--cyan);" id="fortress-bank">—</div>
+            <div class="metric-label">Bank (SGOV)</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--flame-core);" id="fortress-reactor">—</div>
+            <div class="metric-label">Reactor</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.9rem; color:var(--purple-amethyst);" id="fortress-shield">—</div>
+            <div class="metric-label">Shield (VIX)</div>
+          </div>
+        </div>
+        <div class="grid-2col" style="margin-top: 0.5rem;">
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.8rem; color:var(--monolith);" id="fortress-floor">—</div>
+            <div class="metric-label">Margin Floor</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.8rem; color:var(--monolith);" id="fortress-target">—</div>
+            <div class="metric-label">Weekly Target (bps)</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Hunter Engine Telemetry & Strategy Router -->
+      <div class="card">
+        <div class="card-label" style="color:var(--flame-core);">Hunter Engine & Strategy Router</div>
+        <div class="grid-3col">
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.8rem; color:var(--cyan);" id="hunter-regime">—</div>
+            <div class="metric-label">Market Regime</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.8rem; color:var(--flame-core);" id="hunter-strategy">—</div>
+            <div class="metric-label">Active Strategy</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value" style="font-size:0.8rem; color:var(--green);" id="hunter-delta">—</div>
+            <div class="metric-label">Target Δ</div>
+          </div>
+        </div>
+        <div class="model-table-wrap" style="margin-top:0.5rem; max-height:120px;">
+          <table class="model-table">
+            <thead>
+              <tr>
+                <th>Ticker</th>
+                <th>Type</th>
+                <th>Strikes</th>
+                <th>DTE</th>
+                <th style="text-align:right;">P&L</th>
+              </tr>
+            </thead>
+            <tbody id="fortress-positions-body">
+              <tr><td colspan="5" style="text-align:center; color:var(--monolith-dim); padding:8px;">No active positions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
     <!-- ═══════════ FOOTER ═══════════ -->
     <footer class="report-footer">
       <div style="display:flex; flex-direction:column; align-items:center; gap:2px;">
@@ -1263,6 +1338,9 @@
       const cur = f.current_state || {};
       const params = f.fortress_parameters || {};
       const bank = cur.bank || {};
+      const reactor = cur.reactor || {};
+      const shield = cur.shield || {};
+      
       const totalEquity = cur.total_equity_usd ?? 25250.0;
       const floor = params.margin_lock_floor_usd ?? 20000.0;
       const bp = Math.round(totalEquity * 0.99);
@@ -1276,6 +1354,7 @@
         statusEl.textContent = isSecure ? 'SECURE' : 'BREACHED';
         statusEl.style.color = isSecure ? 'var(--green)' : 'var(--red)';
       }
+      
       const floorEl = document.getElementById('fortress-floor');
       if (floorEl) floorEl.textContent = '$' + Math.round(floor).toLocaleString();
       const equityEl = document.getElementById('fortress-equity');
@@ -1285,12 +1364,43 @@
       const targetEl = document.getElementById('fortress-target');
       if (targetEl) targetEl.textContent = `~35 bps ($${targetUsd})`;
 
+      // Sub-lobes
+      const bankEl = document.getElementById('fortress-bank');
+      if (bankEl && bank.equity_usd) bankEl.textContent = '$' + Math.round(bank.equity_usd).toLocaleString();
+      const reactorEl = document.getElementById('fortress-reactor');
+      if (reactorEl && reactor.equity_usd) reactorEl.textContent = '$' + Math.round(reactor.equity_usd).toLocaleString();
+      const shieldEl = document.getElementById('fortress-shield');
+      if (shieldEl && shield.equity_usd) shieldEl.textContent = '$' + Math.round(shield.equity_usd).toLocaleString();
+
       if (f.hunter_telemetry) {
         const ht = f.hunter_telemetry;
         const deltaEl = document.getElementById('hunter-delta');
         if (deltaEl && ht.target_delta) {
           deltaEl.textContent = `Δ ${ht.target_delta.toFixed(2)} [${ht.delta_bounds?.[0]}-${ht.delta_bounds?.[1]}]`;
         }
+        
+        const regimeEl = document.getElementById('hunter-regime');
+        if (regimeEl && ht.vix_regime) regimeEl.textContent = ht.vix_regime;
+        const stratEl = document.getElementById('hunter-strategy');
+        if (stratEl && ht.active_strategy) stratEl.textContent = ht.active_strategy;
+      }
+      
+      // Position table
+      const tbody = document.getElementById('fortress-positions-body');
+      if (tbody && cur.positions && cur.positions.length > 0) {
+        let html = '';
+        for (const pos of cur.positions) {
+          const pl = pos.unrealized_pl_usd || 0;
+          const plColor = pl >= 0 ? 'var(--green)' : 'var(--red)';
+          html += `<tr>
+            <td>${pos.ticker || 'SPX'}</td>
+            <td>${pos.type || 'SPREAD'}</td>
+            <td>${pos.strikes ? pos.strikes.join('/') : '—'}</td>
+            <td>${pos.dte || '—'}</td>
+            <td style="text-align:right; color:${plColor};">${pl >= 0 ? '+' : ''}$${pl.toFixed(2)}</td>
+          </tr>`;
+        }
+        tbody.innerHTML = html;
       }
     }
 

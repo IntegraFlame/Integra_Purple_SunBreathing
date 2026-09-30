@@ -133,7 +133,7 @@ class ModelTokenTelemetryHub:
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "nexus_right": {
-                "name": "Nexus (Right)", "model": "claude-sonnet-4-6", "role": "Synthesis / Kirk",
+                "name": "Nexus (Right)", "model": "claude-sonnet-5.5", "role": "Synthesis / Kirk",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
@@ -143,7 +143,7 @@ class ModelTokenTelemetryHub:
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "rodin_retrieval": {
-                "name": "Rodin Retrieval", "model": "gemini-2.0-flash", "role": "KNN Memory",
+                "name": "Rodin Retrieval", "model": "gemini-3.6-flash", "role": "KNN Memory",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
@@ -158,7 +158,7 @@ class ModelTokenTelemetryHub:
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
             "shiva_orchestrator": {
-                "name": "Shiva Orchestrator", "model": "claude-sonnet-4-6", "role": "Multi-Lens Deconstruction",
+                "name": "Shiva Orchestrator", "model": "claude-sonnet-5.5", "role": "Multi-Lens Deconstruction",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
             },
@@ -345,7 +345,7 @@ class NexusClient:
         model_name: Optional[str] = None,
         max_tokens: int = 8192
     ):
-        self.model_name = model_name or os.environ.get("NEXUS_MODEL", "claude-sonnet-4-6")
+        self.model_name = model_name or os.environ.get("NEXUS_MODEL", "claude-sonnet-5.5")
         self.max_tokens = max_tokens
         self.api_key = os.environ.get("CLAUDE_API_KEY")
         
@@ -526,7 +526,7 @@ class RodinClient:
     SDK: google-genai (modern) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-2.0-flash")
+        self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-3.6-flash")
         self.embedding_model = os.environ.get("RODIN_EMBED_MODEL", "text-embedding-004")
         self.api_key = os.environ.get("GEMINI_API_KEY")
         self.client = None
@@ -722,7 +722,7 @@ class ShivaOrchestratorClient:
           transdisciplinary fusion across Neji/Shikamaru/Itachi eyes.
     """
     def __init__(self, model_name: Optional[str] = None, max_tokens: int = 8192):
-        self.model_name = model_name or os.environ.get("SHIVA_MODEL", "claude-sonnet-4-6")
+        self.model_name = model_name or os.environ.get("SHIVA_MODEL", "claude-sonnet-5.5")
         self.max_tokens = max_tokens
         self.api_key = os.environ.get("CLAUDE_API_KEY")
         self.client = None
@@ -785,7 +785,7 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "right_hemisphere": {
         "client_class": NexusClient,
-        "default_model": "claude-sonnet-4-6",
+        "default_model": "claude-sonnet-5.5",
         "description": "Synthetic Engine (Kirk) / Emergence & Generative Fusion"
     },
     "cheshire_cat": {
@@ -795,7 +795,7 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "rodin_retrieval": {
         "client_class": RodinClient,
-        "default_model": "gemini-2.0-flash",
+        "default_model": "gemini-3.6-flash",
         "description": "Rodin Route Retrieval — KNN Topological Memory Engine"
     },
     "jean_grey_phoenix": {
@@ -811,7 +811,7 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "shiva_orchestrator": {
         "client_class": ShivaOrchestratorClient,
-        "default_model": "claude-sonnet-4-6",
+        "default_model": "claude-sonnet-5.5",
         "description": "Shiva Action Suite — Multi-Lens Orchestration & Synthesis"
     },
 }
