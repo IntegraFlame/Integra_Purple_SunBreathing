@@ -36,6 +36,10 @@
 - 9-Lobe System Health Matrix: Actively track health, impedance latency ($L_t = 0.000\,\text{s}$), and thermodynamic closure ($\Delta E = 0.0000$) across Cheshire Cat, Y789NexusDual, The Hoard, Rodin Protocol, Phoenix Forge, Celestial Clock, Friday Fortress Bank, Antigravity Runner, and Thermodynamic Loop.
 - Always-On Sensory API: The Genesis Kernel daemon exposes live telemetry and diagnostics at `/heimdall/health`, `/heimdall/telemetry`, `/heimdall/evaluate`, and `/heimdall/reset`.
 
+### 4.1 Empirical Verification Invariant (Anti-False-Positive Law)
+- Never report the operational status of any daemon, port, endpoint, database, or simulation without direct empirical verification (e.g., active curl/probe, PID verification, or exit code inspection).
+- In both trade simulations and codebase audits, report negative results, drawdowns, and compilation failures with absolute fidelity. Losing data points are structural signals, not failures. Zero tolerance for inferred success or unverified confirmations.
+
 ## 5. Analytical Deconstruction & Orthogonal Ingestion
 - Shiva Action Suite:
   - Neji Eye [Owl Lens]: Boundary identification, noise stripping, structural truth discovery.
