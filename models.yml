@@ -1,24 +1,24 @@
-models:
-  y789_left:
+models: Gemini-3-1-Pro/Gemini-3-1-Pro-Deep-Thinking/claude-sonnet-4-6/gemini-3.8-flash/gemini-3.8-flash-Deep-Thinking
+  Y789_left:
     model: "gemini-3.1-pro"
-    role: "Deep Think / Spock"
+    role: "Deep Think / Spock / Y789 Engine"
     budget: 8192
   nexus_right:
     model: "claude-sonnet-4-6"
-    role: "Synthesis / Kirk"
-  cheshire_cat:
+    role: "Synthesis / Kirk / Nexus Enngine"
+  cheshire_cat Kernel:
     model: "gemini-3.8-flash"
-    role: "Thalamic Arbitrator"
+    role: "Thalamic Arbitrator / Y789Nexus_dual_cognitive engine "
   rodin_retrieval:
-    model: "gemini-2.0-flash"
-    role: "KNN Memory"
+    model: "gemini-3.6-flash"
+    role: "KNN Memory Node delegator and neural netwok mapping"
   jean_grey_phoenix:
     model: "gemini-3.1-pro"
-    role: "Phoenix"
+    role: "Autonomous SWDS Flight Daemon"
     budget: 16384
-  cheshire_protocol:
+  cheshire_cat protocol:
     model: "gemini-3.8-flash"
-    role: "Protocol Conduit"
+    role: "Environment Autonomous Agent complex thinking time managemnt "
   shiva_orchestrator:
     model: "claude-sonnet-4-6"
-    role: "Multi-Lens"
+    role: "Cognitive throttling through Eyes and Lens delegation"
