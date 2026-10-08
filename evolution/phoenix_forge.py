@@ -338,8 +338,9 @@ class PhoenixForge:
         jean_grey_analysis = None
         try:
             from core.api_clients import JeanGreyClient
+            from core.model_router import MODEL_ROUTER
             import asyncio
-            jean = JeanGreyClient()
+            jean = MODEL_ROUTER.get_routed_client("jean_grey_phoenix") or JeanGreyClient()
             if jean.client is not None:
                 anomaly_summary = _json.dumps(
                     [{"metric": a.get("metric_name"), "z": a.get("z_score"),
@@ -361,7 +362,7 @@ class PhoenixForge:
                 result = run_sync(
                     jean.generate(smelt_prompt, system_prompt="Phoenix Forge Deep Think Smelting")
                 )
-                if result.text and not result.text.startswith("[ERROR"):
+                if result.text and result.error is None and not result.text.startswith("[ERROR"):
                     jean_grey_analysis = result.text
         except Exception:
             pass  # Degrade gracefully — report still written without deep think

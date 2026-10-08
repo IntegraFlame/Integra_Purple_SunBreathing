@@ -24,6 +24,9 @@ class GenerationResult:
             Each inner list is a probability mass function over the vocabulary.
         model_name: Identifier for which model produced this result (e.g., "Y789", "Nexus").
         latency_ms: Generation latency in milliseconds.
+        error: None for a genuine model response. A short reason string
+            (e.g. "API_ERROR", "NO_CLIENT", "ROUTER_REFUSED") when the call
+            failed or was refused; `text` then holds a diagnostic, NOT model output.
     """
     text: str
     token_probabilities: List[List[float]] = field(default_factory=list)
@@ -33,6 +36,7 @@ class GenerationResult:
     candidate_tokens: int = 0
     thinking_tokens: int = 0
     total_tokens: int = 0
+    error: Optional[str] = None
 
 
 @dataclass

@@ -1,24 +1,31 @@
-models: Gemini-3-1-Pro/Gemini-3-1-Pro-Deep-Thinking/claude-sonnet-5.5/gemini-3.8-flash/gemini-3.8-flash-Deep-Thinking
-  Y789_left:
-    model: "gemini-3.1-pro"
-    role: "Deep Think / Spock / Y789 Engine"
-    budget: 8192
-  nexus_right:
-    model: "claude-sonnet-5.5"
-    role: "Synthesis / Kirk / Nexus Engine"
-  cheshire_cat Kernel:
-    model: "gemini-3.8-flash"
-    role: "Thalamic Arbitrator / Y789Nexus_dual_cognitive engine "
-  rodin_retrieval:
-    model: "gemini-3.6-flash"
-    role: "KNN Memory Node delegator and neural netwok mapping"
-  jean_grey_phoenix:
-    model: "gemini-3.1-pro"
-    role: "Autonomous SWDS Flight Daemon"
-    budget: 16384
-  cheshire_cat protocol:
-    model: "gemini-3.8-flash"
-    role: "Environment Autonomous Agent complex thinking time managemnt "
-  shiva_orchestrator:
-    model: "claude-sonnet-5.5"
-    role: "Cognitive throttling through Eyes and Lens delegation"
+y789_left:
+  model: "gemini-3.1-pro-preview"
+  role: "Deep Think / Spock / Y789 Engine"
+  budget: 8192
+
+nexus_right:
+  model: "claude-opus-5-5"
+  role: "Synthesis / Kirk / Nexus Engine"
+  budget: 4096
+
+cheshire_cat_kernel:
+  model: "gemini-3.8-flash"
+  role: "Thalamic Arbitrator / Y789Nexus_dual_cognitive engine"
+
+rodin_retrieval:
+  model: "gemini-3.8-flash"
+  role: "KNN Memory Node delegator and neural network mapping"
+
+jean_grey_phoenix:
+  model: "gemini-3.1-pro-preview"
+  role: "Autonomous SWDS Flight Daemon"
+  budget: 16384
+
+cheshire_protocol:
+  model: "gemini-3.8-flash"
+  role: "Environment Autonomous Agent complex thinking time management"
+
+shiva_orchestrator:
+  model: "claude-sonnet-5-5"
+  role: "Cognitive throttling through Eyes and Lens delegation"
+  budget: 4096

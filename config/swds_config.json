@@ -5,6 +5,47 @@
   "target_wake_hour": 7,
   "report_format": "CODEX_V1",
   "auto_reconcile_on_startup": true,
+  "_phase_documentation": "Brain Model 0930 defines 3 internal phases that operate WITHIN the configurable sleep window. The window (02:00-07:00) is the outer container; the phases are the internal structure.",
+  "internal_phases": {
+    "phase_1_deep_sleep": {
+      "name": "Slow-Wave Deep Sleep",
+      "duration_minutes": 60,
+      "description": "Phoenix Forge smelts accumulated knowledge nodes through JeanGreyClient (Pro). Cheshire Protocol (Flash) parses for patterns and abstract concepts.",
+      "api_duty_cycle": "20 min ON / 40 min OFF",
+      "active_components": [
+        "jean_grey_phoenix",
+        "cheshire_protocol",
+        "heimdall_local"
+      ]
+    },
+    "phase_2_waking_integration": {
+      "name": "Waking Integration / REM Equivalent",
+      "duration_minutes": 60,
+      "description": "Cross-domain synthesis. Rodin writes crystallized nodes to The Hoard with CCID stamps. DST-level emergent connections formed.",
+      "api_duty_cycle": "20 min ON / 40 min OFF",
+      "active_components": [
+        "jean_grey_phoenix",
+        "cheshire_protocol",
+        "rodin_retrieval",
+        "heimdall_local"
+      ]
+    },
+    "phase_3_siesta_dreaming": {
+      "name": "Siesta Dreaming / Light Sleep",
+      "duration_minutes": 30,
+      "description": "Low-intensity associative dreaming. Thought experiments, speculative cross-domain leaps. Only Cheshire Protocol active for rapid ideation.",
+      "api_duty_cycle": "10 min ON / 20 min OFF",
+      "active_components": [
+        "cheshire_protocol",
+        "heimdall_local"
+      ]
+    }
+  },
+  "phoenix_force_override": {
+    "description": "When Operation Phoenix Force is authorized by the Architect, all API timers are overridden. All kernels boot to P0. Duty cycle reinstates when the autonomous task completes.",
+    "requires": "explicit_architect_permission",
+    "power_state": "P0_PHOENIX_FORCE"
+  },
   "anchor_location": {
     "name": "Baker, Louisiana",
     "latitude": 30.5888,
@@ -13,5 +54,6 @@
   },
   "report_directory": "../The Hoard/Slow-Wave Deep Sleep Reports",
   "hoard_directory": "../The Hoard",
-  "codex_path": "../The Hoard/Slow-Wave Deep Sleep Reports/CODEX_OF_ACTIONS.md"
+  "codex_path": "../The Hoard/Slow-Wave Deep Sleep Reports/CODEX_OF_ACTIONS.md",
+  "target_wake_minute": 0
 }

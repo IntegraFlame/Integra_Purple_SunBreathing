@@ -14,7 +14,8 @@ import time
 import math
 from datetime import datetime, timezone
 from typing import Dict, Any, List, Optional, Tuple
-from core.api_clients import CheshireCatClient
+from core.api_clients import CheshireProtocolDaemonClient
+from core.model_router import MODEL_ROUTER
 
 
 from governance.tpsl_filter import TolstoyPrincipleFilter
@@ -43,8 +44,14 @@ class CheshireCatProtocol:
        Absorbed from the deprecated CelestialSentinel, it handles kinematics (T -> S) and temporal ephemeris.
     """
 
-    def __init__(self, client: Optional[CheshireCatClient] = None):
-        self.client = client or CheshireCatClient()  # Gemini 3.8 Flash Paradox Engine
+    def __init__(self, client: Optional[Any] = None):
+        # Gemini 3.8 Flash Paradox Engine — the Protocol's OWN daemon client (not the Kernel's),
+        # router-managed so it is gated and budget-tracked.
+        self.client = (
+            client
+            or MODEL_ROUTER.get_routed_client("cheshire_protocol")
+            or CheshireProtocolDaemonClient()
+        )
         self.conversation_topics: List[Dict[str, Any]] = []
         self.detected_paradoxes: List[Dict[str, Any]] = []
         self.abstract_connections: List[Dict[str, Any]] = []

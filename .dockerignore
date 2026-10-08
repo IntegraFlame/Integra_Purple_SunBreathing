@@ -1,0 +1,51 @@
+# INTEGRA O/S - .dockerignore
+# Docker does NOT read .gitignore. Without this file, `COPY . .` ships the whole
+# directory (measured ~28 GB, dominated by The_Hoard) and bakes .env secrets into the image.
+
+# --- Secrets (never bake into an image) ---
+.env
+.env.*
+*.env
+*.pem
+*.key
+
+# --- Persistent state: mount as volumes at runtime, do not bake ---
+The_Hoard/
+The Hoard/
+local_dbs/
+chroma_storage/
+kernel_memory/
+*.db
+*.sqlite
+*.sqlite3
+
+# --- Large non-runtime assets ---
+Audio_Lectures/
+Reference_PDFs/
+Tradingimages/
+NewCurriculum2026/
+LOGO/
+
+# --- VCS / environments / caches (Windows .venv is also useless in a Linux image) ---
+.git
+.gitignore
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.vscode/
+.idea/
+htmlcov/
+.coverage
+.apache_beam/
+rust/target/
+
+# --- Dev-only ---
+scratch/
+tests/
+AntiGravityconversionprocess/
+Dockerdocs.md
+*.md
+!README.md

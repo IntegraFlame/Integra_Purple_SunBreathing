@@ -13,6 +13,16 @@ import os
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+import hashlib
+import logging
+
+_logger = logging.getLogger("integra.env_loader")
+
+def _fp(val: str) -> str:
+    if not val:
+        return "NONE"
+    return hashlib.sha256(val.strip().encode()).hexdigest()[:8]
+
 # Canonical Model Architecture & Thinking Budget Specifications
 # Sourced from env_file_map.env & Modelsthinkuingbudget.yml
 CANONICAL_MODELS = {
@@ -21,22 +31,24 @@ CANONICAL_MODELS = {
         "role": "Thalamic Arbitrator, Fast Routing, & Paradox Detection",
     },
     "left_hemisphere": {
-        "model": "gemini-3.1-pro",
+        "model": "gemini-3.1-pro-preview",
         "role": "Analytical Engine (Spock) / Deconstruction & Formal Verification",
         "deep_think": True,
         "extended_thinking": True,
         "thinking_budget": 8192,
     },
     "right_hemisphere": {
-        "model": "claude-sonnet-4-6",
+        "model": "claude-opus-5-5",
         "role": "Synthetic Engine (Kirk) / Emergence & Generative Fusion",
     },
 }
 
 DEFAULT_ENV_VARS = {
     "CHESHIRE_MODEL": "gemini-3.8-flash",
-    "Y789_MODEL": "gemini-3.1-pro",
-    "NEXUS_MODEL": "claude-sonnet-4-6",
+    "Y789_MODEL": "gemini-3.1-pro-preview",
+    "NEXUS_MODEL": "claude-opus-5-5",
+    "SHIVA_MODEL": "claude-sonnet-5-5",
+    "RODIN_MODEL": "gemini-3.8-flash",
     "THINKING_BUDGET": "8192",
 }
 
@@ -45,48 +57,43 @@ def load_integra_env(base_dir: Optional[str] = None) -> Dict[str, str]:
     """
     Loads API keys and model configurations from integra-homebase .env files into os.environ.
     
-    Supports formats:
-    1. Standard dotenv: KEY=VALUE (supports comments, quoted strings, inline declarations)
-    2. Bare key: raw_key_value (single line, mapped to the env var based on filename)
-    3. Master map: env_file_map.env (loads all mapped keys and routing identifiers)
-    
-    File mapping order:
-    - .env: Base master KEY=VALUE file
-    - env_file_map.env: Consolidated environment variable and routing map
-    - Specialized .env files (override with dedicated keys)
+    Precedence order:
+    1. OS environment variables (highest priority, preserved if already set)
+    2. .env (authoritative master file)
+    3. env_file_map.env & specialized fallback files (.env overrides these)
     """
     if base_dir is None:
         base_dir = str(Path(__file__).parent.parent)
     
-    env_file_map = {
-        ".env": None,                            # KEY=VALUE master — loads ALL vars FIRST
-        "env_file_map.env": None,                # KEY=VALUE master map reference
-        "GEMINI_API_KEY.env": "GEMINI_API_KEY",  # bare or KEY=VALUE format
-        "CLAUDE_API_KEY.env": "CLAUDE_API_KEY",  # bare or KEY=VALUE format
-        "geminihemisphere.env": "GEMINI_API_KEY",
-        "claudehemisphere.env": "CLAUDE_API_KEY",
-        "CHROMA_API_KEY.env": "CHROMA_API_KEY",  # loads CHROMA_API_KEY
-        "chromakey.env": None,                   # KEY=VALUE — loads CHROMA_API_KEY
-        "FIRECRAWL_API_KEY.env": "FIRECRAWL_API_KEY", # loads FIRECRAWL_API_KEY
-        "FIRECRAWLapi.env": None,                # KEY=VALUE — loads FIRECRAWL_API_KEY
-        "Git_personal_access.env": None,         # KEY=VALUE — loads Git_personal_access
-    }
+    # Auxiliary files loaded first as fallbacks, then .env loaded last as authoritative master
+    aux_files = [
+        ("Git_personal_access.env", None),
+        ("FIRECRAWLapi.env", None),
+        ("FIRECRAWL_API_KEY.env", "FIRECRAWL_API_KEY"),
+        ("chromakey.env", None),
+        ("CHROMA_API_KEY.env", "CHROMA_API_KEY"),
+        ("claudehemisphere.env", "CLAUDE_API_KEY"),
+        ("geminihemisphere.env", "GEMINI_API_KEY"),
+        ("CLAUDE_API_KEY.env", "CLAUDE_API_KEY"),
+        ("GEMINI_API_KEY.env", "GEMINI_API_KEY"),
+        ("env_file_map.env", None),
+        (".env", None),  # Authoritative master — loads LAST to override stale auxiliary files
+    ]
     
     loaded = {}
     
-    for filename, env_var in env_file_map.items():
+    for filename, env_var in aux_files:
         filepath = os.path.join(base_dir, filename)
         if not os.path.exists(filepath):
             continue
             
         try:
-            with open(filepath, "r", encoding="utf-8") as f:
+            with open(filepath, "r", encoding="utf-8-sig", errors="replace") as f:
                 content = f.read().strip()
             
             if not content:
                 continue
                 
-            # Check if it's KEY=VALUE format (ignoring initial comments)
             first_non_comment = next((line.strip() for line in content.split("\n") if line.strip() and not line.strip().startswith("#")), "")
             if "=" in first_non_comment:
                 for line in content.split("\n"):
@@ -98,17 +105,29 @@ def load_integra_env(base_dir: Optional[str] = None) -> Dict[str, str]:
                         key = key.strip()
                         value = value.strip().strip('"').strip("'")
                         if key and value:
+                            # Log fingerprint warning if overriding an existing value with a different key
+                            existing = os.environ.get(key)
+                            if existing and existing != value:
+                                _logger.info(
+                                    f"env_loader: Overriding {key} from {filename} "
+                                    f"(prior_fp={_fp(existing)}, new_fp={_fp(value)})"
+                                )
                             os.environ[key] = value
                             loaded[key] = f"from {filename}"
             elif env_var:
-                # Bare key format (just the raw key on a single line)
+                existing = os.environ.get(env_var)
+                if existing and existing != content:
+                    _logger.info(
+                        f"env_loader: Overriding {env_var} from {filename} "
+                        f"(prior_fp={_fp(existing)}, new_fp={_fp(content)})"
+                    )
                 os.environ[env_var] = content
                 loaded[env_var] = f"from {filename} (bare format)"
                 
-        except Exception:
-            pass  # Silently skip unreadable files
+        except Exception as e:
+            _logger.warning(f"env_loader: Error reading {filename}: {e}")
 
-    # Ensure canonical defaults from env_file_map.env are present in os.environ
+    # Ensure canonical defaults are present if not set
     for def_key, def_val in DEFAULT_ENV_VARS.items():
         if def_key not in os.environ:
             os.environ[def_key] = def_val

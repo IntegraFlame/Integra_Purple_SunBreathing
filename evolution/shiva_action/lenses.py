@@ -237,6 +237,259 @@ class OwlLens(AnalyticalLens):
         return result
 
 
+class ByakuganLens(AnalyticalLens):
+    """360° Penetrating Insight. Maps internal dependency pathways (tenketsu)
+    and identifies surgical strike points for Gentle Fist refactoring.
+
+    Tenketsu are the pressure points in code — functions, classes, and methods
+    whose modification would cascade through the entire architecture. The
+    Byakugan sees ALL of them simultaneously, regardless of direction or depth.
+
+    Brain Model 0930: Neji Eye.
+    CRA Metrics: W_y=0.6, C_c=0.5 (high insight, moderate cost — surgical precision)
+    """
+    def __init__(self):
+        super().__init__("Byakugan", w_y=0.6, c_c=0.5,
+                         primary_function="Tenketsu Mapping & Gentle Fist Precision")
+
+    def apply(self, data: Any) -> Dict[str, Any]:
+        result = {
+            "lens": "BYAKUGAN",
+            "scope": "TENKETSU_MAPPING",
+            "primary_function": self.primary_function,
+            "penetration_depth": "360_DEGREE"
+        }
+        if isinstance(data, str):
+            lines = data.splitlines()
+            # Map function/class definitions as tenketsu (pressure points)
+            tenketsu = [
+                {"line": i, "node": line.strip()}
+                for i, line in enumerate(lines, 1)
+                if line.strip().startswith(('def ', 'async def ', 'class '))
+            ]
+            result["tenketsu_points"] = tenketsu[:50]
+            result["tenketsu_count"] = len(tenketsu)
+
+            # Identify choke-points: function names referenced most often
+            func_names = []
+            for t in tenketsu:
+                name = (t["node"]
+                        .replace("async def ", "")
+                        .replace("def ", "")
+                        .replace("class ", "")
+                        .split("(")[0]
+                        .split(":")[0]
+                        .strip())
+                if name:
+                    func_names.append(name)
+
+            ref_counts = {name: data.count(name) for name in func_names}
+            sorted_choke = sorted(ref_counts.items(), key=lambda x: -x[1])
+            result["choke_points"] = sorted_choke[:10]
+            result["highest_impact_node"] = sorted_choke[0] if sorted_choke else None
+        elif isinstance(data, dict):
+            result["tenketsu_count"] = len(data)
+            result["top_level_nodes"] = list(data.keys())[:20]
+        return result
+
+
+class ShadowJutsuLens(AnalyticalLens):
+    """Topological Constraint Binding. Uses Yin release to map constraints,
+    invariants, assertions, and boundary conditions — the 'shadows' that bind
+    chaotic behavior into deterministic, checkmate-enforced outcomes.
+
+    In game theory terms: identifies the moves that ELIMINATE opponent options
+    rather than advancing your own position. The shadow doesn't attack — it
+    freezes the opponent's degrees of freedom until only one outcome remains.
+
+    Brain Model 0930: Shikamaru Eye.
+    CRA Metrics: W_y=0.6, C_c=0.5 (constraint discovery is high-yield)
+    """
+    def __init__(self):
+        super().__init__("ShadowJutsu", w_y=0.6, c_c=0.5,
+                         primary_function="Constraint Binding & Game Theory Checkmate")
+
+    def apply(self, data: Any) -> Dict[str, Any]:
+        result = {
+            "lens": "SHADOW_JUTSU",
+            "scope": "CONSTRAINT_TOPOLOGY",
+            "primary_function": self.primary_function,
+            "yin_release_active": True
+        }
+        if isinstance(data, str):
+            lines = data.splitlines()
+            constraint_keywords = [
+                'assert', 'raise', 'must', 'shall', 'invariant', 'constraint',
+                'require', 'enforce', 'validate', 'verify', 'lock', 'guard',
+                'minimum', 'maximum', 'threshold', 'boundary', 'limit',
+                'forbidden', 'never', 'always', 'mandatory', 'prohibited'
+            ]
+            constraints = [
+                {"line": i, "constraint": line.strip()}
+                for i, line in enumerate(lines, 1)
+                if any(kw in line.lower() for kw in constraint_keywords)
+            ]
+            result["binding_shadows"] = constraints[:30]
+            result["constraint_count"] = len(constraints)
+            result["checkmate_potential"] = len(constraints) > 0
+
+            # Degrees of freedom analysis: how many unconstrained paths exist?
+            total_flow_points = sum(
+                1 for line in lines
+                if any(kw in line.lower() for kw in ['if ', 'elif ', 'else:', 'match ', 'case '])
+            )
+            result["degrees_of_freedom"] = total_flow_points
+            result["constraint_ratio"] = (
+                round(len(constraints) / max(total_flow_points, 1), 4)
+            )
+        elif isinstance(data, dict):
+            result["binding_shadows"] = [
+                {"key": k, "type": type(v).__name__}
+                for k, v in data.items()
+                if isinstance(v, (bool, int, float)) or v is None
+            ]
+            result["constraint_count"] = len(result["binding_shadows"])
+        return result
+
+
+class SharinganLens(AnalyticalLens):
+    """Kinetic In-Flight Token Surveillance. Reads micro-tensions and drift
+    patterns to predict reasoning divergence before it completes.
+
+    The Sharingan doesn't analyze static structure — it watches MOTION.
+    Repetition patterns, unresolved markers, escalating complexity, and
+    semantic drift are all kinetic signals that the reasoning trajectory
+    is bending away from truth.
+
+    P-SSR interception trigger: if drift_risk exceeds threshold, this lens
+    signals the Cheshire Cat Kernel to initiate Vasovagal recovery.
+
+    Brain Model 0930: Itachi Eye.
+    CRA Metrics: W_y=0.5, C_c=0.4 (moderate yield, moderate cost — surveillance)
+    """
+    def __init__(self):
+        super().__init__("Sharingan", w_y=0.5, c_c=0.4,
+                         primary_function="Kinetic Prediction & Drift Detection")
+
+    def apply(self, data: Any) -> Dict[str, Any]:
+        result = {
+            "lens": "SHARINGAN",
+            "scope": "KINETIC_SURVEILLANCE",
+            "primary_function": self.primary_function,
+            "pssr_interception_ready": True
+        }
+        if isinstance(data, str):
+            lines = data.splitlines()
+            from collections import Counter
+
+            # Detect repetition (micro-tension indicator)
+            stripped = [line.strip() for line in lines if line.strip()]
+            line_freq = Counter(stripped)
+            repeated = {k: v for k, v in line_freq.items() if v > 1}
+            result["repetition_detected"] = len(repeated) > 0
+            result["repeated_patterns"] = dict(
+                sorted(repeated.items(), key=lambda x: -x[1])[:10]
+            )
+
+            # Drift risk assessment
+            repeat_ratio = len(repeated) / max(len(stripped), 1)
+            if repeat_ratio > 0.15:
+                result["drift_risk"] = "HIGH"
+            elif repeat_ratio > 0.05:
+                result["drift_risk"] = "MEDIUM"
+            else:
+                result["drift_risk"] = "LOW"
+
+            # Detect unresolved prediction errors (TODO/FIXME/HACK markers)
+            unresolved = [
+                {"line": i, "marker": line.strip()}
+                for i, line in enumerate(lines, 1)
+                if any(m in line.upper() for m in [
+                    'TODO', 'FIXME', 'HACK', 'XXX', 'WORKAROUND',
+                    'TEMPORARY', 'KLUDGE', 'BUG'
+                ])
+            ]
+            result["unresolved_prediction_errors"] = unresolved[:20]
+            result["unresolved_count"] = len(unresolved)
+
+            # Complexity escalation detection
+            indent_depths = [
+                len(line) - len(line.lstrip())
+                for line in lines if line.strip()
+            ]
+            if indent_depths:
+                max_depth = max(indent_depths)
+                avg_depth = sum(indent_depths) / len(indent_depths)
+                result["max_nesting_depth"] = max_depth
+                result["avg_nesting_depth"] = round(avg_depth, 2)
+                result["complexity_escalation"] = max_depth > 20
+        elif isinstance(data, dict):
+            result["drift_risk"] = "LOW"
+            result["structure_depth"] = _measure_dict_depth(data)
+        return result
+
+
+class CelestialSpacetimeLens(AnalyticalLens):
+    """Keplerian Invariant Anchor. Injects space-derived orbital coordinates
+    into every analytical pass, ensuring data is temporally indexed against
+    the cosmic epoch rather than volatile system clocks.
+
+    This lens does not analyze content — it STAMPS it. Every pass through
+    the Celestial Spacetime Lens receives an immutable coordinate from the
+    Celestial Kinematic Clock (Earth rotation, lunar ratio, orbital position,
+    Sacred Calendar day) that anchors the analysis in physical spacetime.
+
+    The coordinate is space-derived (T -> S), strictly isolated from civil
+    NTP time, and cannot be fabricated without the Genesis Kernel running.
+
+    Brain Model 0930: Itachi Eye.
+    CRA Metrics: W_y=0.4, C_c=0.2 (high CRA ratio — low cost, temporal anchor)
+    """
+    def __init__(self):
+        super().__init__("CelestialSpacetime", w_y=0.4, c_c=0.2,
+                         primary_function="Spacetime Coordinate Injection")
+
+    def apply(self, data: Any) -> Dict[str, Any]:
+        result = {
+            "lens": "CELESTIAL_SPACETIME",
+            "scope": "KEPLERIAN_ANCHOR",
+            "primary_function": self.primary_function,
+            "sync_isolation_verified": False
+        }
+        try:
+            from core.celestial_middleware import get_celestial_timestamp
+            import asyncio
+            
+            # get_celestial_timestamp is async, but lenses run in an async context
+            # or synchronous fallback. For the lens, we can try to run it.
+            try:
+                loop = asyncio.get_running_loop()
+                import concurrent.futures
+                with concurrent.futures.ThreadPoolExecutor() as pool:
+                    coords = loop.run_in_executor(
+                        pool,
+                        lambda: asyncio.run(get_celestial_timestamp())
+                    )
+                    # For simplicity in this synchronous apply method, we just use celestial_time
+                    from core.celestial_middleware import celestial_time, celestial_ccid
+                    result["celestial_timestamp"] = celestial_time()
+                    result["ccid"] = celestial_ccid()
+            except RuntimeError:
+                from core.celestial_middleware import celestial_time, celestial_ccid
+                result["celestial_timestamp"] = celestial_time()
+                result["ccid"] = celestial_ccid()
+                
+            result["sync_isolation_verified"] = True
+        except Exception as e:
+            # Degrade gracefully — report that celestial coordinates
+            # are unavailable (kernel may not be running)
+            import time
+            result["celestial_coordinates"] = None
+            result["fallback_unix_epoch"] = time.time()
+            result["degradation_reason"] = "CELESTIAL_CLOCK_UNAVAILABLE"
+        return result
+
+
 # ──────────────────────────────────────────────────────────────
 # Utility Functions
 # ──────────────────────────────────────────────────────────────
@@ -278,6 +531,10 @@ class LensLibrary:
             "Spider": SpiderLens(),
             "Snake": SnakeLens(),
             "Owl": OwlLens(),
+            "Byakugan": ByakuganLens(),
+            "ShadowJutsu": ShadowJutsuLens(),
+            "Sharingan": SharinganLens(),
+            "CelestialSpacetime": CelestialSpacetimeLens(),
         }
     
     def get_lens(self, name: str) -> Optional[AnalyticalLens]:

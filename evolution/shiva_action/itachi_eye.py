@@ -58,7 +58,8 @@ class ItachiEye:
     async def analyze_data(
         self,
         understanding: Dict[str, Any],
-        lenses: Optional[List[Any]] = None
+        lenses: Optional[List[Any]] = None,
+        model_client: Any = None
     ) -> Dict[str, Any]:
         """
         Used by the ShivaAction tool for independent analysis.
@@ -70,6 +71,8 @@ class ItachiEye:
         Args:
             understanding: The Understanding dict from Shikamaru's analyze_data output.
             lenses: Optional list of AnalyticalLens objects for additional depth.
+            model_client: Optional API client (e.g., ShivaOrchestratorClient) for
+                         LLM-augmented discernment. Default: None (local only).
         
         Returns:
             A dict containing wisdom output with pruning results.
@@ -84,6 +87,23 @@ class ItachiEye:
         for lens in active_lenses:
             lens_insights[lens.name] = lens.apply(understanding)
         
+        # LLM-augmented discernment (when model_client is injected via Model Router)
+        llm_augmentation = None
+        if model_client is not None and hasattr(model_client, 'generate'):
+            try:
+                prompt = self.structure_prompt(str(understanding))
+                llm_result = await model_client.generate(prompt)
+                llm_augmentation = {
+                    "model": getattr(model_client, 'MODEL_NAME', 'unknown'),
+                    "augmented": True,
+                    "result": llm_result
+                }
+            except Exception as e:
+                llm_augmentation = {
+                    "augmented": False,
+                    "error": str(e)
+                }
+        
         return {
             "eye": "ITACHI",
             "pass": "WISDOM",
@@ -93,6 +113,7 @@ class ItachiEye:
             "lens_count": len(active_lenses),
             "tpsl_evaluation": tpsl_evaluation,
             "lens_insights": lens_insights,
+            "llm_augmentation": llm_augmentation,
             "psyche_pruned": True,
             "status": "DISCERNMENT_COMPLETE"
         }

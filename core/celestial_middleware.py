@@ -81,6 +81,7 @@ class CelestialMiddleware:
     def __init__(self):
         self._mode = "INITIALIZING"
         self._last_response: Optional[Dict[str, Any]] = None
+        self._last_response_at: float = 0.0  # time.time() when _last_response was cached
         self._last_checkpoint: Optional[Dict[str, Any]] = None
         self._boot_time = time.time()
         self._clock_online = False
@@ -151,6 +152,7 @@ class CelestialMiddleware:
             result = await self._fetch_clock()
             if result is not None:
                 self._last_response = result
+                self._last_response_at = time.time()
                 self._clock_online = True
                 self._mode = "SOVEREIGN"
                 logger.info(f"Celestial Clock online (attempt {attempt + 1})")
@@ -234,6 +236,7 @@ class CelestialMiddleware:
                 result = await self._fetch_clock()
                 if result is not None:
                     self._last_response = result
+                    self._last_response_at = time.time()
                     self._clock_online = True
                     self._mode = "SOVEREIGN"
         
@@ -242,6 +245,7 @@ class CelestialMiddleware:
             result = await self._fetch_clock()
             if result is not None:
                 self._last_response = result
+                self._last_response_at = time.time()
                 ts = self._build_sovereign_timestamp(result)
                 self._persist_checkpoint(ts)
                 return ts
@@ -307,11 +311,15 @@ def celestial_time() -> float:
         created_at = celestial_time()   # instead of time.time()
     """
     # Priority 1: Last server response (SOVEREIGN mode)
+    # The cached epoch is only refreshed when get_timestamp() is awaited. Advance it by
+    # the time elapsed since receipt — otherwise the value freezes and long-running loops
+    # (e.g. swds_scheduler's 07:00 wake check) never see the clock move.
     if _middleware._last_response:
         dig = _middleware._last_response.get("digital_clock", {})
         epoch = dig.get("unix_timestamp")
         if epoch:
-            return float(epoch)
+            elapsed = time.time() - _middleware._last_response_at if _middleware._last_response_at else 0.0
+            return float(epoch) + max(0.0, elapsed)
     
     # Priority 2: Checkpoint + elapsed delta
     cp = _middleware._last_checkpoint

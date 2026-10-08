@@ -19,6 +19,7 @@ from memory.the_hoard import TheHoard
 from memory.rodin_protocol import RodinProtocol
 from core.cognitive_engine import Y789NexusEngine
 from core.api_clients import CheshireCatClient
+from core.model_router import MODEL_ROUTER
 from sensory.heimdall import Heimdall31
 from sensory.cheshire_protocol import CheshireCatProtocol
 from sensory.looking_glass import LookingGlassProtocol
@@ -54,7 +55,8 @@ class CheshireCatKernel:
         
         # Instantiate unified cognitive components
         self.cognitive_engine = Y789NexusEngine()
-        self.client = CheshireCatClient()  # Gemini 3.8 Flash Thalamic Delegator
+        # Gemini 3.8 Flash Thalamic Delegator — router-managed (gated + budget-tracked)
+        self.client = MODEL_ROUTER.get_routed_client("cheshire_cat_kernel") or CheshireCatClient()
         self.hoard = TheHoard()
         self.rodin = RodinProtocol(self.hoard)
         self.phoenix = PhoenixForge()

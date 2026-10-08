@@ -322,7 +322,8 @@ class RodinProtocol:
         # Attempt live embedding via RodinClient
         try:
             from core.api_clients import RodinClient
-            client = RodinClient()
+            from core.model_router import MODEL_ROUTER
+            client = MODEL_ROUTER.get_routed_client("rodin_retrieval") or RodinClient()
             if client.client is not None:
                 vec = client.embed_sync(prompt)
                 if vec and len(vec) > 0:

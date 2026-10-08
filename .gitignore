@@ -65,3 +65,11 @@ rust/target/
 # --- Byte-compiled / optimized ---
 *.pyc
 *.pyo
+
+# --- Foreign application data accidentally present in repo (2026-10-08) ---
+.gitkraken/
+91UData/
+Adobe/
+Antigravity/
+Antigravity IDE/
+scratch/

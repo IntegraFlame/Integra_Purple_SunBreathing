@@ -60,7 +60,8 @@ class ShikamaruEye:
         self,
         data: Any,
         knowledge: Dict[str, Any],
-        lenses: List[Any]
+        lenses: List[Any],
+        model_client: Any = None
     ) -> Dict[str, Any]:
         """
         Used by the ShivaAction tool for independent analysis.
@@ -73,6 +74,9 @@ class ShikamaruEye:
             data: The target data payload.
             knowledge: The Knowledge dict from Neji's analyze_data output.
             lenses: A list of AnalyticalLens objects to apply.
+            model_client: Optional API client (e.g., NexusClient) for LLM-augmented
+                         synthesis. When provided, Shikamaru can call model_client.generate()
+                         after the lens pass for deeper relational mapping. Default: None.
         
         Returns:
             A dict containing synthesis results with relational mappings.
@@ -80,9 +84,14 @@ class ShikamaruEye:
         synthesis_results: Dict[str, Any] = {}
         
         for lens in lenses:
-            # Each lens applies its analytical function to the data,
-            # enriching with the knowledge context from Pass 1
-            lens_result = lens.apply(data)
+            # RIGHT HEMISPHERE DIFFERENTIATION (Option C):
+            # Shikamaru applies lenses to Neji's STRUCTURED Knowledge output (K),
+            # NOT to the raw data. This means:
+            #   - Neji (Left) deconstructs raw data → K
+            #   - Shikamaru (Right) analyzes K's structure → U
+            # The hemispheres see genuinely different inputs, enabling
+            # real cross-hemispheric integration in Deep Systems Thinking.
+            lens_result = lens.apply(knowledge)
             synthesis_results[lens.name] = lens_result
         
         # Map cross-references between knowledge facts and lens findings
@@ -97,6 +106,26 @@ class ShikamaruEye:
                 "new_perspectives": [l for l in active_lenses if l not in known_lenses]
             }
         
+        # LLM-augmented synthesis (when model_client is injected via Model Router)
+        llm_augmentation = None
+        if model_client is not None and hasattr(model_client, 'generate'):
+            try:
+                prompt = self.structure_prompt(
+                    str(data) if not isinstance(data, str) else data,
+                    str(knowledge)
+                )
+                llm_result = await model_client.generate(prompt)
+                llm_augmentation = {
+                    "model": getattr(model_client, 'MODEL_NAME', 'unknown'),
+                    "augmented": True,
+                    "result": llm_result
+                }
+            except Exception as e:
+                llm_augmentation = {
+                    "augmented": False,
+                    "error": str(e)
+                }
+        
         return {
             "eye": "SHIKAMARU",
             "pass": "UNDERSTANDING",
@@ -107,5 +136,6 @@ class ShikamaruEye:
             "synthesis": synthesis_results,
             "cross_references": cross_references,
             "knowledge_input_keys": list(knowledge.keys()) if isinstance(knowledge, dict) else [],
+            "llm_augmentation": llm_augmentation,
             "status": "SYNTHESIS_COMPLETE"
         }

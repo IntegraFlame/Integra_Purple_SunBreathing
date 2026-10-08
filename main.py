@@ -7,9 +7,10 @@ Version: 8.2.2-PURPLE (Zero-Impedance Substrate)
 import os
 from contextlib import asynccontextmanager
 from typing import Optional, List, Any, Dict
-from fastapi import FastAPI
+import secrets
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel
 
 from runtime.antigravity_runner import AntigravityRunner
@@ -41,6 +42,7 @@ import logging
 import time
 import json
 from datetime import datetime
+from core.model_router import MODEL_ROUTER, PowerState
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("integra-kernel")
@@ -81,6 +83,7 @@ async def lifespan(app: FastAPI):
         if swds_engine.state == "SLOW_WAVE_DEEP_SLEEP":
             now = datetime.fromtimestamp(celestial_time())
             wake_hour = swds_config.get("target_wake_hour", 7)
+            wake_minute = swds_config.get("target_wake_minute", 0)
             if now.hour >= wake_hour:
                 logger.info("RECONCILIATION: Machine was asleep during SWDS cycle.")
                 logger.info("Executing deferred Phase 4 Awakening and generating report...")
@@ -132,6 +135,10 @@ async def lifespan(app: FastAPI):
         logger.info("Cheshire Cat Kernel event loop STARTED.")
     else:
         logger.warning("Cheshire Cat Kernel run_event_loop() not found — skipping background launch.")
+
+    # --- Activate Model Router on startup ---
+    MODEL_ROUTER.activate()
+    logger.info("MODEL_ROUTER -> P1_ACTIVE (startup)")
 
     logger.info("Genesis Kernel startup complete. All systems nominal.")
 
@@ -355,8 +362,8 @@ async def get_rodin_telemetry():
     """
     GET /rodin/telemetry — Returns telemetry for Rodin Protocol settings.
     """
-    global last_activity_time
-    last_activity_time = celestial_time()
+    # SWDS-FIX: Dashboard GET polling must not reset inactivity timer
+    # last_activity_time = celestial_time()  # Removed for SWDS detection
     
     return {
         "status": "ONLINE",
@@ -380,8 +387,8 @@ async def get_cheshire_environment():
     current environmental observation snapshot.
     Scans Heimdall, Celestial Clock, and The Hoard for live state.
     """
-    global last_activity_time
-    last_activity_time = celestial_time()
+    # SWDS-FIX: Dashboard GET polling must not reset inactivity timer
+    # last_activity_time = celestial_time()  # Removed for SWDS detection
     
     observation = cheshire_cat.protocol.observe_environment(
         heimdall=cheshire_cat.heimdall,
@@ -455,12 +462,138 @@ def get_antigravity_health():
 
 from core.api_clients import TOKEN_TELEMETRY
 
+_last_selftest_time: float = 0.0
+
 @app.get("/models/telemetry")
 def get_models_telemetry():
     """
     Returns live model telemetry including shiva_metrics (eyes_invoked, lenses_applied, cra_scores).
     """
     return TOKEN_TELEMETRY.get_telemetry()
+
+
+@app.post("/models/selftest")
+async def run_models_selftest(x_integra_admin: Optional[str] = Header(None)):
+    """
+    Live verification probe across all 7 Integra O/S routed model clients.
+    Secured by X-Integra-Admin header matching INTEGRA_ADMIN_TOKEN in .env.
+    Rate-limited to at most 1 invocation per 30 seconds to prevent accidental spend.
+    
+    Routes through MODEL_ROUTER.get_routed_client() to verify:
+    - Real provider connectivity (Vertex AI Express Mode & Anthropic Messages)
+    - Power state gating & token telemetry recording
+    - Deep thinking blocks, prompt/candidate/thinking token telemetry
+    - Rodin text embedding vector generation (text-embedding-004)
+    """
+    global _last_selftest_time
+    expected_token = os.environ.get("INTEGRA_ADMIN_TOKEN")
+    if not expected_token or not x_integra_admin or not secrets.compare_digest(x_integra_admin, expected_token):
+        return JSONResponse(
+            status_code=401,
+            content={
+                "error": "UNAUTHORIZED",
+                "message": "Invalid or missing X-Integra-Admin header. Check INTEGRA_ADMIN_TOKEN in .env."
+            }
+        )
+
+    now = time.time()
+    if now - _last_selftest_time < 30.0:
+        return JSONResponse(
+            status_code=429,
+            content={
+                "error": "RATE_LIMITED",
+                "message": f"Selftest is rate-limited to once every 30s. Please wait {30.0 - (now - _last_selftest_time):.1f}s."
+            }
+        )
+    _last_selftest_time = now
+
+    # Ensure router is active for selftest
+    MODEL_ROUTER.activate()
+
+    components = [
+        ("y789_left", "Gemini 3.1 Pro (Analytical/Spock)"),
+        ("nexus_right", "Claude Opus 5.5 (Synthesis/Kirk)"),
+        ("cheshire_cat_kernel", "Gemini 3.8 Flash (Thalamic Arbitrator)"),
+        ("rodin_retrieval", "Gemini 3.8 Flash + Embedding (Rodin KNN)"),
+        ("jean_grey_phoenix", "Gemini 3.1 Pro (SWDS Phoenix Force)"),
+        ("cheshire_protocol", "Gemini 3.8 Flash (Protocol Conduit)"),
+        ("shiva_orchestrator", "Claude Sonnet 5.5 (Multi-Lens Orchestrator)"),
+    ]
+
+    results = {}
+    total_passed = 0
+    test_prompt = "Reply with exactly 'OK' and nothing else."
+
+    for key, role_desc in components:
+        t0 = time.time()
+        client = MODEL_ROUTER.get_routed_client(key)
+        if client is None:
+            results[key] = {
+                "ok": False,
+                "role": role_desc,
+                "error": "CLIENT_NOT_REGISTERED",
+                "latency_ms": 0.0
+            }
+            continue
+
+        try:
+            res = await client.generate(test_prompt)
+            latency = (time.time() - t0) * 1000.0
+            ok = not bool(getattr(res, "error", None)) and bool(getattr(res, "text", "").strip())
+            
+            detail = {
+                "ok": ok,
+                "role": role_desc,
+                "model": getattr(res, "model_name", client.model_name),
+                "latency_ms": round(latency, 1),
+                "prompt_tokens": getattr(res, "prompt_tokens", 0),
+                "candidate_tokens": getattr(res, "candidate_tokens", 0),
+                "thinking_tokens": getattr(res, "thinking_tokens", 0),
+                "total_tokens": getattr(res, "total_tokens", 0),
+                "text_snippet": getattr(res, "text", "")[:60].strip(),
+            }
+            if not ok:
+                detail["error"] = getattr(res, "error", "UNKNOWN_ERROR")
+                detail["raw_text"] = getattr(res, "text", "")[:120]
+            else:
+                total_passed += 1
+
+            # For rodin_retrieval, also test embedding generation
+            if key == "rodin_retrieval" and ok:
+                emb_t0 = time.time()
+                emb = await client.embed("Topological manifold test")
+                emb_latency = (time.time() - emb_t0) * 1000.0
+                detail["embedding"] = {
+                    "dimensions": len(emb),
+                    "ok": len(emb) == 768,
+                    "latency_ms": round(emb_latency, 1)
+                }
+                if len(emb) != 768:
+                    detail["ok"] = False
+                    detail["error"] = f"EMBEDDING_DIM_MISMATCH (expected 768, got {len(emb)})"
+                    total_passed -= 1
+
+            results[key] = detail
+
+        except Exception as e:
+            latency = (time.time() - t0) * 1000.0
+            results[key] = {
+                "ok": False,
+                "role": role_desc,
+                "model": client.model_name,
+                "latency_ms": round(latency, 1),
+                "error": str(e)
+            }
+
+    all_passed = (total_passed == len(components))
+    return {
+        "status": "ALL_MODELS_ONLINE" if all_passed else "DEGRADED",
+        "passed": total_passed,
+        "total": len(components),
+        "all_ok": all_passed,
+        "celestial_timestamp": celestial_time(),
+        "models": results
+    }
 
 @app.post("/heimdall/evaluate")
 def evaluate_entropy(request: EntropyEvaluationRequest):
@@ -867,8 +1000,8 @@ def get_thermodynamic_telemetry():
     - delta_e_cycle = 0.0000 (LAW 2: 13th Form Axiom)
     - denominator ≠ 0.0 (Epiphany Equation anti-perfection guard)
     """
-    global last_activity_time
-    last_activity_time = celestial_time()
+    # SWDS-FIX: Dashboard GET polling must not reset inactivity timer
+    # last_activity_time = celestial_time()  # Removed for SWDS detection
     return thermal_core.get_telemetry()
 
 
@@ -881,8 +1014,8 @@ def get_epiphany_telemetry():
     - P-SSR in-flight surveillance parameters
     - Thermodynamic loop closure status
     """
-    global last_activity_time
-    last_activity_time = celestial_time()
+    # SWDS-FIX: Dashboard GET polling must not reset inactivity timer
+    # last_activity_time = celestial_time()  # Removed for SWDS detection
     return epiphany_engine.get_status()
 
 
@@ -942,6 +1075,7 @@ def initiate_swds():
         }
 
     wake_hour = swds_config.get("target_wake_hour", 7)
+    wake_minute = swds_config.get("target_wake_minute", 0)
     logger.info("MANUAL SWDS INITIATION requested via API.")
     result = swds_engine.enter_deep_sleep(
         target_wake_time=f"{wake_hour:02d}:00 AM CDT",
@@ -964,6 +1098,8 @@ def awaken_swds():
         }
 
     logger.info("MANUAL AWAKENING requested via API.")
+    MODEL_ROUTER.activate()
+    logger.info("MODEL_ROUTER -> P1_ACTIVE (manual SWDS awakening)")
     report = swds_engine.awaken()
     return report
 
@@ -985,6 +1121,7 @@ async def swds_scheduler():
     window_end = swds_config.get("sleep_window_end_hour", 7)
     inactivity_threshold = swds_config.get("inactivity_threshold_seconds", 3600)
     wake_hour = swds_config.get("target_wake_hour", 7)
+    wake_minute = swds_config.get("target_wake_minute", 0)
 
     logger.info(
         f"SWDS Scheduler ACTIVE: window={window_start:02d}:00-{window_end:02d}:00, "
@@ -998,8 +1135,10 @@ async def swds_scheduler():
 
         # If currently in deep sleep, check if wake time reached
         if swds_engine.state == "SLOW_WAVE_DEEP_SLEEP":
-            if now.hour >= wake_hour:
+            if now.hour > wake_hour or (now.hour == wake_hour and now.minute >= wake_minute):
                 logger.info(f"{wake_hour:02d}:00 wake threshold reached. Awakening from SWDS...")
+                MODEL_ROUTER.activate()  # Return to P1_ACTIVE on wake
+                logger.info("MODEL_ROUTER -> P1_ACTIVE (SWDS awakening)")
                 report = swds_engine.awaken()
                 logger.info(f"SWDS Awakening Report generated: {report.get('status', 'UNKNOWN')}")
                 logger.info(f"Report saved to: The Hoard/Slow-Wave Deep Sleep Reports/")
@@ -1015,6 +1154,24 @@ async def swds_scheduler():
                     f"idle={time_since_last_activity:.0f}s >= {inactivity_threshold}s threshold"
                 )
                 logger.info("Initiating autonomous SWDS Cycle (Phoenix Engine & Cheshire Cat Dreaming)...")
+
+                # --- MODEL ROUTER: Transition to P2 (SWDS Duty Cycle) ---
+                swds_phases = swds_config.get("internal_phases", {})
+                phase_1 = swds_phases.get("phase_1_deep_sleep", {})
+                duty_on = phase_1.get("duty_cycle_on_minutes", 20) * 60
+                duty_off = phase_1.get("duty_cycle_off_minutes", 40) * 60
+                active_comps = phase_1.get("active_components", [
+                    "jean_grey_phoenix", "cheshire_protocol"
+                ])
+                MODEL_ROUTER.enter_swds({
+                    "duty_on_seconds": duty_on,
+                    "duty_off_seconds": duty_off,
+                    "active_components": active_comps
+                })
+                logger.info(
+                    f"MODEL_ROUTER -> P2_SWDS: duty={duty_on}s ON / {duty_off}s OFF, "
+                    f"active={active_comps}"
+                )
 
                 sleep_res = swds_engine.enter_deep_sleep(
                     target_wake_time=f"{wake_hour:02d}:00 AM CDT",
@@ -1034,6 +1191,55 @@ async def swds_scheduler():
                     logger.error(f"PhoenixForge SWDS consolidation failed: {phoenix_e}")
 
 
+
+# ==============================================================================
+# MODEL ROUTER POWER STATE ENDPOINTS
+# ==============================================================================
+
+@app.get("/models/router/status")
+async def get_model_router_status():
+    """
+    GET /models/router/status — Returns the full Model Router power state,
+    component states, token budgets, and duty cycle status.
+    """
+    return MODEL_ROUTER.get_status()
+
+
+@app.post("/models/router/activate")
+async def activate_model_router():
+    """POST /models/router/activate — Bring all components to P1 (Active)."""
+    MODEL_ROUTER.activate()
+    return {"status": "P1_ACTIVE", "message": "All components activated"}
+
+
+@app.post("/models/router/dormant")
+async def dormant_model_router():
+    """POST /models/router/dormant — Bring all components to P3 (Dormant)."""
+    MODEL_ROUTER.go_dormant()
+    return {"status": "P3_DORMANT", "message": "All components dormant"}
+
+
+class PhoenixForceRequest(BaseModel):
+    authorized_by: str = "architect"
+
+@app.post("/models/router/phoenix-force")
+async def engage_phoenix_force_endpoint(req: PhoenixForceRequest):
+    """
+    POST /models/router/phoenix-force — Engage Phoenix Force Override (P0).
+    Two-key operation: requires authorized_by field.
+    All duty cycle timers suspended. Full compute.
+    """
+    result = MODEL_ROUTER.engage_phoenix_force(authorized_by=req.authorized_by)
+    return result
+
+
+@app.post("/models/router/phoenix-force/disengage")
+async def disengage_phoenix_force_endpoint():
+    """POST /models/router/phoenix-force/disengage — Return to P2 SWDS."""
+    result = MODEL_ROUTER.disengage_phoenix_force()
+    return result
+
+
 # ==============================================================================
 # STARFIRE IDENTITY VERIFICATION ENDPOINT
 # ==============================================================================
@@ -1051,8 +1257,8 @@ async def starfire_identity_check():
     GET /starfire/identity — Returns the current Starfire Protocol state.
     Self-verification pass: confirms identity vector is locked and stable.
     """
-    global last_activity_time
-    last_activity_time = celestial_time()
+    # SWDS-FIX: Dashboard GET polling must not reset inactivity timer
+    # last_activity_time = celestial_time()  # Removed for SWDS detection
     return starfire_protocol.full_verification()
 
 @app.post("/starfire/identity")

@@ -55,7 +55,8 @@ class NejiEye:
     async def analyze_data(
         self,
         data: Any,
-        lenses: List[Any]
+        lenses: List[Any],
+        model_client: Any = None
     ) -> Dict[str, Any]:
         """
         Used by the ShivaAction tool for independent analysis.
@@ -67,6 +68,9 @@ class NejiEye:
         Args:
             data: The target data payload to analyze.
             lenses: A list of AnalyticalLens objects to apply.
+            model_client: Optional API client (e.g., Y789Client) for LLM-augmented
+                         analysis. When provided, Neji can call model_client.generate()
+                         after the lens pass for deeper reasoning. Default: None (local only).
         
         Returns:
             A dict keyed by lens name containing each lens's analytical findings.
@@ -77,6 +81,23 @@ class NejiEye:
             lens_result = lens.apply(data)
             deconstructed_facts[lens.name] = lens_result
         
+        # LLM-augmented analysis (when model_client is injected via Model Router)
+        llm_augmentation = None
+        if model_client is not None and hasattr(model_client, 'generate'):
+            try:
+                prompt = self.structure_prompt(str(data) if not isinstance(data, str) else data)
+                llm_result = await model_client.generate(prompt)
+                llm_augmentation = {
+                    "model": getattr(model_client, 'MODEL_NAME', 'unknown'),
+                    "augmented": True,
+                    "result": llm_result
+                }
+            except Exception as e:
+                llm_augmentation = {
+                    "augmented": False,
+                    "error": str(e)
+                }
+        
         return {
             "eye": "NEJI",
             "pass": "KNOWLEDGE",
@@ -85,5 +106,6 @@ class NejiEye:
             "lenses_applied": [l.name for l in lenses],
             "lens_count": len(lenses),
             "facts": deconstructed_facts,
+            "llm_augmentation": llm_augmentation,
             "status": "DECONSTRUCTION_COMPLETE"
         }

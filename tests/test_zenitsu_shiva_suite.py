@@ -96,13 +96,16 @@ class TestPass1_Neji_Knowledge:
         assert isinstance(eagle.apply(test_data), dict)
         assert isinstance(owl.apply(test_data), dict)
 
-    def test_lens_library_instantiates_with_all_six(self):
-        """LensLibrary must auto-register all 6 lenses."""
+    def test_lens_library_instantiates_with_all_ten(self):
+        """LensLibrary must auto-register all 10 lenses (6 original + 4 Brain Model 0930)."""
         from evolution.shiva_action.lenses import LensLibrary
         lib = LensLibrary()
         available = lib.list_available()
-        assert len(available) == 6
-        assert set(available) == {"Eagle", "Hawk", "Chameleon", "Spider", "Snake", "Owl"}
+        assert len(available) == 10
+        assert set(available) == {
+            "Eagle", "Hawk", "Chameleon", "Spider", "Snake", "Owl",
+            "Byakugan", "ShadowJutsu", "Sharingan", "CelestialSpacetime"
+        }
 
     # --- Eyes ---
 

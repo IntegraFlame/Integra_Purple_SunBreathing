@@ -377,7 +377,12 @@ if __name__ == "__main__":
     print("=" * 70)
     print("INTEGRA O/S — EVOLVED HUNTER BRIDGE")
     print("Paper Trading Integration Test")
-    print(f"Timestamp: {datetime.now().strftime('%Y-%m-%d %H:%M:%S CDT')}")
+    try:
+        from core.celestial_middleware import get_celestial_timestamp
+        print(f"Timestamp: {get_celestial_timestamp()}")
+    except ImportError:
+        import time
+        print(f"Timestamp: {time.strftime('%Y-%m-%d %H:%M:%S CDT')}")
     print("=" * 70)
 
     # Initialize the bridge

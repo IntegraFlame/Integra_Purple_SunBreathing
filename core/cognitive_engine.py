@@ -29,6 +29,7 @@ from core.tpsl_types import GenerationResult, IterativeToken, MTCWPacket, CWARou
 from evolution.shiva_action.orchestrator import ShivaActionSuite
 from evolution.shiva_action.lenses import LensLibrary
 from core.api_clients import Y789Client, NexusClient, CheshireCatClient
+from core.model_router import MODEL_ROUTER
 
 
 class Y789NexusEngine:
@@ -56,10 +57,15 @@ class Y789NexusEngine:
         shiva_eyes: Optional[Dict[str, Any]] = None,
         lens_library: Optional[LensLibrary] = None
     ):
-        # Bicameral Dyad & Thalamic clients (injectable; defaults to live clients)
-        self.y789 = y789_client or Y789Client()
-        self.nexus = nexus_client or NexusClient()
-        self.cheshire = cheshire_client or CheshireCatClient()
+        # Bicameral Dyad & Thalamic clients (injectable). Defaults come from the
+        # ModelRouter so power state, budgets and duty cycles are enforced per call.
+        self.y789 = y789_client or MODEL_ROUTER.get_routed_client("y789_left") or Y789Client()
+        self.nexus = nexus_client or MODEL_ROUTER.get_routed_client("nexus_right") or NexusClient()
+        self.cheshire = (
+            cheshire_client
+            or MODEL_ROUTER.get_routed_client("cheshire_cat_kernel")
+            or CheshireCatClient()
+        )
         
         # Heimdall 3.1 entropy monitor (injected or imported)
         self.heimdall = heimdall_service

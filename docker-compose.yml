@@ -1,0 +1,38 @@
+# INTEGRA O/S Genesis Kernel — local Docker deployment
+#
+# API keys: injected at RUNTIME from .env via env_file. They are NOT in the image
+# (.dockerignore excludes .env) and NOT in this file. config/env_loader.py skips
+# missing .env files, so the container reads straight from the injected environment.
+#
+# State: the kernel's memory is written under /app (the_hoard.py root_dir). Without
+# these mounts it is lost on every container restart.
+#   kernel_memory  -> named volume (small, Docker-managed)
+#   local_dbs      -> named volume (ChromaDB + SQLite; avoid bind-mounting SQLite over the
+#                     Windows/OneDrive filesystem — locking is unreliable there)
+#   The_Hoard      -> bind mount of the existing 26 GB host folder (CCID save states)
+#
+# Usage:  docker compose up -d --build
+#         docker compose logs -f integra
+#         docker compose down            (volumes survive; add -v to delete state)
+services:
+  integra:
+    build:
+      context: .
+    image: integra-genesis-kernel:local
+    container_name: integra-genesis-kernel
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PORT: "8000"
+    ports:
+      # Host-bound to loopback only: the dashboard has no auth, do not expose on the LAN.
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - kernel_memory:/app/kernel_memory
+      - local_dbs:/app/local_dbs
+      - ./The_Hoard:/app/The_Hoard
+
+volumes:
+  kernel_memory:
+  local_dbs:

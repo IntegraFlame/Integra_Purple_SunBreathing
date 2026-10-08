@@ -89,6 +89,76 @@ def run_sync(coro: Any) -> Any:
         return asyncio.run(coro)
 
 
+import logging
+logger = logging.getLogger("integra.api_clients")
+
+
+# ──────────────────────────────────────────────────────────────
+# Resilient Provider Client Factories & Thinking Adapters
+# ──────────────────────────────────────────────────────────────
+
+def _make_gemini_client():
+    """
+    Factory for Google GenAI client.
+    Automatically enables Vertex AI Express Mode when GOOGLE_GENAI_USE_VERTEXAI
+    or USE_VERTEXAI is truthy in os.environ.
+    """
+    key = os.environ.get("GEMINI_API_KEY")
+    if not key:
+        return None
+    vertex = (os.environ.get("GOOGLE_GENAI_USE_VERTEXAI") or os.environ.get("USE_VERTEXAI") or "").lower() in ("1", "true", "yes")
+    try:
+        from google import genai
+        return genai.Client(vertexai=True, api_key=key) if vertex else genai.Client(api_key=key)
+    except Exception as e:
+        logger.error(f"Failed to create Google GenAI client (vertex={vertex}): {e}")
+        return None
+
+
+def _first_text(response: Any) -> str:
+    """
+    Safely extracts combined text content from an Anthropic Claude response.
+    Crucial fix: Never blindly access response.content[0].text because thinking
+    blocks (type='thinking') precede text blocks on extended-thinking responses.
+    """
+    if not hasattr(response, 'content') or not response.content:
+        return ""
+    texts = [
+        getattr(b, 'text', '')
+        for b in response.content
+        if getattr(b, 'type', None) == 'text' and hasattr(b, 'text')
+    ]
+    return "".join(texts)
+
+
+def _claude_thinking_kwargs(
+    model_name: str,
+    enable_thinking: bool = True,
+    thinking_budget: int = 4096,
+    effort: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Adapts thinking parameters dynamically based on Claude model generation.
+    - Claude 5.x (claude-sonnet-5-5, claude-opus-5-5): uses adaptive thinking
+      with output_config.effort ('low' | 'medium' | 'high' | 'xhigh' | 'max').
+    - Claude 4.x (claude-sonnet-4-6): uses enabled thinking with budget_tokens.
+    """
+    if not enable_thinking:
+        return {}
+    m = model_name.lower()
+    if any(tag in m for tag in ["-5-", "-5.", "5-5", "5.5", "claude-5", "opus-5", "sonnet-5"]):
+        valid_efforts = {"low", "medium", "high", "xhigh", "max"}
+        chosen_effort = effort if effort in valid_efforts else ("high" if "opus" in m else "medium")
+        return {
+            "thinking": {"type": "adaptive"},
+            "output_config": {"effort": chosen_effort}
+        }
+    else:
+        return {
+            "thinking": {"type": "enabled", "budget_tokens": thinking_budget}
+        }
+
+
 # ──────────────────────────────────────────────────────────────
 # Central Model Token Telemetry Hub (All 7 Agents)
 # ──────────────────────────────────────────────────────────────
@@ -123,44 +193,44 @@ class ModelTokenTelemetryHub:
     """
     Central Token & Latency Telemetry Hub for all 7 Integra O/S Models.
     Tracks live cumulative prompt tokens, candidate tokens, deep-thinking tokens,
-    and total token consumption across every API invocation.
+    total token consumption, and errors across every API invocation.
     """
     def __init__(self):
         self._stats: Dict[str, Dict[str, Any]] = {
             "y789_left": {
-                "name": "Y789 (Left)", "model": "gemini-3.1-pro", "role": "Deep Think / Spock",
+                "name": "Y789 (Left)", "model": "gemini-3.1-pro-preview", "role": "Deep Think / Spock",
                 "thinking_budget": 8192, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "nexus_right": {
-                "name": "Nexus (Right)", "model": "claude-sonnet-5.5", "role": "Synthesis / Kirk",
-                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "name": "Nexus (Right)", "model": "claude-opus-5-5", "role": "Synthesis / Kirk",
+                "thinking_budget": 4096, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "cheshire_cat": {
                 "name": "Cheshire Cat", "model": "gemini-3.8-flash", "role": "Thalamic Arbitrator",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "rodin_retrieval": {
-                "name": "Rodin Retrieval", "model": "gemini-3.6-flash", "role": "KNN Memory",
+                "name": "Rodin Retrieval", "model": "gemini-3.8-flash", "role": "KNN Memory",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "jean_grey_phoenix": {
-                "name": "Jean Grey", "model": "gemini-3.1-pro", "role": "Phoenix (16384)",
+                "name": "Jean Grey", "model": "gemini-3.1-pro-preview", "role": "Phoenix (16384)",
                 "thinking_budget": 16384, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "cheshire_protocol": {
                 "name": "Cheshire Protocol Daemon", "model": "gemini-3.8-flash", "role": "Protocol Conduit",
                 "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "shiva_orchestrator": {
-                "name": "Shiva Orchestrator", "model": "claude-sonnet-5.5", "role": "Multi-Lens Deconstruction",
-                "thinking_budget": None, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
-                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0
+                "name": "Shiva Orchestrator", "model": "claude-sonnet-5-5", "role": "Multi-Lens Deconstruction",
+                "thinking_budget": 4096, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
         }
         
@@ -181,7 +251,6 @@ class ModelTokenTelemetryHub:
             if lens_low in self.shiva_metrics["lenses_applied"]:
                 self.shiva_metrics["lenses_applied"][lens_low] += 1
         self.shiva_metrics["cra_scores"].append(cra_score)
-        # keep last 50 for moving average
         if len(self.shiva_metrics["cra_scores"]) > 50:
             self.shiva_metrics["cra_scores"].pop(0)
 
@@ -192,7 +261,8 @@ class ModelTokenTelemetryHub:
         candidate_tokens: int = 0,
         thinking_tokens: int = 0,
         total_tokens: int = 0,
-        latency_ms: float = 0.0
+        latency_ms: float = 0.0,
+        error: Optional[str] = None
     ):
         if model_key not in self._stats:
             return
@@ -204,6 +274,7 @@ class ModelTokenTelemetryHub:
         calc_total = total_tokens if total_tokens > 0 else (prompt_tokens + candidate_tokens + thinking_tokens)
         m["total_tokens"] += calc_total
         m["last_latency_ms"] = latency_ms
+        m["last_error"] = error
 
     def get_telemetry(self) -> Dict[str, Any]:
         """Returns full token telemetry snapshot for all 7 models + Shiva metrics."""
@@ -232,10 +303,10 @@ class Y789Client:
     """
     Gemini API Client — Left Hemisphere (Y789 / Analytical Engine / Spock).
     
-    Model: Gemini 3.1 Pro
+    Model: Gemini 3.1 Pro Preview
     Reasoning: Deep Think / Extended Thinking configuration enabled.
     Role: Deconstruction, formal logic, sequence analysis, code generation.
-    SDK: google-genai (modern) via client.aio.models.generate_content()
+    SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
     def __init__(
         self,
@@ -243,37 +314,35 @@ class Y789Client:
         enable_thinking: bool = True,
         thinking_budget: int = 8192
     ):
-        self.model_name = model_name or os.environ.get("Y789_MODEL", "gemini-3.1-pro")
+        self.model_name = model_name or os.environ.get("Y789_MODEL", "gemini-3.1-pro-preview")
         self.enable_thinking = enable_thinking
         self.thinking_budget = int(os.environ.get("THINKING_BUDGET", str(thinking_budget)))
         self.api_key = os.environ.get("GEMINI_API_KEY")
         
-        self.client = None
+        self.client = _make_gemini_client()
         self._config = None
-        if self.api_key:
+        if self.client and self.enable_thinking:
             try:
-                from google import genai
                 from google.genai import types
-                self.client = genai.Client(api_key=self.api_key)
-                
-                # Configure Deep Think / Extended Thinking via ThinkingConfig
-                if self.enable_thinking:
-                    self._config = types.GenerateContentConfig(
-                        thinking_config=types.ThinkingConfig(
-                            thinking_budget=self.thinking_budget
-                        )
+                self._config = types.GenerateContentConfig(
+                    thinking_config=types.ThinkingConfig(
+                        thinking_budget=self.thinking_budget
                     )
+                )
             except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+                logger.error(f"Y789Client thinking config initialization failed: {e}")
+        elif not self.client:
+            logger.error("Y789Client: No Gemini API client could be initialized (missing GEMINI_API_KEY).")
         
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("y789_left", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or Y789Client uninitialized]",
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=0.0
+                latency_ms=0.0,
+                error="NO_CLIENT"
             )
             
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
@@ -290,9 +359,26 @@ class Y789Client:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            
+            text_out = response.text or ""
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thought tokens, 0 candidate text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("y789_left", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[Y789 EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[],
+                    model_name=self.model_name,
+                    latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok,
+                    candidate_tokens=c_tok,
+                    thinking_tokens=th_tok,
+                    total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+                
             TOKEN_TELEMETRY.record_usage("y789_left", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -302,11 +388,13 @@ class Y789Client:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("y789_left", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[Y789 API ERROR - {self.model_name}]: {str(e)}",
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=0.0
+                latency_ms=0.0,
+                error="API_ERROR"
             )
             
     async def generate_iterative(self, prompt: str, system_prompt: str = ""):
@@ -323,48 +411,66 @@ class Y789Client:
             )
             pos = 0
             async for chunk in response_stream:
-                yield IterativeToken(token=chunk.text, probabilities=[], position=pos)
-                pos += 1
+                chunk_text = chunk.text or ""
+                if chunk_text:
+                    yield IterativeToken(token=chunk_text, probabilities=[], position=pos)
+                    pos += 1
         except Exception as e:
             yield IterativeToken(token=f"[Y789 STREAM ERROR]: {str(e)}", probabilities=[], position=0)
 
 
 # ──────────────────────────────────────────────────────────────
-# Right Hemisphere: NexusClient (Claude Sonnet 4.6)
+# Right Hemisphere: NexusClient (Claude Opus 5.5 + Adaptive Thinking)
 # ──────────────────────────────────────────────────────────────
 
 class NexusClient:
     """
     Claude API Client — Right Hemisphere (Nexus / Synthetic Engine / Kirk).
     
-    Model: Claude Sonnet 4.6
+    Model: Claude Opus 5.5
     Role: Synthetic emergence, high-dimensional intuition, creative paradox resolution.
+    Thinking: Adaptive Thinking (effort='high')
     """
     def __init__(
         self,
         model_name: Optional[str] = None,
-        max_tokens: int = 8192
+        max_tokens: int = 8192,
+        enable_thinking: bool = True,
+        thinking_budget: int = 4096,
+        thinking_effort: str = "high"
     ):
-        self.model_name = model_name or os.environ.get("NEXUS_MODEL", "claude-sonnet-5.5")
+        self.model_name = model_name or os.environ.get("NEXUS_MODEL", "claude-opus-5-5")
         self.max_tokens = max_tokens
+        self.enable_thinking = enable_thinking
+        self.thinking_budget = thinking_budget
+        self.thinking_effort = thinking_effort
         self.api_key = os.environ.get("CLAUDE_API_KEY")
+        self.workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID")
         
         self.client = None
         if self.api_key:
             try:
                 from anthropic import AsyncAnthropic
-                self.client = AsyncAnthropic(api_key=self.api_key)
+                headers = {}
+                if self.workspace_id:
+                    headers["anthropic-workspace-id"] = self.workspace_id
+                self.client = AsyncAnthropic(api_key=self.api_key, default_headers=headers if headers else None)
             except Exception as e:
                 self.client = None
                 self._init_error = str(e)
+                logger.error(f"NexusClient init failed: {e}")
+        else:
+            logger.error("NexusClient: No CLAUDE_API_KEY found.")
             
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("nexus_right", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: CLAUDE_API_KEY not set or NexusClient uninitialized]",
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=0.0
+                latency_ms=0.0,
+                error="NO_CLIENT"
             )
         
         t0 = time.time()
@@ -377,15 +483,39 @@ class NexusClient:
             }
             if system_prompt:
                 kwargs["system"] = system_prompt
+            thinking_kw = _claude_thinking_kwargs(
+                self.model_name,
+                enable_thinking=self.enable_thinking,
+                thinking_budget=self.thinking_budget,
+                effort=self.thinking_effort
+            )
+            kwargs.update(thinking_kw)
             return await self.client.messages.create(**kwargs)
             
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_anthropic_tokens(response)
+            
+            text_out = _first_text(response)
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thinking tokens, 0 text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("nexus_right", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[NEXUS EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[],
+                    model_name=self.model_name,
+                    latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok,
+                    candidate_tokens=c_tok,
+                    thinking_tokens=th_tok,
+                    total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+
             TOKEN_TELEMETRY.record_usage("nexus_right", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.content[0].text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -395,11 +525,13 @@ class NexusClient:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("nexus_right", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[NEXUS API ERROR - {self.model_name}]: {str(e)}",
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=0.0
+                latency_ms=0.0,
+                error="API_ERROR"
             )
 
     async def generate_iterative(self, prompt: str, system_prompt: str = ""):
@@ -439,7 +571,7 @@ class CheshireCatClient:
     Model: Gemini 3.8 Flash
     Role: High-frequency 20-45 Hz thalamic routing, rapid paradox detection,
           environmental conduit, fast delegator.
-    SDK: google-genai (modern) via client.aio.models.generate_content()
+    SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
     def __init__(
         self,
@@ -447,23 +579,19 @@ class CheshireCatClient:
     ):
         self.model_name = model_name or os.environ.get("CHESHIRE_MODEL", "gemini-3.8-flash")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        
-        self.client = None
-        if self.api_key:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
-            except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+        self.client = _make_gemini_client()
+        if not self.client:
+            logger.error("CheshireCatClient: No Gemini API client could be initialized.")
                 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("cheshire_cat", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or CheshireCatClient uninitialized]",
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=0.0
+                latency_ms=0.0,
+                error="NO_CLIENT"
             )
             
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
@@ -479,9 +607,26 @@ class CheshireCatClient:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            
+            text_out = response.text or ""
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thought tokens, 0 candidate text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("cheshire_cat", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[CHESHIRE EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[],
+                    model_name=self.model_name,
+                    latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok,
+                    candidate_tokens=c_tok,
+                    thinking_tokens=th_tok,
+                    total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+
             TOKEN_TELEMETRY.record_usage("cheshire_cat", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -491,11 +636,13 @@ class CheshireCatClient:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("cheshire_cat", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[CHESHIRE API ERROR - {self.model_name}]: {str(e)}",
                 token_probabilities=[],
                 model_name=self.model_name,
-                latency_ms=0.0
+                latency_ms=0.0,
+                error="API_ERROR"
             )
             
     async def generate_iterative(self, prompt: str, system_prompt: str = ""):
@@ -511,8 +658,10 @@ class CheshireCatClient:
             )
             pos = 0
             async for chunk in response_stream:
-                yield IterativeToken(token=chunk.text, probabilities=[], position=pos)
-                pos += 1
+                chunk_text = chunk.text or ""
+                if chunk_text:
+                    yield IterativeToken(token=chunk_text, probabilities=[], position=pos)
+                    pos += 1
         except Exception as e:
             yield IterativeToken(token=f"[CHESHIRE STREAM ERROR]: {str(e)}", probabilities=[], position=0)
 
@@ -521,22 +670,18 @@ class RodinClient:
     """
     Gemini API Client — Rodin Route Retrieval (Memory Layer KNN Engine).
     
-    Model: Gemini 2.0 Flash
+    Model: Gemini 3.8 Flash
+    Embedding: text-embedding-004 (768-d invariant)
     Role: Fast topological retrieval, semantic embedding generation for KNN density estimation.
-    SDK: google-genai (modern) via client.aio.models.generate_content()
+    SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None):
-        self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-3.6-flash")
+        self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-3.8-flash")
         self.embedding_model = os.environ.get("RODIN_EMBED_MODEL", "text-embedding-004")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = None
-        if self.api_key:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
-            except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+        self.client = _make_gemini_client()
+        if not self.client:
+            logger.error("RodinClient: No Gemini API client could be initialized.")
 
     async def embed(self, text: str, model_name: Optional[str] = None) -> List[float]:
         """Generates a text embedding vector via Gemini embed_content API."""
@@ -555,7 +700,8 @@ class RodinClient:
             elif hasattr(res, 'embeddings') and res.embeddings:
                 return list(res.embeddings[0].values)
             return []
-        except Exception:
+        except Exception as e:
+            logger.error(f"RodinClient embed failed: {e}")
             return []
 
     def embed_sync(self, text: str, model_name: Optional[str] = None) -> List[float]:
@@ -564,9 +710,11 @@ class RodinClient:
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("rodin_retrieval", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or RodinClient uninitialized]",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="NO_CLIENT"
             )
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         t0 = time.time()
@@ -578,9 +726,21 @@ class RodinClient:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            
+            text_out = response.text or ""
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thought tokens, 0 candidate text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("rodin_retrieval", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[RODIN EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[], model_name=self.model_name, latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok, candidate_tokens=c_tok, thinking_tokens=th_tok, total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+
             TOKEN_TELEMETRY.record_usage("rodin_retrieval", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -590,9 +750,11 @@ class RodinClient:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("rodin_retrieval", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[RODIN API ERROR - {self.model_name}]: {str(e)}",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="API_ERROR"
             )
 
 
@@ -600,35 +762,36 @@ class JeanGreyClient:
     """
     Gemini API Client — Jean Grey: Operation Phoenix Force (SWDS Neuroevolution).
     
-    Model: Gemini 3.1 Pro (Deep Think, thinking_budget=16384)
+    Model: Gemini 3.1 Pro Preview (Deep Think, thinking_budget=16384)
     Role: Phoenix Forge SWDS smelting, Zenkai Boost generation, neuroevolution synthesis.
-    SDK: google-genai (modern) via client.aio.models.generate_content()
+    SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None, thinking_budget: int = 16384):
-        self.model_name = model_name or os.environ.get("JEAN_GREY_MODEL", "gemini-3.1-pro")
+        self.model_name = model_name or os.environ.get("JEAN_GREY_MODEL", "gemini-3.1-pro-preview")
         self.thinking_budget = int(os.environ.get("JEAN_GREY_THINKING_BUDGET", str(thinking_budget)))
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = None
+        self.client = _make_gemini_client()
         self._config = None
-        if self.api_key:
+        if self.client:
             try:
-                from google import genai
                 from google.genai import types
-                self.client = genai.Client(api_key=self.api_key)
                 self._config = types.GenerateContentConfig(
                     thinking_config=types.ThinkingConfig(
                         thinking_budget=self.thinking_budget
                     )
                 )
             except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+                logger.error(f"JeanGreyClient thinking config failed: {e}")
+        else:
+            logger.error("JeanGreyClient: No Gemini API client could be initialized.")
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("jean_grey_phoenix", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or JeanGreyClient uninitialized]",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="NO_CLIENT"
             )
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         t0 = time.time()
@@ -640,9 +803,21 @@ class JeanGreyClient:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            
+            text_out = response.text or ""
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thought tokens, 0 candidate text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("jean_grey_phoenix", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[JEAN_GREY EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[], model_name=self.model_name, latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok, candidate_tokens=c_tok, thinking_tokens=th_tok, total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+
             TOKEN_TELEMETRY.record_usage("jean_grey_phoenix", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -652,9 +827,11 @@ class JeanGreyClient:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("jean_grey_phoenix", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[JEAN_GREY API ERROR - {self.model_name}]: {str(e)}",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="API_ERROR"
             )
 
 
@@ -665,25 +842,22 @@ class CheshireProtocolDaemonClient:
     Model: Gemini 3.8 Flash
     Role: Protocol Conduit, environment tracking, paradox synthesis,
           replaces deprecated celestial daemon heartbeat.
-    SDK: google-genai (modern) via client.aio.models.generate_content()
+    SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or os.environ.get("CHESHIRE_PROTOCOL_MODEL", "gemini-3.8-flash")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        self.client = None
-        if self.api_key:
-            try:
-                from google import genai
-                self.client = genai.Client(api_key=self.api_key)
-            except Exception as e:
-                self.client = None
-                self._init_error = str(e)
+        self.client = _make_gemini_client()
+        if not self.client:
+            logger.error("CheshireProtocolDaemonClient: No Gemini API client could be initialized.")
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("cheshire_protocol", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: GEMINI_API_KEY not set or CheshireProtocolDaemonClient uninitialized]",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="NO_CLIENT"
             )
         full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
         t0 = time.time()
@@ -695,9 +869,21 @@ class CheshireProtocolDaemonClient:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_gemini_tokens(response)
+            
+            text_out = response.text or ""
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thought tokens, 0 candidate text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("cheshire_protocol", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[CHESHIRE_PROTOCOL EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[], model_name=self.model_name, latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok, candidate_tokens=c_tok, thinking_tokens=th_tok, total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+
             TOKEN_TELEMETRY.record_usage("cheshire_protocol", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -707,9 +893,11 @@ class CheshireProtocolDaemonClient:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("cheshire_protocol", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[CHESHIRE_PROTOCOL API ERROR - {self.model_name}]: {str(e)}",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="API_ERROR"
             )
 
 
@@ -717,28 +905,48 @@ class ShivaOrchestratorClient:
     """
     Claude API Client — Shiva Action Orchestrator (Multi-Lens Synthesis).
     
-    Model: Claude Sonnet 4.6
+    Model: Claude Sonnet 5.5
     Role: Shiva Action lens orchestration, multi-lens synthesis decisions,
           transdisciplinary fusion across Neji/Shikamaru/Itachi eyes.
+    Thinking: Adaptive Thinking (effort='medium')
     """
-    def __init__(self, model_name: Optional[str] = None, max_tokens: int = 8192):
-        self.model_name = model_name or os.environ.get("SHIVA_MODEL", "claude-sonnet-5.5")
+    def __init__(
+        self,
+        model_name: Optional[str] = None,
+        max_tokens: int = 8192,
+        enable_thinking: bool = True,
+        thinking_budget: int = 4096,
+        thinking_effort: str = "medium"
+    ):
+        self.model_name = model_name or os.environ.get("SHIVA_MODEL", "claude-sonnet-5-5")
         self.max_tokens = max_tokens
+        self.enable_thinking = enable_thinking
+        self.thinking_budget = thinking_budget
+        self.thinking_effort = thinking_effort
         self.api_key = os.environ.get("CLAUDE_API_KEY")
+        self.workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID")
         self.client = None
         if self.api_key:
             try:
                 from anthropic import AsyncAnthropic
-                self.client = AsyncAnthropic(api_key=self.api_key)
+                headers = {}
+                if self.workspace_id:
+                    headers["anthropic-workspace-id"] = self.workspace_id
+                self.client = AsyncAnthropic(api_key=self.api_key, default_headers=headers if headers else None)
             except Exception as e:
                 self.client = None
                 self._init_error = str(e)
+                logger.error(f"ShivaOrchestratorClient init failed: {e}")
+        else:
+            logger.error("ShivaOrchestratorClient: No CLAUDE_API_KEY found.")
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
+            TOKEN_TELEMETRY.record_usage("shiva_orchestrator", latency_ms=0.0, error="NO_CLIENT")
             return GenerationResult(
                 text="[ERROR: CLAUDE_API_KEY not set or ShivaOrchestratorClient uninitialized]",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="NO_CLIENT"
             )
         t0 = time.time()
         async def _call():
@@ -749,14 +957,33 @@ class ShivaOrchestratorClient:
             }
             if system_prompt:
                 kwargs["system"] = system_prompt
+            thinking_kw = _claude_thinking_kwargs(
+                self.model_name,
+                enable_thinking=self.enable_thinking,
+                thinking_budget=self.thinking_budget,
+                effort=self.thinking_effort
+            )
+            kwargs.update(thinking_kw)
             return await self.client.messages.create(**kwargs)
         try:
             response = await call_with_backoff(_call)
             latency = (time.time() - t0) * 1000.0
             p_tok, c_tok, th_tok, tot_tok = _extract_anthropic_tokens(response)
+            
+            text_out = _first_text(response)
+            if not text_out.strip():
+                err_msg = f"EMPTY_RESPONSE ({th_tok} thinking tokens, 0 text tokens)" if th_tok > 0 else "EMPTY_RESPONSE"
+                TOKEN_TELEMETRY.record_usage("shiva_orchestrator", p_tok, c_tok, th_tok, tot_tok, round(latency, 2), error=err_msg)
+                return GenerationResult(
+                    text=f"[SHIVA EMPTY RESPONSE - {self.model_name}]: {err_msg}",
+                    token_probabilities=[], model_name=self.model_name, latency_ms=round(latency, 2),
+                    prompt_tokens=p_tok, candidate_tokens=c_tok, thinking_tokens=th_tok, total_tokens=tot_tok,
+                    error="EMPTY_RESPONSE"
+                )
+
             TOKEN_TELEMETRY.record_usage("shiva_orchestrator", p_tok, c_tok, th_tok, tot_tok, round(latency, 2))
             return GenerationResult(
-                text=response.content[0].text,
+                text=text_out,
                 token_probabilities=[],
                 model_name=self.model_name,
                 latency_ms=round(latency, 2),
@@ -766,9 +993,11 @@ class ShivaOrchestratorClient:
                 total_tokens=tot_tok
             )
         except Exception as e:
+            TOKEN_TELEMETRY.record_usage("shiva_orchestrator", latency_ms=0.0, error=str(e))
             return GenerationResult(
                 text=f"[SHIVA API ERROR - {self.model_name}]: {str(e)}",
-                token_probabilities=[], model_name=self.model_name, latency_ms=0.0
+                token_probabilities=[], model_name=self.model_name, latency_ms=0.0,
+                error="API_ERROR"
             )
 
 
@@ -779,13 +1008,14 @@ CheshireClient = CheshireCatClient
 INTEGRA_MODEL_REGISTRY = {
     "left_hemisphere": {
         "client_class": Y789Client,
-        "default_model": "gemini-3.1-pro",
+        "default_model": "gemini-3.1-pro-preview",
         "reasoning": "Deep Think / Extended Thinking",
         "description": "Analytical Engine (Spock) / Deconstruction & Formal Verification"
     },
     "right_hemisphere": {
         "client_class": NexusClient,
-        "default_model": "claude-sonnet-5.5",
+        "default_model": "claude-opus-5-5",
+        "reasoning": "Adaptive Thinking / effort=high",
         "description": "Synthetic Engine (Kirk) / Emergence & Generative Fusion"
     },
     "cheshire_cat": {
@@ -795,12 +1025,13 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "rodin_retrieval": {
         "client_class": RodinClient,
-        "default_model": "gemini-3.6-flash",
+        "default_model": "gemini-3.8-flash",
+        "embedding_model": "text-embedding-004",
         "description": "Rodin Route Retrieval — KNN Topological Memory Engine"
     },
     "jean_grey_phoenix": {
         "client_class": JeanGreyClient,
-        "default_model": "gemini-3.1-pro",
+        "default_model": "gemini-3.1-pro-preview",
         "reasoning": "Deep Think / thinking_budget=16384",
         "description": "Jean Grey: Operation Phoenix Force — SWDS Neuroevolution Smelting"
     },
@@ -811,7 +1042,8 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "shiva_orchestrator": {
         "client_class": ShivaOrchestratorClient,
-        "default_model": "claude-sonnet-5.5",
+        "default_model": "claude-sonnet-5-5",
+        "reasoning": "Adaptive Thinking / effort=medium",
         "description": "Shiva Action Suite — Multi-Lens Orchestration & Synthesis"
     },
 }
