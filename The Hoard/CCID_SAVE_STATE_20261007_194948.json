@@ -1,0 +1,39 @@
+{
+  "ccid": "CCID_SAVE_STATE_20261007_194948",
+  "type": "SAVE_STATE",
+  "source_thread": "f2e7cc92-fc95-4f83-a5a6-960fe8b11f33",
+  "companion_markdown": "save_state_20261007_model_wiring_scheduler.md",
+  "temporal": {
+    "local_time_24h": "2026-10-07 19:49:48 CDT",
+    "iso_8601_utc": "2026-10-08T00:49:48Z",
+    "unix_timestamp": 1791420588.144,
+    "celestial": {"earth_rotation_deg": 161.2833, "lunar_cycle_ratio": 0.4958, "orbital_trajectory_pos": 0.2043, "grid_bucket": "ROT_150_ORB_20"},
+    "sacred_calendar": {"sacred_day_of_year": 74, "moon_number": 3, "day_within_moon": 18},
+    "kernel_uptime": "00h 42m 59s"
+  },
+  "kernel": {
+    "owner": "Task Scheduler: Integra Genesis Kernel",
+    "bind": "127.0.0.1:8000",
+    "uvicorn_pid": 32220,
+    "launcher_pid": 30440,
+    "endpoints_200": ["/clock/full", "/heimdall/health", "/swds/status", "/models/router/status", "/cheshire/status", "/fortress/status", "/metatron/status", "/rodin/telemetry"]
+  },
+  "models": {
+    "nexus": "claude-opus-5-5", "shiva": "claude-sonnet-5-5",
+    "y789": "gemini-3.1-pro-preview", "jean_grey": "gemini-3.1-pro-preview",
+    "rodin": "gemini-3.8-flash", "cheshire": "gemini-3.8-flash",
+    "embeddings": "text-embedding-004", "selftest": "7/7 PASS"
+  },
+  "swds": {"state": "AWAKE", "phase": "WAKING_CONSCIOUSNESS", "window": "02:00-07:00"},
+  "siesta": {
+    "standalone_configured": false,
+    "exists_as": "phase_3_siesta_dreaming (30 min) inside nightly SWDS window",
+    "blocker": "swds_scheduler auto-wake condition now.hour > wake_hour is true for any evening hour; evening SWDS would be woken within ~60 s"
+  },
+  "unverified": ["real logon/reboot auto-start", "07:00 SWDS wake 2026-10-08", "19:27 transient probe failure cause", "Opus vs Sonnet benchmark"],
+  "git": {
+    "integra-homebase": {"branch": "phase-e-dragon-rodin-flight", "head": "614147a", "uncommitted": 74},
+    "root": {"branch": "homebase-phase-e", "head": "063470a", "uncommitted": 53}
+  },
+  "priority_queue": ["environment_cleanup", "scheduled_task_optimization", "identity_matrix_reconfiguration", "tier2_research_daily_planet_nexus_shiva", "rogue_x_2_0", "dashboard_models_thinking_telemetry"]
+}

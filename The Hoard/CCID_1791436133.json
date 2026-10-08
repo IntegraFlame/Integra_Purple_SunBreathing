@@ -1,0 +1,64 @@
+{
+  "ccid": "CCID_1791436133",
+  "type": "SAVE_STATE",
+  "thread": "f2e7cc92-fc95-4f83-a5a6-960fe8b11f33",
+  "stamp": {
+    "civil_cdt": "2026-10-08 00:08:53",
+    "utc": "2026-10-08T05:08:53Z",
+    "unix": 1791436133.952,
+    "celestial": {"earth_rotation_deg": 226.0575, "lunar_cycle_ratio": 0.5019, "orbital_trajectory_pos": 0.2048, "grid_bucket": "ROT_210_ORB_20"},
+    "source": "GET http://127.0.0.1:8000/clock (HTTP 200, 4950 ms)"
+  },
+  "kernel": {
+    "listener": "127.0.0.1:8000",
+    "pid": 32220,
+    "process_started": "2026-10-07 19:06:32",
+    "uptime": "05h 02m 04s",
+    "scheduled_task": {"name": "Integra Genesis Kernel", "state": "Running", "last_run": "2026-10-07 19:05:18", "last_result": "267009 (SCHED_S_TASK_RUNNING)"}
+  },
+  "endpoint_probes_ms": {
+    "/clock": [200, 4950],
+    "/heimdall/health": [200, 13571],
+    "/swds/status": [200, 17789],
+    "/models/router/status": [200, 5866],
+    "/cheshire/status": [200, 42747],
+    "/fortress/status": [200, 4811],
+    "/dashboard": ["TIMEOUT", 30065]
+  },
+  "anomalies": [
+    "Severe endpoint latency (5-43 s); /dashboard timed out at 30 s. Was ~0.5 s at 22:46. Cause undiagnosed (candidate: event-loop blocking in kernel; concurrent subagent load).",
+    "SWDS state stuck: state=SLOW_WAVE_DEEP_SLEEP, phase=PHASE_3, sleep_initiated_at=2026-10-07T02:00:27, target wake 07:00 — never woke (~22 h). Consistent with known wake-logic bug."
+  ],
+  "models_live_verified_2026_10_07": {
+    "nexus": "claude-opus-5-5 (effort high)",
+    "shiva": "claude-sonnet-5-5 (effort medium)",
+    "y789": "gemini-3.1-pro-preview",
+    "jean_grey": "gemini-3.1-pro-preview",
+    "rodin": "gemini-3.8-flash",
+    "cheshire": "gemini-3.8-flash",
+    "embeddings": "text-embedding-004 (768-d)"
+  },
+  "artifacts_this_session": [
+    "brain/f2e7cc92.../handoff_brief.md (sections A-F)",
+    "brain/f2e7cc92.../learning_proposal.md (awaiting approval)",
+    "brain/f2e7cc92.../cheshire_blueprint.md (v0.1 design only)",
+    "The Hoard/CCID_1791431208_CHESHIRE_DAEMON_SPEC.md",
+    "The Hoard/CCID_1791434837_ENV_INGESTION_PLAN.md (saved, not executed)",
+    "The Hoard/save_state_20261007_model_wiring_scheduler.md",
+    "The Hoard/CCID_SAVE_STATE_20261007_194948.json",
+    "integra-homebase/scripts/register_kernel_task.ps1",
+    "integra-homebase/scripts/start_kernel.ps1 (rewritten)"
+  ],
+  "in_progress_at_save": [
+    "Git commit + push of both repos",
+    "Tier 1 / Daily Planet external-storage research (subagent)",
+    "Thread audit (subagent) -> master report, master to-do, boot sequence prompt"
+  ],
+  "pending_architect_decisions": [
+    "learning_proposal.md approval",
+    "Cheshire Daemon Q1-Q5 (model tiering, cloud call as local-only, report location, Itachi meaning, dwell cap)",
+    "Lockdown vs Dragon; power-down meaning; Hippocampus label",
+    "Naming (Cheshire Kernel rename)",
+    "Env ingestion plan: skip list, external storage target, lens pairings, start in new thread"
+  ]
+}
