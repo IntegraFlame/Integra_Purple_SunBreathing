@@ -46,7 +46,7 @@ At 02:34 CDT, `/clock`, `/heimdall/health` (4.8 ms) and `/swds/status` (AWAKE, i
    - "Shadow Clone" = Shadow Jutsu.
    - Closes **D-1** and **D-2**.
 3. **"CWA/CRA 2.0 weight system" = `governance/cra_simplex.py`.**
-   - The Architect's own 9/23 annotation calls it the "CWA 2.0 CRA 2.0 simplex scorer".
+   - The Architect's own 9/23 annotation, under `cra_simplex.py` in the systems map, reads verbatim "CWA 2.0 CRA 2,0lex scorer" (Suite 1_2T L4747), read as "CWA 2.0 / CRA 2.0 simplex scorer". (Quote corrected 2026-10-11 by session d245db57.)
    - It will be wired under Heimdall for per-component router token budgets and alerts.
    - Closes the second half of **D-16**.
 
@@ -133,6 +133,23 @@ The quiz answers and the full to-do (E1–E101, N1–N7, with changes since 10/0
   - Both nodes carry the real OS-clock time, because `celestial_time()` in a separate process would return the frozen checkpoint time.
   - The live Chroma index was not touched (`chroma_synced: false`), to avoid a second process writing to the kernel's vector database.
   - The kernel doesn't load shards at startup. Phoenix and the SWDS scripts read them from disk.
+
+## 8a. Successor session d245db57 (2026-10-11, from 03:41 CDT)
+- **Handoff completed:**
+  - The Hoard/Phoenix sync ran (§8).
+  - Root `CLAUDE.md` created.
+  - Blueprint updated to v.9.9.1 and its page republished.
+  - Commits pushed: integra-homebase `96b6278`, root `8a8c2dc`.
+- **Kernel unresponsive from 03:51 CDT.** Connections first got no answer and later were refused, while a Chrome dashboard tab kept polling. No restart was made, since that needs the Architect's approval. Full record: blueprint v.9.9.1, "Kernel note".
+- **Self-review corrections (the same morning):**
+  - The 9/23 annotation is quoted verbatim now ("CWA 2.0 CRA 2,0lex scorer", L4747) in §3, the JSON and the blueprint.
+  - The JSON's 10/09 roster line now matches the code diff: 3.1 Pro → 3.8 Flash. The 3.5/3.6/3.7 names were only in SKILL.md.
+  - Commit `96b6278`'s message repeats that false 3.5/3.6/3.7 line. It is pushed and stays as written, and the correction is recorded in the next homebase commit.
+- **Still open at G1:**
+  - the quiz grade
+  - D-18 and D-19
+  - the kernel decision (close the polling tab, or restart)
+  - the two "v.9.9.1" page-export copies, which are OneDrive placeholders this session could not overwrite
 
 ## 9. Next thread: boot line
 Paste this into a new thread:

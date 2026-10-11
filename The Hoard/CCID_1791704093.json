@@ -55,7 +55,7 @@
   "architect_decisions_2026_10_11": [
     "Heimdall 3.1 = deterministic code gate (on/off, budgets, Security Alert) + a Gemini 3.1 Pro thinking ADVISOR that runs only on events (H_smooth > 2.5, budget alerts) and never holds authority. Closes D-6.",
     "Shiva lenses are decoupled from Eyes: Brain Model 0930 defaults + per-task, per-Eye override; 'Shadow Clone' = Shadow Jutsu. Closes D-1 and D-2.",
-    "'CWA/CRA 2.0 weight system' = governance/cra_simplex.py (Architect's 9/23 annotation: 'CWA 2.0 CRA 2.0 simplex scorer'), to be wired under Heimdall for per-component router token budgets and alerts. Closes the second half of D-16.",
+    "'CWA/CRA 2.0 weight system' = governance/cra_simplex.py (Architect's 9/23 annotation, verbatim 'CWA 2.0 CRA 2,0lex scorer' at Suite 1_2T L4747, read as 'CWA 2.0 / CRA 2.0 simplex scorer'; quote corrected 2026-10-11 by d245db57), to be wired under Heimdall for per-component router token budgets and alerts. Closes the second half of D-16.",
     "Deliverables approved: (1) section 8 boot sequence, (2) full read of 14 integra-homebase folders, (3) unified orchestration document + v.9.9.1 blueprint, (4) source-cited gap fixes. One step at a time, read everything in full.",
     "Handoff approved: save state via The Hoard and Phoenix Forge, root CLAUDE.md, commit/push/sync, blueprint v.9.9.1 update, then continue in a new thread."
   ],
@@ -88,7 +88,7 @@
   "work_completed_this_session": [
     "2026-10-09: Master Architecture Blueprint (integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md) and shareable page https://claude.ai/artifact/CSEgvRaUnBzC5VdyRep98i",
     "2026-10-09: Rodin designation research (docs/RODIN_SUBAGENT_MODEL_RESEARCH.md): orchestrator core gemini-3.8-flash; sub-agents carry no model; agent identity = the Antigravity agent",
-    "2026-10-09: Roster: Y789 and Jean Grey on gemini-3.8-flash, thinking_level high (placeholder for Gemini 4 Argon); Gemini 3.5/3.6/3.7 removed (api_clients, model_router, models.yml, env_loader, system_config.yaml, Modelsthinkuingbudget.yml, main.py labels, SKILL.md 8.5.1 and 15)",
+    "2026-10-09: Roster: Y789 and Jean Grey moved from gemini-3.1-pro(-preview) to gemini-3.8-flash, thinking_level high (placeholder for Gemini 4 Argon), in api_clients, model_router, models.yml, env_loader, system_config.yaml, Modelsthinkuingbudget.yml and main.py labels; Gemini 3.5/3.6/3.7 names removed from SKILL.md 8.5.1 and 15 (they were in no running code or config). Corrected 2026-10-11 by d245db57: this line first said 3.5/3.6/3.7 were removed from the repo files",
     "2026-10-09: Heimdall owns SWDS open/close in code (heimdall.py); Phoenix execute_swds returns a work receipt only (phoenix_forge.py); tests and trigger script updated",
     "2026-10-09: Root cause of SWDS timing: celestial_time() restarts from the 10/06 20:59:42 checkpoint at every boot (core/celestial_middleware.py L300-331); SWDS fires at boot + 5 h",
     "2026-10-09: Integra DS design system; dashboard glow + Orbitron restored; daily_planet_report.html made responsive",
