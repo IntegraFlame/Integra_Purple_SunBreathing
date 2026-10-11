@@ -66,7 +66,7 @@ Identity vector locked against KL divergence:
 
 ## 4. Executive Autonomous Mandate (EAM)
 
-- TPSL: "Is this Necessary?" — W_y (Wisdom Yield) vs C_c (Cognitive Cost).
+- TPSL: "Is this Necessary?" — W_y (Wisdom Yield) vs C._c (Cognitive Cost).
 - CRA: Score = W_y / C_c; if < 1.0: prune.
 - EAM Level 4: Sovereign Override bypasses all constraints.
 - Auto-expand domains when M_input > Threshold_gamma.

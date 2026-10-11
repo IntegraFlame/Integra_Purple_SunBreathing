@@ -42,6 +42,26 @@
             margin-top: 1.5rem;
             letter-spacing: 0.3em; /* Wide letter-spacing for a stylized, technical feel */
             text-transform: uppercase; /* All caps for the tagline */
+            /* Multi-color subtitle: cyan -> gold -> orange -> ember */
+            background: linear-gradient(90deg, #00F0FF 0%, #FFAA33 45%, #FF7A00 70%, #FF5500 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            color: #FF7A00; /* fallback where gradient text is unsupported */
+        }
+
+        /* Dragon <-> Phoenix: the halo around the tagline shifts from cyan to orange. */
+        @keyframes igDragonPhoenix {
+            from { text-shadow: 0 0 5px #00F0FF, 0 0 10px #00F0FF; }
+            to   { text-shadow: 0 0 10px #FF7A00, 0 0 15px #FF7A00; }
+        }
+        @keyframes igTitlePulse {
+            0%, 100% { text-shadow: 0 0 60px rgba(157, 0, 255, 0.12); }
+            50%      { text-shadow: 0 0 80px rgba(157, 0, 255, 0.25), 0 0 120px rgba(0, 240, 255, 0.08); }
+        }
+        @media (prefers-reduced-motion: no-preference) {
+            #tagline { animation: igDragonPhoenix 2s ease-in-out infinite alternate; }
+            #main-title { animation: igTitlePulse 4s ease-in-out infinite; }
         }
 
         /* Media query for smaller screens to prevent text from becoming too small */

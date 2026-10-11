@@ -1,0 +1,218 @@
+[
+ {
+  "file": "Claudecode1import anthropic.md",
+  "line_start": 1,
+  "line_end": 38,
+  "title": "(preamble)",
+  "chars": 1041,
+  "hash": "43754e3dee92",
+  "dup_of": null,
+  "out": "01__preamble__43754e3dee92.md"
+ },
+ {
+  "file": "Claudecode1import anthropic.md",
+  "line_start": 39,
+  "line_end": 1938,
+  "title": "Batch processing",
+  "chars": 75427,
+  "hash": "14ee6edfdc40",
+  "dup_of": null,
+  "out": "02_Batch_processing_14ee6edfdc40.md"
+ },
+ {
+  "file": "Claudecode1import anthropic.md",
+  "line_start": 1939,
+  "line_end": 2854,
+  "title": "Define tools",
+  "chars": 38091,
+  "hash": "0ce73ae4d067",
+  "dup_of": null,
+  "out": "03_Define_tools_0ce73ae4d067.md"
+ },
+ {
+  "file": "Claudecode1import anthropic.md",
+  "line_start": 2855,
+  "line_end": 4475,
+  "title": "Parallel tool use",
+  "chars": 56120,
+  "hash": "65b9f895b7bb",
+  "dup_of": null,
+  "out": "04_Parallel_tool_use_65b9f895b7bb.md"
+ },
+ {
+  "file": "Claudecode1import anthropic.md",
+  "line_start": 4476,
+  "line_end": 5090,
+  "title": "Memory tool",
+  "chars": 22297,
+  "hash": "782fafb29fed",
+  "dup_of": null,
+  "out": "05_Memory_tool_782fafb29fed.md"
+ },
+ {
+  "file": "Claudecode1import anthropic.md",
+  "line_start": 5091,
+  "line_end": 5703,
+  "title": "Memory tool",
+  "chars": 22297,
+  "hash": "782fafb29fed",
+  "dup_of": "05_Memory_tool_782fafb29fed.md"
+ },
+ {
+  "file": "Claudecode4Untitled-2.md",
+  "line_start": 1,
+  "line_end": 1026,
+  "title": "Memory tool",
+  "chars": 39699,
+  "hash": "36c165d57e7c",
+  "dup_of": null,
+  "out": "06_Memory_tool_36c165d57e7c.md"
+ },
+ {
+  "file": "Claudecode4Untitled-2.md",
+  "line_start": 1027,
+  "line_end": 1639,
+  "title": "Memory tool",
+  "chars": 22297,
+  "hash": "782fafb29fed",
+  "dup_of": "05_Memory_tool_782fafb29fed.md"
+ },
+ {
+  "file": "Claudecode5Untitled-3.md",
+  "line_start": 1,
+  "line_end": 1555,
+  "title": "Code execution tool",
+  "chars": 61187,
+  "hash": "dd86ecd0d119",
+  "dup_of": null,
+  "out": "07_Code_execution_tool_dd86ecd0d119.md"
+ },
+ {
+  "file": "Claudecode5Untitled-3.md",
+  "line_start": 1556,
+  "line_end": 2676,
+  "title": "Server tools",
+  "chars": 44735,
+  "hash": "041d1f2e09f0",
+  "dup_of": null,
+  "out": "08_Server_tools_041d1f2e09f0.md"
+ },
+ {
+  "file": "Claudecode5Untitled-3.md",
+  "line_start": 2677,
+  "line_end": 4133,
+  "title": "Token counting",
+  "chars": 43494,
+  "hash": "03d4c2753dc5",
+  "dup_of": null,
+  "out": "09_Token_counting_03d4c2753dc5.md"
+ },
+ {
+  "file": "Claudecode5Untitled-3.md",
+  "line_start": 4134,
+  "line_end": 7490,
+  "title": "Prompt caching",
+  "chars": 160148,
+  "hash": "1235fda1dd3e",
+  "dup_of": null,
+  "out": "10_Prompt_caching_1235fda1dd3e.md"
+ },
+ {
+  "file": "Claudecode5Untitled-3.md",
+  "line_start": 7491,
+  "line_end": 12290,
+  "title": "Using Agent Skills with the API",
+  "chars": 149979,
+  "hash": "388264d5e1a1",
+  "dup_of": null,
+  "out": "11_Using_Agent_Skills_with_the_API_388264d5e1a1.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 1,
+  "line_end": 1001,
+  "title": "Claude on Google Cloud",
+  "chars": 34636,
+  "hash": "493913f35e33",
+  "dup_of": null,
+  "out": "12_Claude_on_Google_Cloud_493913f35e33.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 1002,
+  "line_end": 2278,
+  "title": "Browser and computer use with the SDK toolsets",
+  "chars": 74591,
+  "hash": "96b1de417f0b",
+  "dup_of": null,
+  "out": "13_Browser_and_computer_use_with_the_SDK_to_96b1de417f0b.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 2279,
+  "line_end": 2386,
+  "title": "Tool combinations",
+  "chars": 6169,
+  "hash": "7fac033c403a",
+  "dup_of": null,
+  "out": "14_Tool_combinations_7fac033c403a.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 2387,
+  "line_end": 3978,
+  "title": "Programmatic tool calling",
+  "chars": 62288,
+  "hash": "3749ce3c3e94",
+  "dup_of": null,
+  "out": "15_Programmatic_tool_calling_3749ce3c3e94.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 3979,
+  "line_end": 5004,
+  "title": "Memory tool",
+  "chars": 39699,
+  "hash": "36c165d57e7c",
+  "dup_of": "06_Memory_tool_36c165d57e7c.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 5005,
+  "line_end": 6125,
+  "title": "Server tools",
+  "chars": 44735,
+  "hash": "041d1f2e09f0",
+  "dup_of": "08_Server_tools_041d1f2e09f0.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 6126,
+  "line_end": 7385,
+  "title": "Thinking",
+  "chars": 82636,
+  "hash": "4449b20bb34b",
+  "dup_of": null,
+  "out": "16_Thinking_4449b20bb34b.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 7386,
+  "line_end": 12056,
+  "title": "Tutorial: Build a tool-using agent",
+  "chars": 164573,
+  "hash": "d58a2423bd6a",
+  "dup_of": null,
+  "out": "17_Tutorial_Build_a_tool_using_agent_d58a2423bd6a.md"
+ },
+ {
+  "file": "Claudecode6Untitled-5.md",
+  "line_start": 12057,
+  "line_end": 14886,
+  "title": "Structured outputs",
+  "chars": 103036,
+  "hash": "66d768f34cc5",
+  "dup_of": null,
+  "out": "18_Structured_outputs_66d768f34cc5.md"
+ }
+]

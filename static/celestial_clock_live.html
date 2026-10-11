@@ -5,7 +5,7 @@
   <title>Integra O/S — Live Celestial Clock</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
   <style>
     /* ── INTEGRA BRAND TOKENS (DailyPlanet / Logo Schematics) ── */
@@ -28,7 +28,7 @@
       margin: 0; padding: 0;
       background: var(--void);
       color: var(--monolith);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Orbitron', sans-serif;
       min-height: 100vh;
       overflow-x: hidden;
     }
@@ -66,7 +66,7 @@
     .glow-purple { animation: pulseGlow 4s ease-in-out infinite; }
     .orbit-pulse { animation: orbitalPulse 2s ease-in-out infinite; }
     .font-mono-data {
-      font-family: 'JetBrains Mono', monospace, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas;
+      font-family: 'Orbitron', sans-serif;
     }
 
     /* DailyPlanet header bar */
@@ -79,6 +79,72 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LIVING FLAME — GLOW MOTION
+       The original front-end's tagline glow (halo shifting cyan <-> orange)
+       carried to every accent. Structure glows dragon <-> phoenix; values keep
+       their own color. Every readout here updates at 1 Hz in place, so no
+       animation restarts.
+       ═══════════════════════════════════════════════════════════════ */
+    @keyframes igDragonPhoenix {
+      from { text-shadow: 0 0 5px #00F0FF, 0 0 10px #00F0FF; }
+      to   { text-shadow: 0 0 10px #FF7A00, 0 0 15px #FF7A00; }
+    }
+    @keyframes igDragonPhoenixSm {
+      from { text-shadow: 0 0 3px #00F0FF, 0 0 6px rgba(0, 240, 255, 0.6); }
+      to   { text-shadow: 0 0 5px #FF7A00, 0 0 9px rgba(255, 122, 0, 0.6); }
+    }
+    @keyframes igTitlePulse {
+      0%, 100% { text-shadow: 0 0 14px rgba(157, 0, 255, 0.35); }
+      50%      { text-shadow: 0 0 22px rgba(157, 0, 255, 0.65), 0 0 40px rgba(0, 240, 255, 0.18); }
+    }
+    @keyframes igGlowText {
+      0%, 100% { text-shadow: 0 0 2px color-mix(in srgb, currentColor 25%, transparent); }
+      50%      { text-shadow: 0 0 8px color-mix(in srgb, currentColor 70%, transparent), 0 0 16px color-mix(in srgb, currentColor 30%, transparent); }
+    }
+    @keyframes igEdge { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.85; } }
+    @keyframes igBadge {
+      0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, currentColor 0%, transparent); }
+      50%      { box-shadow: 0 0 10px 0 color-mix(in srgb, currentColor 45%, transparent); }
+    }
+
+    /* Card edges glow in the card's own accent: purple, indigo, amber, cyan */
+    .max-w-4xl > div[class*="border"], .max-w-4xl .grid > div[class*="border"] { position: relative; }
+    .max-w-4xl > div[class*="border"]::after, .max-w-4xl .grid > div[class*="border"]::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0.12;
+      box-shadow: inset 0 0 0 1px rgba(157, 0, 255, 0.55), inset 0 0 14px rgba(157, 0, 255, 0.22);
+    }
+    .max-w-4xl .grid > div[class*="border-indigo-800"]::after {
+      box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.6), inset 0 0 14px rgba(99, 102, 241, 0.28);
+    }
+    .max-w-4xl .grid > div[class*="border-amber-800"]::after {
+      box-shadow: inset 0 0 0 1px rgba(255, 170, 51, 0.5), inset 0 0 14px rgba(255, 170, 51, 0.2);
+    }
+    .max-w-4xl .grid > div[class*="border-cyan-800"]::after {
+      box-shadow: inset 0 0 0 1px rgba(0, 240, 255, 0.5), inset 0 0 14px rgba(0, 240, 255, 0.2);
+    }
+    /* Orbitron is wider than the mono it replaces: keep readouts whole */
+    #digital-time-12, #celestial-rot { white-space: nowrap; }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .clock-header-brand { animation: igDragonPhoenix 2s ease-in-out infinite alternate; }
+      h1 { animation: igTitlePulse 4s ease-in-out infinite; }
+      .tracking-wider.uppercase { animation: igDragonPhoenixSm 3.2s ease-in-out infinite alternate; }
+      .grid > div:nth-child(2) > .tracking-wider.uppercase, .grid > div:nth-child(2) > .flex > .tracking-wider.uppercase { animation-delay: -1.6s; }
+      #digital-time-12 { animation: igDragonPhoenix 2.6s ease-in-out infinite alternate; }
+      #celestial-rot { animation: igDragonPhoenix 3s ease-in-out infinite alternate; }
+      #sacred-moon, #sacred-day, #sacred-yearday { animation: igGlowText 3.6s ease-in-out infinite; }
+      #sacred-day { animation-delay: -1.2s; }
+      #sacred-yearday { animation-delay: -2.4s; }
+      #hlc-host, #hlc-y789, #hlc-nexus, #hlc-alex { animation: igGlowText 4s ease-in-out infinite; }
+      #hlc-y789 { animation-delay: -1s; }
+      #hlc-nexus { animation-delay: -2s; }
+      #hlc-alex { animation-delay: -3s; }
+      #status-badge { animation: igBadge 3.2s ease-in-out infinite; }
+      .max-w-4xl > div[class*="border"]::after, .max-w-4xl .grid > div[class*="border"]::after { animation: igEdge 5s ease-in-out infinite; }
+      .max-w-4xl .grid > div:nth-child(2)::after { animation-duration: 6s; animation-delay: -1.7s; }
     }
   </style>
 </head>
@@ -429,7 +495,7 @@
 
       // Baker, LA label
       ctx.fillStyle = 'rgba(168, 85, 247, 0.5)';
-      ctx.font = '8px monospace';
+      ctx.font = '8px Orbitron, sans-serif';
       ctx.fillText('Baker, LA', 4, h - 4);
     }
 
@@ -563,6 +629,30 @@
       }
       animBg();
     }
+  </script>
+
+  <script>
+    // Orbitron's digits are proportional (a "1" is about half the width of a "0"), so a ticking
+    // readout would jitter every second. Pin each digit of the live readouts to a fixed-width cell.
+    (function () {
+      var IDS = ['digital-time-12', 'digital-time-24', 'digital-utc', 'digital-unix', 'digital-uptime',
+                 'celestial-rot', 'celestial-orb', 'celestial-lunar'];
+      function pin(el) {
+        var txt = el.textContent;
+        if (el.__pinned === txt) return;
+        el.__pinned = txt;
+        el.textContent = '';
+        for (var i = 0; i < txt.length; i++) {
+          var ch = txt.charAt(i), s = document.createElement('span');
+          s.textContent = ch;
+          if (ch >= '0' && ch <= '9') s.style.cssText = 'display:inline-block;width:0.84em;text-align:center';
+          el.appendChild(s);
+        }
+      }
+      var els = IDS.map(function (id) { return document.getElementById(id); }).filter(Boolean);
+      var mo = new MutationObserver(function () { els.forEach(pin); });
+      els.forEach(function (el) { pin(el); mo.observe(el, { childList: true, characterData: true, subtree: true }); });
+    })();
   </script>
 </body>
 </html>

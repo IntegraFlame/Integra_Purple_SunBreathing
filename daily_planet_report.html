@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400..900&display=swap" rel="stylesheet">
   <style>
     :root {
       --void: #000000;
@@ -27,7 +27,7 @@
     body {
       background: var(--void);
       color: var(--monolith);
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Orbitron', sans-serif;
       font-size: 13px;
       line-height: 1.6;
       padding: 2rem;
@@ -232,6 +232,105 @@
       color: rgba(157, 0, 255, 0.5);
       margin-top: 0.5rem;
     }
+
+    /* ═══════════════════════════════════════════════════════════════
+       LIVING FLAME — GLOW MOTION
+       The original front-end's tagline glow (halo shifting cyan <-> orange)
+       carried to every accent. Structure glows dragon <-> phoenix; values and
+       signals (gauges, prices, up / down, thesis / antithesis / synthesis)
+       glow in their own color.
+       ═══════════════════════════════════════════════════════════════ */
+    @keyframes igDragonPhoenix {
+      from { text-shadow: 0 0 5px #00F0FF, 0 0 10px #00F0FF; }
+      to   { text-shadow: 0 0 10px #FF7A00, 0 0 15px #FF7A00; }
+    }
+    @keyframes igDragonPhoenixSm {
+      from { text-shadow: 0 0 3px #00F0FF, 0 0 6px rgba(0, 240, 255, 0.6); }
+      to   { text-shadow: 0 0 5px #FF7A00, 0 0 9px rgba(255, 122, 0, 0.6); }
+    }
+    @keyframes igTitlePulse {
+      0%, 100% { text-shadow: 0 0 14px rgba(157, 0, 255, 0.35); }
+      50%      { text-shadow: 0 0 22px rgba(157, 0, 255, 0.65), 0 0 40px rgba(0, 240, 255, 0.18); }
+    }
+    @keyframes igGlowText {
+      0%, 100% { text-shadow: 0 0 2px color-mix(in srgb, currentColor 25%, transparent); }
+      50%      { text-shadow: 0 0 8px color-mix(in srgb, currentColor 70%, transparent), 0 0 16px color-mix(in srgb, currentColor 30%, transparent); }
+    }
+    @keyframes igEdge { 0%, 100% { opacity: 0.12; } 50% { opacity: 0.85; } }
+    @keyframes igRule { 0%, 100% { opacity: 0.18; } 50% { opacity: 0.7; } }
+
+    /* Edges: the brand gradient as a hairline under the header and over the footer; a purple inner glow on panels */
+    .report-header, .report-footer { position: relative; }
+    .report-header::after, .report-footer::before {
+      content: ""; position: absolute; left: 0; right: 0; height: 1px; pointer-events: none; opacity: 0.18;
+      background: linear-gradient(90deg, #00F0FF, #FFAA33, #FF7A00, #FF5500);
+    }
+    .report-header::after { bottom: -1px; }
+    .report-footer::before { top: -1px; }
+    .card, .chart-container, .gauge-card { position: relative; }
+    .card::after, .chart-container::after, .gauge-card::after {
+      content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; opacity: 0.12;
+      box-shadow: inset 0 0 0 1px rgba(157, 0, 255, 0.55), inset 0 0 14px rgba(157, 0, 255, 0.22);
+    }
+
+    @media (prefers-reduced-motion: no-preference) {
+      .report-brand, .footer-brand { animation: igDragonPhoenix 2s ease-in-out infinite alternate; }
+      .report-title { animation: igTitlePulse 4s ease-in-out infinite; }
+      .report-header::after, .report-footer::before { animation: igRule 4s ease-in-out infinite; }
+      .card::after, .chart-container::after, .gauge-card::after { animation: igEdge 5s ease-in-out infinite; }
+      .gauge-card:nth-child(2n)::after, .card:nth-of-type(2n)::after { animation-duration: 6s; animation-delay: -1.7s; }
+      .chart-container:nth-of-type(2n)::after { animation-duration: 4.4s; animation-delay: -3.1s; }
+
+      .section-number { animation: igDragonPhoenixSm 3s ease-in-out infinite alternate; }
+      .section-title { animation: igDragonPhoenixSm 3.4s ease-in-out infinite alternate; }
+      .card-label { animation: igDragonPhoenixSm 3.2s ease-in-out infinite alternate; }
+      .chart-title { animation: igDragonPhoenixSm 3.8s ease-in-out infinite alternate; }
+      thead th { animation: igDragonPhoenixSm 3.6s ease-in-out infinite alternate; }
+      thead th:nth-child(2n) { animation-delay: -1.8s; }
+      section:nth-of-type(2n) .section-title, section:nth-of-type(2n) .section-number { animation-delay: -1.5s; }
+
+      .gauge-value { animation: igGlowText 3.6s ease-in-out infinite; }
+      .gauge-card:nth-child(2n) .gauge-value { animation-delay: -1.3s; }
+      .gauge-card:nth-child(3n) .gauge-value { animation-delay: -2.5s; }
+      .price { animation: igGlowText 4s ease-in-out infinite; }
+      .up, .down { animation: igGlowText 4.4s ease-in-out infinite; }
+      em.thesis, em.antithesis, em.synthesis { animation: igGlowText 4.8s ease-in-out infinite; }
+      em.antithesis { animation-delay: -1.6s; }
+      em.synthesis { animation-delay: -3.2s; }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════
+       RESPONSIVE — the report fits any screen
+       Under 720px the page tightens and the gauge cards stack; under 640px each
+       table row becomes a stacked card whose cells carry their column name
+       (the data-label attributes are added by the script at the bottom).
+       ═══════════════════════════════════════════════════════════════ */
+    @media (max-width: 720px) {
+      body { padding: 1rem; font-size: 12px; }
+      .report-header { padding-bottom: 1rem; margin-bottom: 1.25rem; }
+      .report-title { font-size: 1.15rem; }
+      .report-meta { gap: 0.5rem 1rem; margin-top: 0.75rem; font-size: 0.65rem; }
+      section { margin-bottom: 1.75rem; }
+      .gauge-row { flex-direction: column; }
+      .gauge-card, .card, .chart-container { padding: 1rem; }
+      .gauge-value { font-size: 1.6rem; }
+      .footer-meta, .footer-telemetry { line-height: 1.6; }
+    }
+    @media (max-width: 640px) {
+      table, tbody, tr, td { display: block; width: 100%; }
+      thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+      tbody tr, tbody tr:nth-child(even) {
+        background: var(--card-bg); border: 1px solid var(--card-border); border-radius: 8px;
+        margin-bottom: 0.75rem; padding: 0.25rem 0;
+      }
+      tbody td { padding: 0.45rem 0.75rem; }
+      tbody td:last-child { border-bottom: 0; }
+      tbody td[data-label]::before {
+        content: attr(data-label); display: block; margin-bottom: 0.15rem;
+        font-family: 'Orbitron', sans-serif; font-size: 0.5rem; font-weight: 400;
+        letter-spacing: 0.15em; text-transform: uppercase; color: var(--cyan);
+      }
+    }
   </style>
 </head>
 <body>
@@ -410,13 +509,25 @@
 
   <!-- ═══════════ CHART SCRIPTS ═══════════ -->
   <script>
-    // ── VIX Gauge Bar ──
-    (function() {
-      const c = document.getElementById('vixGauge');
+    // Canvases are drawn at the element's real width and the device pixel ratio, after Orbitron has
+    // loaded, and redrawn when the width changes, so the charts stay sharp and fit any screen.
+    function sizeCanvas(c, h) {
+      const dpr = window.devicePixelRatio || 1;
+      const w = Math.max(1, Math.round(c.clientWidth));
+      c.width = Math.round(w * dpr);
+      c.height = Math.round(h * dpr);
+      c.style.height = h + 'px';
       const ctx = c.getContext('2d');
-      const w = c.width = c.offsetWidth;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      return { ctx, w };
+    }
+
+    // ── VIX Gauge Bar ──
+    function drawVix() {
+      const c = document.getElementById('vixGauge');
       const h = 24;
-      c.height = h;
+      const { ctx, w } = sizeCanvas(c, h);
 
       // Background track
       ctx.fillStyle = 'rgba(255,255,255,0.04)';
@@ -451,15 +562,13 @@
       ctx.fillText('20', w * 0.25 - 6, 16);
       ctx.fillText('40', w * 0.5 - 6, 16);
       ctx.fillText('80', w - 18, 16);
-    })();
+    }
 
     // ── Performance Bar Chart ──
-    (function() {
+    function drawPerf() {
       const c = document.getElementById('perfChart');
-      const ctx = c.getContext('2d');
-      const w = c.width = c.offsetWidth;
-      const h = 180;
-      c.height = h;
+      const h = 214; // 5 bars: 20px top margin + 5 x (24px bar + 12px gap) + room below the last bar
+      const { ctx, w } = sizeCanvas(c, h);
 
       const data = [
         { label: 'SPY',  value: 1.2,   color: '#00F0FF' },
@@ -487,7 +596,7 @@
 
       ctx.font = '9px Orbitron';
       ctx.fillStyle = 'rgba(255,255,255,0.3)';
-      ctx.fillText('0%', zeroX - 6, h - 2);
+      ctx.fillText('0%', zeroX + 4, 12);
 
       data.forEach((d, i) => {
         const y = startY + i * (barH + gap);
@@ -508,7 +617,7 @@
         ctx.globalAlpha = 1;
 
         // Value label
-        ctx.font = '10px JetBrains Mono';
+        ctx.font = '10px Orbitron';
         ctx.fillStyle = d.color;
         ctx.textAlign = d.value >= 0 ? 'left' : 'right';
         const valX = d.value >= 0 ? x + bw + 8 : x - 8;
@@ -516,7 +625,30 @@
       });
 
       ctx.textAlign = 'left';
-    })();
+    }
+
+    function drawAll() { drawVix(); drawPerf(); }
+    Promise.all([document.fonts.load('400 11px Orbitron'), document.fonts.load('700 11px Orbitron')])
+      .catch(function () {})
+      .then(function () {
+        drawAll();
+        var lastW = document.getElementById('perfChart').clientWidth, timer;
+        window.addEventListener('resize', function () {
+          clearTimeout(timer);
+          timer = setTimeout(function () {
+            var w = document.getElementById('perfChart').clientWidth;
+            if (w !== lastW) { lastW = w; drawAll(); }
+          }, 120);
+        });
+      });
+
+    // On narrow screens each table row becomes a stacked card; tag every cell with its column name.
+    document.querySelectorAll('table').forEach(function (tbl) {
+      var heads = Array.prototype.map.call(tbl.querySelectorAll('thead th'), function (th) { return th.textContent.trim(); });
+      tbl.querySelectorAll('tbody tr').forEach(function (tr) {
+        Array.prototype.forEach.call(tr.children, function (td, i) { if (heads[i]) td.setAttribute('data-label', heads[i]); });
+      });
+    });
   </script>
 </body>
 </html>

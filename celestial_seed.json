@@ -1,0 +1,14 @@
+{
+  "geographic_anchor": {
+    "location": "Baker, Louisiana",
+    "seed_latitude": 30.5888,
+    "seed_longitude": -91.1673
+  },
+  "cosmic_kinematics": {
+    "earth_rotation_deg_per_sec": 0.0041666666666667,
+    "lunar_synodic_month_seconds": 2551442.8,
+    "sidereal_year_seconds": 31558149.763,
+    "orbital_eccentricity": 0.0167086,
+    "alignment_epoch_unix": 1785052800.0
+  }
+}

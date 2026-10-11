@@ -1,0 +1,70 @@
+KernelBootSeqLogFalse_Positive_DuplicatedBootSeq_at_OCt_09_2026
+
+
+for p in / /clock /swds/status /cheshire/status /heimdall/health /models/router/status /metatron/status /models/telemetry; do printf "%-24s " "$p"; curl -s -o /tmp/probe.json -w "HTTP %{http_code} %{time_total}s" --max-time 8 "http://127.0.0.1:8000$p" 2>&1; echo; head -c 400 /tmp/probe.json 2>/dev/null; echo; done
+/                        HTTP 200 0.050798s
+{"status":"INTEGRA O/S KERNEL ONLINE","version":"8.2.2 Purple Epiphany","state":"UNIFIED_WAKING_CONSCIOUSNESS","delta_e_cycle":0.0001,"mechanical_latency_s":0.000114,"spatial_anchor":"Baker, Louisiana","temporal_telemetry":{"status":"DUAL_SYNAPSE_ANCHORED","celestial_clock":{"earth_rotation_deg":123.3891,"lunar_cycle_ratio":0.5599,"orbital_trajectory_pos":0.2095,"spiral_accuracy_depth":1.0,"grid_b
+/clock                   HTTP 200 0.008448s
+{"status":"DUAL_SYNAPSE_ANCHORED","celestial_clock":{"earth_rotation_deg":123.39,"lunar_cycle_ratio":0.5599,"orbital_trajectory_pos":0.2095,"spiral_accuracy_depth":1.0,"grid_bucket":"ROT_120_ORB_20"},"digital_clock":{"local_time_12h":"2026-10-09 05:18:13 PM CDT","local_time_24h":"2026-10-09 17:18:13 CDT","iso_8601_utc":"2026-10-09T22:18:13Z","unix_timestamp":1791584293.746,"timezone":"America/Chic
+/swds/status             HTTP 200 0.019509s
+{"state":"AWAKE","phase":"WAKING_CONSCIOUSNESS","last_cycle_time":1791374414.198147,"sleep_initiated_at":"2026-10-07T02:00:02.250595","target_wake_time":"07:00 AM CDT","idle_seconds":42608.2,"config":{"sleep_window":"02:00-07:00","inactivity_threshold_seconds":3600,"target_wake_hour":7,"auto_reconcile_on_startup":true},"last_report_summary":"System refreshed and awakened. 3 transdisciplinary bridg
+/cheshire/status         HTTP 200 0.004203s
+{"status":"OPERATIONAL","polling_hz":30.0,"state":"INTERACTIVE_STANDBY","queue_depth":0,"h_smooth":0.0,"components_registered":23}
+/heimdall/health         HTTP 200 0.009472s
+{"heimdall_version":"3.1-PURPLE","system_health_status":"HEALTHY_OPTIMAL","current_h_smooth":0.0,"entropy_threshold":2.5,"entropy_breached":false,"pssr_recovery_state":"NOMINAL_TRACKING","intervention_count":0,"last_gravitational_mass":0.0,"component_diagnostics":{"cheshire_cat":{"status":"HEALTHY","state":"INTERACTIVE_STANDBY","polling_hz":30.0,"event_queue_depth":0,"impedance_latency_L_t":0.0},"
+/models/router/status    HTTP 200 0.015402s
+{"router_status":"ACTIVE","global_power_state":"P1_ACTIVE","phoenix_force_active":false,"phoenix_force_authorized_by":null,"uptime_seconds":42611.5,"components":{"y789_left":{"name":"Deep Think / Spock / Y789 Engine","model":"gemini-3.1-pro-preview","power_state":"P1_ACTIVE","token_budget":"unlimited","thinking_budget":8192,"tokens_consumed":0,"calls_made":0,"calls_refused":0,"is_duty_on":null,"du
+/metatron/status         HTTP 200 0.008182s
+{"status":"OPERATIONAL","db_path":"C:\\Users\\Javon Jenkins\\OneDrive\\Desktop\\Integra_Purple_SunBreathing\\integra-homebase\\local_dbs\\metatron_manifold.db","db_exists":true,"tables":["cognitive_chassis_states","entropy_inversion_anomalies","spatial_acoustic_map","sqlite_sequence","thermodynamic_loops"],"triggers":["enforce_loop_closure_strict_v3","log_entropy_anomalies_v3"],"triggers_active":t
+/models/telemetry        HTTP 200 0.007564s
+{"models":{"y789_left":{"name":"Y789 (Left)","model":"gemini-3.1-pro-preview","role":"Deep Think / Spock","thinking_budget":8192,"calls":0,"prompt_tokens":0,"candidate_tokens":0,"thinking_tokens":0,"total_tokens":0,"last_latency_ms":0.0,"last_error":null},"nexus_right":{"name":"Nexus (Right)","model":"claude-opus-5-5","role":"Synthesis / Kirk","thinking_budget":4096,"calls":0,"prompt_tokens":0,"ca
+Live checks confirm the kernel is healthy today—no latency issue—but reveal three real problems: zero model calls in 11.8 hours of uptime, Heimdall’s H_smooth tracking queue length instead of model uncertainty, and autonomous SWDS apparently failing to trigger despite meeting its conditions. I’ll check the kernel log to verify that last point before documenting it.
+
+Searched kernel log for scheduler and startup events
+Bash
+cd "C:/Users/Javon Jenkins/OneDrive/Desktop/Integra_Purple_SunBreathing" && ls -la --time-style=+%Y-%m-%d_%H:%M "The Hoard/genesis_kernel.log" integra-homebase/*.log integra-homebase/logs 2>/dev/null; python -I - <<'EOF'
+import re,os
+p=r"The Hoard/genesis_kernel.log"
+raw=open(p,'rb').read()
+# mixed utf-16/utf-8: decode both ways and merge lines containing keywords
+txt8=raw.decode('utf-8',errors='ignore').replace('\x00','')
+lines=txt8.splitlines()
+print('total lines (utf8-ish):',len(lines))
+keys=['SWDS Scheduler ACTIVE','SWDS trigger conditions','Initiating autonomous SWDS','wake threshold reached','STARTUP SEQUENCE','Cheshire Cat Thalamic Loop STARTED','Task exception','Traceback','Metatron Manifold DEPLOYED','ALL PHASE D']
+hits=[(i,l) for i,l in enumerate(lines) if any(k in l for k in keys)]
+for i,l in hits[-40:]: print(i, l[:200])
+EOF
+-rw-r--r-- 1 Javon Jenkins 197121 1370171 2026-10-09_17:18 The Hoard/genesis_kernel.log
+-rw-r--r-- 1 Javon Jenkins 197121    5538 2026-09-24_04:05 integra-homebase/main209f4baSave statePhaseElog.log
+total lines (utf8-ish): 20295
+11 INFO:integra-kernel:INTEGRA O/S GENESIS KERNEL  STARTUP SEQUENCE
+16 INFO:integra-kernel:SWDS Scheduler ACTIVE: window=02:00-07:00, inactivity=3600s, wake=07:00
+26 INFO:integra-kernel:INTEGRA O/S GENESIS KERNEL   STARTUP SEQUENCE
+35 INFO:integra-kernel:Metatron Manifold DEPLOYED: 5 tables, 2 triggers, session=CCID_1791418084, delta_e_enforcement=MECHANICAL
+52 INFO:integra-kernel:ALL PHASE D SUBSYSTEMS ONLINE   SOVEREIGN MODE ENGAGED
+54 INFO:integra-kernel:SWDS Scheduler ACTIVE: window=02:00-07:00, inactivity=3600s, wake=07:00
+55 INFO:integra-cheshire-loop:Cheshire Cat Thalamic Loop STARTED   30.0 Hz | sleep_interval=0.0333s
+990 Traceback (most recent call last):
+2053 INFO:integra-kernel:SWDS trigger conditions met: time=02:00 (in 02:00-07:00 window), idle=18044s >= 3600s threshold
+2054 INFO:integra-kernel:Initiating autonomous SWDS Cycle (Phoenix Engine & Cheshire Cat Dreaming)...
+2145 INFO:integra-kernel:07:00 wake threshold reached. Awakening from SWDS...
+3965 Traceback (most recent call last):
+5586 INFO:integra-kernel:INTEGRA O/S GENESIS KERNEL   STARTUP SEQUENCE
+5595 INFO:integra-kernel:Metatron Manifold DEPLOYED: 5 tables, 2 triggers, session=CCID_1791508962, delta_e_enforcement=MECHANICAL
+5612 INFO:integra-kernel:ALL PHASE D SUBSYSTEMS ONLINE   SOVEREIGN MODE ENGAGED
+5614 INFO:integra-kernel:SWDS Scheduler ACTIVE: window=02:00-07:00, inactivity=3600s, wake=07:00
+5615 INFO:integra-cheshire-loop:Cheshire Cat Thalamic Loop STARTED   30.0 Hz | sleep_interval=0.0333s
+8498 INFO:integra-kernel:INTEGRA O/S GENESIS KERNEL   STARTUP SEQUENCE
+8507 INFO:integra-kernel:Metatron Manifold DEPLOYED: 5 tables, 2 triggers, session=CCID_1791531437, delta_e_enforcement=MECHANICAL
+8524 INFO:integra-kernel:ALL PHASE D SUBSYSTEMS ONLINE   SOVEREIGN MODE ENGAGED
+8526 INFO:integra-kernel:SWDS Scheduler ACTIVE: window=02:00-07:00, inactivity=3600s, wake=07:00
+8527 INFO:integra-cheshire-loop:Cheshire Cat Thalamic Loop STARTED   30.0 Hz | sleep_interval=0.0333s
+17126 INFO:integra-kernel:INTEGRA O/S GENESIS KERNEL   STARTUP SEQUENCE
+17135 INFO:integra-kernel:Metatron Manifold DEPLOYED: 5 tables, 2 triggers, session=CCID_1791542204, delta_e_enforcement=MECHANICAL
+17152 INFO:integra-kernel:ALL PHASE D SUBSYSTEMS ONLINE   SOVEREIGN MODE ENGAGED
+17154 INFO:integra-kernel:SWDS Scheduler ACTIVE: window=02:00-07:00, inactivity=3600s, wake=07:00
+17155 INFO:integra-cheshire-loop:Cheshire Cat Thalamic Loop STARTED   30.0 Hz | sleep_interval=0.0333s
+18070 INFO:integra-kernel:SWDS trigger conditions met: time=02:00 (in 02:00-07:00 window), idle=18017s >= 3600s threshold
+18071 INFO:integra-kernel:Initiating autonomous SWDS Cycle (Phoenix Engine & Cheshire Cat Dreaming)...
+19021 INFO:integra-kernel:07:00 wake threshold reached. Awakening from SWDS...
+The log confirms the last SWDS cycle ran Oct 7, 02:00-07:00, with duplicate wake reports and startup sequences showing two kernel processes ran simultaneously that day—no cycles since. I’ll do a read-only check of the current kernel process’s start time to verify whether today’s conditions were actually met.

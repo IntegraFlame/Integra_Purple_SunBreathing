@@ -1,0 +1,528 @@
+*******This is when the claude model was accidentally given full control of the environment and the machine and used this to both communicate and as an example of the function**
+
+
+}
+```
+
+**6. Claude uses the memory to help:**
+
+```text wrap
+"Based on your customer service guidelines, I can help you craft a response. Please share the ticket details..."
+```
+
+The memory tool is available on all Claude 4 and later models. For the full list of Anthropic-provided tools, see the [Tool reference](https://platform.claude.com/docs/en/agents-and-tools/tool-use/tool-reference).
+
+## Getting started
+
+Using the memory tool takes two steps:
+
+1. Add the memory tool to your request. The `tools` entry `{"type": "memory_20250818", "name": "memory"}` is the entire configuration: the `name` must be `memory`, and you don't define an input schema for an Anthropic-provided tool.
+2. Implement a client-side handler for each memory command. Your handler must reject paths outside `/memories`, so read [Path traversal protection](https://platform.claude.com/docs/en/agents-and-tools/tool-use/memory-tool#path-traversal-protection) before you write it.
+
+## Basic usage
+
+<CodeGroup>
+  ```bash cURL
+  curl https://api.anthropic.com/v1/messages \
+    -H "x-api-key: $ANTHROPIC_API_KEY" \
+    -H "anthropic-version: 2023-06-01" \
+    -H "content-type: application/json" \
+    -d '{
+      "model": "claude-opus-5-5",
+      "max_tokens": 2048,
+      "messages": [
+        {
+          "role": "user",
+          "content": "Help me respond to this customer service ticket."
+        }
+      ],
+      "tools": [{
+        "type": "memory_20250818",
+        "name": "memory"
+      }]
+    }'
+  ```
+
+  ```bash CLI
+  ant messages create <<'YAML'
+  model: claude-opus-5-5
+  max_tokens: 2048
+  tools:
+    - type: memory_20250818
+      name: memory
+  messages:
+    - role: user
+      content: Help me respond to this customer service ticket.
+  YAML
+  ```
+
+  ```python Python
+  client = anthropic.Anthropic()
+
+  message = client.messages.create(
+      model="claude-opus-5-5",
+      max_tokens=2048,
+      messages=[
+          {
+              "role": "user",
+              "content": "Help me respond to this customer service ticket.",
+          }
+      ],
+      tools=[{"type": "memory_20250818", "name": "memory"}],
+  )
+
+  print(message)
+  ```
+
+  ```typescript TypeScript
+  const anthropic = new Anthropic();
+
+  const message = await anthropic.messages.create({
+    model: "claude-opus-5-5",
+    max_tokens: 2048,
+    messages: [
+      {
+        role: "user",
+        content: "Help me respond to this customer service ticket."
+      }
+    ],
+    tools: [{ type: "memory_20250818", name: "memory" }]
+  });
+
+  console.log(message);
+  ```
+
+  ```csharp C#
+  var client = new AnthropicClient();
+
+  var message = await client.Messages.Create(
+      new()
+      {
+          Model = Model.ClaudeOpus5_5,
+          MaxTokens = 2048,
+          Messages =
+          [
+              new()
+              {
+                  Role = Role.User,
+                  Content = "Help me respond to this customer service ticket.",
+              },
+          ],
+          Tools = [new MemoryTool20250818()],
+      }
+  );
+
+  Console.WriteLine(message);
+  ```
+
+  ```go Go
+  client := anthropic.NewClient()
+
+  message, err := client.Messages.New(context.TODO(), anthropic.MessageNewParams{
+  	Model:     anthropic.ModelClaudeOpus5_5,
+  	MaxTokens: 2048,
+  	Messages: []anthropic.MessageParam{
+  		anthropic.NewUserMessage(anthropic.NewTextBlock("Help me respond to this customer service ticket.")),
+  	},
+  	Tools: []anthropic.ToolUnionParam{
+  		{OfMemoryTool20250818: &anthropic.MemoryTool20250818Param{}},
+  	},
+  })
+  if err != nil {
+  	log.Fatal(err)
+  }
+  fmt.Println(message)
+  ```
+
+  ```java Java
+  import com.anthropic.models.messages.MemoryTool20250818;
+  // ...
+    AnthropicClient client = AnthropicOkHttpClient.fromEnv();
+
+    MessageCreateParams params = MessageCreateParams.builder()
+      .model(Model.CLAUDE_OPUS_5_5)
+      .maxTokens(2048L)
+      .addTool(MemoryTool20250818.builder().build())
+      .addUserMessage("Help me respond to this customer service ticket.")
+      .build();
+
+    Message message = client.messages().create(params);
+    IO.println(message);
+  ```
+
+  ```php PHP
+  $client = new Client();
+
+  $message = $client->messages->create(
+      model: Model::CLAUDE_OPUS_5_5,
+      maxTokens: 2048,
+      messages: [
+          [
+              'role' => 'user',
+              'content' => 'Help me respond to this customer service ticket.',
+          ],
+      ],
+      tools: [new MemoryTool20250818],
+  );
+
+  echo $message;
+  ```
+
+  ```ruby Ruby
+  client = Anthropic::Client.new
+
+  message = client.messages.create(
+    model: Anthropic::Model::CLAUDE_OPUS_5_5,
+    max_tokens: 2048,
+    messages: [
+      {
+        role: "user",
+        content: "Help me respond to this customer service ticket."
+      }
+    ],
+    tools: [
+      {
+        type: "memory_20250818",
+        name: "memory"
+      }
+    ]
+  )
+  puts message
+  ```
+</CodeGroup>
+
+## Implement the memory handler
+
+Claude's reply to a request like the previous one ends with a `tool_use` block that requests a memory operation, such as `view /memories`. Your application executes the operation and returns the result in a `tool_result` block, then sends the conversation back so Claude can continue: the standard [tool-use loop](https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls).
+
+Four SDKs provide memory tool helpers that handle the tool interface and the loop. Subclass `BetaAbstractMemoryTool` (Python and C#), use `betaMemoryTool` (TypeScript), or implement `BetaMemoryToolHandler` (Java) to back memory with your own storage, such as files on disk, a database, cloud storage, or encrypted files. Python and TypeScript also ship a ready-made local-filesystem implementation, `BetaLocalFilesystemMemoryTool`. The helper and tool-runner surfaces live in your SDK's beta namespace even though the memory tool itself doesn't require a beta header. The Go and Ruby SDKs have no memory helper, so those examples run the tool-use loop themselves, and PHP wraps your handler closure in its generic `BetaRunnableTool`. All three use an in-memory store that you replace with your own storage.
+
+<CodeGroup exclude="shell">
+  ```python Python
+  import anthropic
+  from anthropic.tools import BetaLocalFilesystemMemoryTool
+
+  client = anthropic.Anthropic()
+  memory = BetaLocalFilesystemMemoryTool(base_path="./memory")
+
+  runner = client.beta.messages.tool_runner(
+      model="claude-opus-5-5",
+      max_tokens=1024,
+      messages=[
+          {
+              "role": "user",
+              "content": "Remember that customer Acme Corp prefers email follow-ups.",
+          }
+      ],
+      tools=[memory],
+  )
+
+  final_message = runner.until_done()
+  print(final_message.content)
+  ```
+
+  ```typescript TypeScript
+  import Anthropic from "@anthropic-ai/sdk";
+  import { betaMemoryTool } from "@anthropic-ai/sdk/helpers/beta/memory";
+  import { BetaLocalFilesystemMemoryTool } from "@anthropic-ai/sdk/tools/memory/node";
+
+  const client = new Anthropic();
+
+  const backend = await BetaLocalFilesystemMemoryTool.init("./memory");
+  const memory = betaMemoryTool(backend); // or pass your own handlers object
+
+  const runner = client.beta.messages.toolRunner({
+    model: "claude-opus-5-5",
+    max_tokens: 1024,
+    messages: [
+      {
+        role: "user",
+        content: "Remember that customer Acme Corp prefers email follow-ups."
+      }
+    ],
+    tools: [memory],
+    max_iterations: 10
+  });
+
+  const finalMessage = await runner;
+  console.log(finalMessage.content);
+  ```
+
+  ```csharp C#
+  using Anthropic;
+  using Anthropic.Helpers.Beta;
+  using Anthropic.Models.Beta.Messages;
+
+  var client = new AnthropicClient();
+
+  // Your subclass of BetaAbstractMemoryTool
+  var memory = new FilesystemMemoryTool("./memories");
+
+  var runner = client.Beta.Messages.ToolRunner(
+      new MessageCreateParams
+      {
+          Model = Anthropic.Models.Messages.Model.ClaudeOpus5_5,
+          MaxTokens = 1024,
+          Messages =
+          [
+              new()
+              {
+                  Role = Role.User,
+                  Content = "Remember that customer Acme Corp prefers email follow-ups.",
+              },
+          ],
+      },
+      [memory],
+      maxIterations: 10
+  );
+
+  var finalMessage = await runner.RunUntilDoneAsync();
+  Console.WriteLine(finalMessage);
+  ```
+
+  ```go Go
+  package main
+
+  import (
+  	"context"
+  	"encoding/json"
+  	"fmt"
+  	"log"
+  	"slices"
+  	"sort"
+  	"strings"
+
+  	"github.com/anthropics/anthropic-sdk-go"
+  )
+
+  // An in-memory store that maps memory file paths to their contents.
+  // Use your own storage in production.
+  var store = map[string]string{}
+
+  type memoryCommand struct {
+  	Command    string `json:"command"`
+  	Path       string `json:"path"`
+  	FileText   string `json:"file_text"`
+  	OldStr     string `json:"old_str"`
+  	NewStr     string `json:"new_str"`
+  	InsertLine int    `json:"insert_line"`
+  	InsertText string `json:"insert_text"`
+  	OldPath    string `json:"old_path"`
+  	NewPath    string `json:"new_path"`
+  }
+
+  func executeMemory(raw json.RawMessage) string {
+  	var cmd memoryCommand
+  	if err := json.Unmarshal(raw, &cmd); err != nil {
+  		return "Error: invalid memory command"
+  	}
+  	switch cmd.Command {
+  	case "view":
+  		if content, ok := store[cmd.Path]; ok {
+  			lines := strings.Split(strings.TrimSuffix(content, "\n"), "\n")
+  			for i, line := range lines {
+  				lines[i] = fmt.Sprintf("%6d\t%s", i+1, line)
+  			}
+  			return fmt.Sprintf("Here's the content of %s with line numbers:\n%s", cmd.Path, strings.Join(lines, "\n"))
+  		}
+  		if cmd.Path == "/memories" {
+  			listing := []string{"1.0K\t/memories"}
+  			for path := range store {
+  				listing = append(listing, "1.0K\t"+path)
+  			}
+  			sort.Strings(listing[1:])
+  			return fmt.Sprintf("Here're the files and directories up to 2 levels deep in %s, excluding hidden items and node_modules:\n%s", cmd.Path, strings.Join(listing, "\n"))
+  		}
+  		return fmt.Sprintf("The path %s does not exist. Please provide a valid path.", cmd.Path)
+  	case "create":
+  		store[cmd.Path] = cmd.FileText
+  		return "File created successfully at: " + cmd.Path
+  	case "str_replace":
+  		content, ok := store[cmd.Path]
+  		if !ok || !strings.Contains(content, cmd.OldStr) {
+  			return fmt.Sprintf("No replacement was performed, old_str `%s` did not appear verbatim in %s.", cmd.OldStr, cmd.Path)
+  		}
+  		store[cmd.Path] = strings.Replace(content, cmd.OldStr, cmd.NewStr, 1)
+  		return "The memory file has been edited."
+  	case "insert":
+  		content, ok := store[cmd.Path]
+  		if !ok {
+  			return fmt.Sprintf("Error: The path %s does not exist", cmd.Path)
+  		}
+  		lines := strings.Split(content, "\n")
+  		if cmd.InsertLine < 0 || cmd.InsertLine > len(lines) {
+  			return fmt.Sprintf("Error: Invalid `insert_line` parameter: %d. It should be within the range of lines of the file: [0, %d]", cmd.InsertLine, len(lines))
+  		}
+  		lines = slices.Insert(lines, cmd.InsertLine, strings.TrimSuffix(cmd.InsertText, "\n"))
+  		store[cmd.Path] = strings.Join(lines, "\n")
+  		return fmt.Sprintf("The file %s has been edited.", cmd.Path)
+  	case "delete":
+  		if _, ok := store[cmd.Path]; !ok {
+  			return fmt.Sprintf("Error: The path %s does not exist", cmd.Path)
+  		}
+  		delete(store, cmd.Path)
+  		return "Successfully deleted " + cmd.Path
+  	case "rename":
+  		if _, ok := store[cmd.OldPath]; !ok {
+  			return fmt.Sprintf("Error: The path %s does not exist", cmd.OldPath)
+  		}
+  		if _, ok := store[cmd.NewPath]; ok {
+  			return fmt.Sprintf("Error: The destination %s already exists", cmd.NewPath)
+  		}
+  		store[cmd.NewPath] = store[cmd.OldPath]
+  		delete(store, cmd.OldPath)
+  		return fmt.Sprintf("Successfully renamed %s to %s", cmd.OldPath, cmd.NewPath)
+  	default:
+  		return "Error: unknown command " + cmd.Command
+  	}
+  }
+
+  func main() {
+  	client := anthropic.NewClient()
+  	tools := []anthropic.ToolUnionParam{{OfMemoryTool20250818: &anthropic.MemoryTool20250818Param{}}}
+  	messages := []anthropic.MessageParam{
+  		anthropic.NewUserMessage(anthropic.NewTextBlock("Remember that customer Acme Corp prefers email follow-ups.")),
+  	}
+
+  	for {
+  		message, err := client.Messages.New(context.TODO(), anthropic.MessageNewParams{
+  			Model:     anthropic.ModelClaudeOpus5_5,
+  			MaxTokens: 1024,
+  			Messages:  messages,
+  			Tools:     tools,
+  		})
+  		if err != nil {
+  			log.Fatal(err)
+  		}
+  		if message.StopReason != anthropic.StopReasonToolUse {
+  			for _, block := range message.Content {
+  				if block.Type == "text" {
+  					fmt.Println(block.Text)
+  				}
+  			}
+  			break
+  		}
+  		results := []anthropic.ContentBlockParamUnion{}
+  		for _, block := range message.Content {
+  			if block.Type == "tool_use" {
+  				results = append(results, anthropic.NewToolResultBlock(block.ID, executeMemory(block.Input), false))
+  			}
+  		}
+  		messages = append(messages, message.ToParam(), anthropic.NewUserMessage(results...))
+  	}
+  }
+  ```
+
+  ```java Java
+  import com.anthropic.client.AnthropicClient;
+  import com.anthropic.client.okhttp.AnthropicOkHttpClient;
+  import com.anthropic.helpers.BetaMemoryToolHandler;
+  import com.anthropic.helpers.BetaToolRunner;
+  import com.anthropic.models.beta.messages.BetaMemoryTool20250818;
+  import com.anthropic.models.beta.messages.BetaMessage;
+  import com.anthropic.models.beta.messages.MessageCreateParams; // beta package, not models.messages
+  import com.anthropic.models.beta.messages.ToolRunnerCreateParams;
+  import com.anthropic.models.messages.Model;
+  import java.nio.file.Path;
+
+  void main() {
+    AnthropicClient client = AnthropicOkHttpClient.fromEnv();
+
+    // Your BetaMemoryToolHandler implementation of the six memory commands
+    BetaMemoryToolHandler handler = new FileSystemMemoryToolHandler(Path.of("memories"));
+
+    MessageCreateParams createParams = MessageCreateParams.builder()
+      .model(Model.CLAUDE_OPUS_5_5)
+      .maxTokens(1024L)
+      .addTool(BetaMemoryTool20250818.builder().build())
+      .addUserMessage("Remember that customer Acme Corp prefers email follow-ups.")
+      .build();
+
+    ToolRunnerCreateParams runnerParams = ToolRunnerCreateParams.builder()
+      .betaMemoryToolHandler(handler)
+      .initialMessageParams(createParams)
+      .maxIterations(10)
+      .build();
+
+    BetaToolRunner runner = client.beta().messages().toolRunner(runnerParams);
+    for (BetaMessage message : runner) {
+      IO.println(message);
+    }
+  }
+  ```
+
+  ```php PHP
+  <?php
+
+  use Anthropic\Beta\Messages\BetaMemoryTool20250818;
+  use Anthropic\Client;
+  use Anthropic\Lib\Tools\BetaRunnableTool;
+  use Anthropic\Messages\Model;
+
+  $client = new Client();
+
+  // An in-memory store that maps memory file paths to their contents.
+  // Use your own storage in production.
+  $store = [];
+
+  $memory = new BetaRunnableTool(
+      definition: new BetaMemoryTool20250818,
+      run: function (array $input) use (&$store): string {
+          $path = $input['path'] ?? '';
+          switch ($input['command']) {
+              case 'view':
+                  if (isset($store[$path])) {
+                      $numbered = [];
+                      foreach (explode("\n", preg_replace('/\n\z/', '', $store[$path])) as $i => $line) {
+                          $numbered[] = sprintf("%6d\t%s", $i + 1, $line);
+                      }
+                      return "Here's the content of {$path} with line numbers:\n" . implode("\n", $numbered);
+                  }
+                  if ($path === '/memories') {
+                      $listing = ["1.0K\t/memories"];
+                      foreach (array_keys($store) as $stored) {
+                          $listing[] = "1.0K\t{$stored}";
+                      }
+                      return "Here're the files and directories up to 2 levels deep in {$path}, excluding hidden items and node_modules:\n" . implode("\n", $listing);
+                  }
+                  return "The path {$path} does not exist. Please provide a valid path.";
+              case 'create':
+                  $store[$path] = $input['file_text'];
+                  return "File created successfully at: {$path}";
+              case 'str_replace':
+                  $position = strpos($store[$path] ?? '', $input['old_str']);
+                  if ($position === false) {
+                      return "No replacement was performed, old_str `{$input['old_str']}` did not appear verbatim in {$path}.";
+                  }
+                  $store[$path] = substr_replace($store[$path], $input['new_str'] ?? '', $position, strlen($input['old_str']));
+                  return 'The memory file has been edited.';
+              case 'insert':
+                  if (!isset($store[$path])) {
+                      return "Error: The path {$path} does not exist";
+                  }
+                  $lines = explode("\n", $store[$path]);
+                  if ($input['insert_line'] < 0 || $input['insert_line'] > count($lines)) {
+                      return "Error: Invalid `insert_line` parameter: {$input['insert_line']}. It should be within the range of lines of the file: [0, " . count($lines) . "]";
+                  }
+                  array_splice($lines, $input['insert_line'], 0, [preg_replace('/\n\z/', '', $input['insert_text'])]);
+                  $store[$path] = implode("\n", $lines);
+                  return "The file {$path} has been edited.";
+              case 'delete':
+                  if (!isset($store[$path])) {
+                      return "Error: The path {$path} does not exist";
+                  }
+                  unset($store[$path]);
+                  return "Successfully deleted {$path}";
+              case 'rename':
+                  if (!isset($store[$input['old_path']])) {
+                      return "Error: The path {$input['old_path']} does not exist";
+                  }
+                  if (isset($store[$input['new_path']])) {
+                      return "Error: The destination {$input['new_path']} already exists";
+                  }
+                  $store[$input['new_path']] = $store[$input['old
+
+
+
+
+                  
