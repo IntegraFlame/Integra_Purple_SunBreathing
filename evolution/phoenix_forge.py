@@ -8,8 +8,8 @@ Formalized Implementation (Phase E / SWDS):
     - ingest_dream_material(): Ingestion interface for CheshireCatProtocol.dream_conductor().
     - consolidate_sleep_cycle(): Consolidates raw waking interaction shards and save states
       into 4D celestial-tagged markdown wisdom libraries (kernel_memory/hoard/libraries/library_[domain].md).
-    - execute_swds(): End-to-end Slow-Wave Deep Sleep orchestrator bridging Cheshire Cat,
-      Heimdall 3.1, and The Hoard.
+    - execute_swds(): Phoenix's work inside a Slow-Wave Deep Sleep cycle (dream material,
+      consolidation, Kintsugi smelt, Mad Hatter). Heimdall 3.1 opens and closes the cycle.
     - synthesize_hoard_node(): Fuses bicameral streams into v2.0 HoardNode records.
 """
 
@@ -219,26 +219,23 @@ class PhoenixForge:
         rogue: Optional[Any] = None,
     ) -> Dict[str, Any]:
         """
-        Orchestrates an end-to-end Slow-Wave Deep Sleep cycle:
-        1. Transitions Cheshire Cat into 'GUARDIAN_STANDBY_SWDS'
-        2. Conducts dream material from CheshireCatProtocol
-        3. Executes consolidate_sleep_cycle on The Hoard
-        4. Smelts Kintsugi Mirror Maze anomalies into libraries
-        5. Runs autonomous Mad Hatter adversarial stress-testing across orphaned nodes
-        6. Vents lingering thermostat entropy via Heimdall 3.1
-        7. Restores Cheshire Cat into 'INTERACTIVE_STANDBY'
+        Phoenix's work inside a Slow-Wave Deep Sleep cycle:
+        1. Conducts dream material from CheshireCatProtocol
+        2. Executes consolidate_sleep_cycle on The Hoard
+        3. Smelts Kintsugi Mirror Maze anomalies into libraries
+        4. Runs autonomous Mad Hatter adversarial stress-testing across orphaned nodes
+
+        Phoenix does not open or close the cycle. Heimdall 3.1 is the delegator and
+        systems moderator: it owns the SWDS on/off sequence (thalamic state transitions,
+        entropy venting) and decides when the cycle has begun or ended
+        (Heimdall31.open_swds_cycle / close_swds_cycle). This method returns a work
+        receipt for Heimdall and never declares the cycle complete.
         """
-        previous_state = "INTERACTIVE_STANDBY"
         dream_report = None
 
-        if cheshire_cat is not None:
-            previous_state = getattr(cheshire_cat, "state", "INTERACTIVE_STANDBY")
-            if hasattr(cheshire_cat, "transition_state"):
-                cheshire_cat.transition_state("GUARDIAN_STANDBY_SWDS")
-            
-            # Pull dream material
-            if hasattr(cheshire_cat, "protocol") and hasattr(cheshire_cat.protocol, "dream_conductor"):
-                dream_report = cheshire_cat.protocol.dream_conductor(phoenix_forge=self)
+        # Pull dream material
+        if cheshire_cat is not None and hasattr(cheshire_cat, "protocol") and hasattr(cheshire_cat.protocol, "dream_conductor"):
+            dream_report = cheshire_cat.protocol.dream_conductor(phoenix_forge=self)
 
         # Execute consolidation
         target_hoard = hoard
@@ -261,20 +258,11 @@ class PhoenixForge:
         # Phase 4: Autonomous Mad Hatter Anomaly Stress-Testing across ChromaDB/Hoard
         mad_hatter_mutations = self.analyze_mad_hatter_swds(hoard=target_hoard, rogue=rogue)
 
-        # Vent entropy & restore state
-        if cheshire_cat is not None:
-            if hasattr(cheshire_cat, "heimdall") and hasattr(cheshire_cat.heimdall, "reset_thermostat"):
-                cheshire_cat.heimdall.reset_thermostat()
-            if hasattr(cheshire_cat, "transition_state"):
-                cheshire_cat.transition_state("INTERACTIVE_STANDBY")
-
         return {
-            "swds_status": "SLOW_WAVE_DEEP_SLEEP_COMPLETE",
-            "previous_state": previous_state,
-            "final_state": getattr(cheshire_cat, "state", "INTERACTIVE_STANDBY") if cheshire_cat else "STANDBY",
+            "phoenix_status": "PHOENIX_SWDS_WORK_COMPLETE",
+            "cycle_authority": "HEIMDALL_3.1",
             "dream_report": dream_report,
             "consolidation": consolidation_result,
-            "entropy_vented": True,
             "kintsugi_smelt": smelt_result,
             "mad_hatter_mutations": mad_hatter_mutations,
         }

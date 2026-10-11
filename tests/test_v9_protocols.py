@@ -158,7 +158,8 @@ def test_execute_swds_includes_mad_hatter_phase():
     rogue = RogueXProtocol(shiva_action=None)
 
     swds_res = phoenix.execute_swds(hoard=hoard, rogue=rogue)
-    assert swds_res["swds_status"] == "SLOW_WAVE_DEEP_SLEEP_COMPLETE"
+    assert swds_res["phoenix_status"] == "PHOENIX_SWDS_WORK_COMPLETE"
+    assert "swds_status" not in swds_res  # only Heimdall 3.1 declares the cycle complete
     assert "mad_hatter_mutations" in swds_res
     assert len(swds_res["mad_hatter_mutations"]) >= 1
 

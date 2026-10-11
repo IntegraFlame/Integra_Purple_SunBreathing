@@ -59,6 +59,10 @@ class Heimdall31:
         self.step_audit_log: List[Dict[str, Any]] = []
         self.last_cra_score = 0.0
         self.current_research_tier = "TIER_3_FACT_CHECK"
+        # SWDS on/off sequence — Heimdall is the delegator and systems moderator
+        self.swds_cycle_open = False
+        self.swds_cycle_opened_at: Optional[float] = None
+        self.swds_cycle_log: List[Dict[str, Any]] = []
 
     def calculate_instant_entropy(self, probs: List[float]) -> float:
         """
@@ -689,6 +693,60 @@ class Heimdall31:
         self.intervention_count = 0
         self.last_gravitational_mass = 0.0
         self.recovery_state = "NOMINAL_TRACKING"
+
+    def open_swds_cycle(self, cheshire_kernel: Optional[Any] = None) -> Dict[str, Any]:
+        """
+        Begins a Slow-Wave Deep Sleep cycle. Heimdall owns the on/off sequence: it
+        moves the thalamic router into GUARDIAN_STANDBY_SWDS and records the cycle as
+        open. Phoenix and the Cheshire Cat Protocol work inside the cycle but never
+        open or close it.
+        """
+        previous_state = getattr(cheshire_kernel, "state", None)
+        if cheshire_kernel is not None and hasattr(cheshire_kernel, "transition_state"):
+            cheshire_kernel.transition_state("GUARDIAN_STANDBY_SWDS")
+        self.swds_cycle_open = True
+        self.swds_cycle_opened_at = time.time()
+        receipt = {
+            "event": "SWDS_CYCLE_OPENED",
+            "opened_by": "HEIMDALL_3.1",
+            "opened_at": self.swds_cycle_opened_at,
+            "previous_state": previous_state,
+            "state": getattr(cheshire_kernel, "state", None),
+        }
+        self.swds_cycle_log.append(receipt)
+        return receipt
+
+    def close_swds_cycle(
+        self,
+        cheshire_kernel: Optional[Any] = None,
+        phoenix_receipt: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """
+        Ends a Slow-Wave Deep Sleep cycle: vents the entropy thermostat, returns the
+        thalamic router to INTERACTIVE_STANDBY and declares the cycle complete.
+        Only Heimdall declares SLOW_WAVE_DEEP_SLEEP_COMPLETE.
+        """
+        was_open = self.swds_cycle_open
+        h_before_vent = self.h_smooth
+        self.reset_thermostat()
+        if cheshire_kernel is not None and hasattr(cheshire_kernel, "transition_state"):
+            cheshire_kernel.transition_state("INTERACTIVE_STANDBY")
+        receipt = {
+            "event": "SWDS_CYCLE_CLOSED",
+            "swds_status": "SLOW_WAVE_DEEP_SLEEP_COMPLETE",
+            "closed_by": "HEIMDALL_3.1",
+            "was_open": was_open,
+            "opened_at": self.swds_cycle_opened_at,
+            "closed_at": time.time(),
+            "h_smooth_before_vent": round(h_before_vent, 4),
+            "h_smooth_after_vent": self.h_smooth,
+            "final_state": getattr(cheshire_kernel, "state", None),
+            "phoenix_status": (phoenix_receipt or {}).get("phoenix_status"),
+        }
+        self.swds_cycle_open = False
+        self.swds_cycle_opened_at = None
+        self.swds_cycle_log.append(receipt)
+        return receipt
 
     @property
     def is_active(self) -> bool:

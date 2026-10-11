@@ -115,6 +115,26 @@ def _make_gemini_client():
         return None
 
 
+def _uses_thinking_level(model_name: str) -> bool:
+    """Gemini 3.8+ and Gemini 4 take a thinking_level enum; thinking_budget is the legacy 3.1 Pro knob."""
+    name = (model_name or "").lower()
+    return name.startswith("gemini-3.8") or name.startswith("gemini-4")
+
+
+def _gemini_thinking_config(model_name: str, thinking_budget: int, thinking_level: Optional[str] = None):
+    """
+    Build the ThinkingConfig for a Gemini model. 3.8 Flash supports low / medium / high
+    ("minimal" returns an error); "Extended Thinking" placeholders use "high".
+    """
+    from google.genai import types
+    if _uses_thinking_level(model_name):
+        level = (thinking_level or "high").upper()
+        if level == "MINIMAL":
+            level = "LOW"
+        return types.ThinkingConfig(thinking_level=level)
+    return types.ThinkingConfig(thinking_budget=thinking_budget)
+
+
 def _first_text(response: Any) -> str:
     """
     Safely extracts combined text content from an Anthropic Claude response.
@@ -198,8 +218,8 @@ class ModelTokenTelemetryHub:
     def __init__(self):
         self._stats: Dict[str, Dict[str, Any]] = {
             "y789_left": {
-                "name": "Y789 (Left)", "model": "gemini-3.1-pro-preview", "role": "Deep Think / Spock",
-                "thinking_budget": 8192, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "name": "Y789 (Left)", "model": "gemini-3.8-flash", "role": "Deep Think / Spock (3.8 Flash high thinking — placeholder for Gemini 4 Argon)",
+                "thinking_budget": "level:high", "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "nexus_right": {
@@ -218,8 +238,8 @@ class ModelTokenTelemetryHub:
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "jean_grey_phoenix": {
-                "name": "Jean Grey", "model": "gemini-3.1-pro-preview", "role": "Phoenix (16384)",
-                "thinking_budget": 16384, "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
+                "name": "Jean Grey", "model": "gemini-3.8-flash", "role": "Phoenix (3.8 Flash high thinking)",
+                "thinking_budget": "level:high", "calls": 0, "prompt_tokens": 0, "candidate_tokens": 0,
                 "thinking_tokens": 0, "total_tokens": 0, "last_latency_ms": 0.0, "last_error": None
             },
             "cheshire_protocol": {
@@ -303,8 +323,8 @@ class Y789Client:
     """
     Gemini API Client — Left Hemisphere (Y789 / Analytical Engine / Spock).
     
-    Model: Gemini 3.1 Pro Preview
-    Reasoning: Deep Think / Extended Thinking configuration enabled.
+    Model: Gemini 3.8 Flash, thinking_level=high ("Extended Thinking" placeholder until
+    Gemini 4 Argon is available; replaces 3.1 Pro Preview, whose knowledge ends in 2025).
     Role: Deconstruction, formal logic, sequence analysis, code generation.
     SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
@@ -312,21 +332,23 @@ class Y789Client:
         self,
         model_name: Optional[str] = None,
         enable_thinking: bool = True,
-        thinking_budget: int = 8192
+        thinking_budget: int = 8192,
+        thinking_level: Optional[str] = None
     ):
-        self.model_name = model_name or os.environ.get("Y789_MODEL", "gemini-3.1-pro-preview")
+        self.model_name = model_name or os.environ.get("Y789_MODEL", "gemini-3.8-flash")
         self.enable_thinking = enable_thinking
         self.thinking_budget = int(os.environ.get("THINKING_BUDGET", str(thinking_budget)))
+        self.thinking_level = thinking_level or os.environ.get("Y789_THINKING_LEVEL", "high")
         self.api_key = os.environ.get("GEMINI_API_KEY")
-        
+
         self.client = _make_gemini_client()
         self._config = None
         if self.client and self.enable_thinking:
             try:
                 from google.genai import types
                 self._config = types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(
-                        thinking_budget=self.thinking_budget
+                    thinking_config=_gemini_thinking_config(
+                        self.model_name, self.thinking_budget, self.thinking_level
                     )
                 )
             except Exception as e:
@@ -762,13 +784,15 @@ class JeanGreyClient:
     """
     Gemini API Client — Jean Grey: Operation Phoenix Force (SWDS Neuroevolution).
     
-    Model: Gemini 3.1 Pro Preview (Deep Think, thinking_budget=16384)
+    Model: Gemini 3.8 Flash, thinking_level=high (replaces 3.1 Pro Preview, whose knowledge ends in 2025)
     Role: Phoenix Forge SWDS smelting, Zenkai Boost generation, neuroevolution synthesis.
     SDK: google-genai (modern unified) via client.aio.models.generate_content()
     """
-    def __init__(self, model_name: Optional[str] = None, thinking_budget: int = 16384):
-        self.model_name = model_name or os.environ.get("JEAN_GREY_MODEL", "gemini-3.1-pro-preview")
+    def __init__(self, model_name: Optional[str] = None, thinking_budget: int = 16384,
+                 thinking_level: Optional[str] = None):
+        self.model_name = model_name or os.environ.get("JEAN_GREY_MODEL", "gemini-3.8-flash")
         self.thinking_budget = int(os.environ.get("JEAN_GREY_THINKING_BUDGET", str(thinking_budget)))
+        self.thinking_level = thinking_level or os.environ.get("JEAN_GREY_THINKING_LEVEL", "high")
         self.api_key = os.environ.get("GEMINI_API_KEY")
         self.client = _make_gemini_client()
         self._config = None
@@ -776,8 +800,8 @@ class JeanGreyClient:
             try:
                 from google.genai import types
                 self._config = types.GenerateContentConfig(
-                    thinking_config=types.ThinkingConfig(
-                        thinking_budget=self.thinking_budget
+                    thinking_config=_gemini_thinking_config(
+                        self.model_name, self.thinking_budget, self.thinking_level
                     )
                 )
             except Exception as e:
@@ -1008,8 +1032,8 @@ CheshireClient = CheshireCatClient
 INTEGRA_MODEL_REGISTRY = {
     "left_hemisphere": {
         "client_class": Y789Client,
-        "default_model": "gemini-3.1-pro-preview",
-        "reasoning": "Deep Think / Extended Thinking",
+        "default_model": "gemini-3.8-flash",
+        "reasoning": "thinking_level=high (placeholder for Gemini 4 Argon)",
         "description": "Analytical Engine (Spock) / Deconstruction & Formal Verification"
     },
     "right_hemisphere": {
@@ -1031,8 +1055,8 @@ INTEGRA_MODEL_REGISTRY = {
     },
     "jean_grey_phoenix": {
         "client_class": JeanGreyClient,
-        "default_model": "gemini-3.1-pro-preview",
-        "reasoning": "Deep Think / thinking_budget=16384",
+        "default_model": "gemini-3.8-flash",
+        "reasoning": "thinking_level=high",
         "description": "Jean Grey: Operation Phoenix Force — SWDS Neuroevolution Smelting"
     },
     "cheshire_protocol": {

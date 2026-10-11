@@ -58,6 +58,7 @@ class ComponentState:
     power_state: PowerState = PowerState.P3_DORMANT
     token_budget: int = 0     # 0 = unlimited. Cumulative per-session cap (circuit breaker).
     thinking_budget: int = 0  # 0 = model default. Per-call reasoning budget passed to the client.
+    thinking_level: str = ""  # Gemini 3.8+ / 4: "low" | "medium" | "high". Empty = client default.
     tokens_consumed: int = 0
     calls_made: int = 0
     calls_refused: int = 0
@@ -176,6 +177,7 @@ class ModelRouter:
                 token_budget=int(spec.get('token_budget', 0) or 0),
                 # Legacy models.yml `budget:` values (8192 / 16384) are THINKING budgets.
                 thinking_budget=int(spec.get('thinking_budget', spec.get('budget', 0)) or 0),
+                thinking_level=str(spec.get('thinking_level', '') or ''),
             )
             logger.info(f"ModelRouter: Registered {component_key} → {spec.get('model', '?')} "
                        f"(token_budget: {spec.get('token_budget', 'unlimited')}, "
@@ -403,6 +405,8 @@ class ModelRouter:
             kwargs["model_name"] = comp.model_name
         if comp.thinking_budget > 0 and key in ("y789_left", "jean_grey_phoenix", "nexus_right", "shiva_orchestrator"):
             kwargs["thinking_budget"] = comp.thinking_budget
+        if comp.thinking_level and key in ("y789_left", "jean_grey_phoenix"):
+            kwargs["thinking_level"] = comp.thinking_level
 
         routed = RoutedClient(self, key, client_cls(**kwargs))
         self._clients[key] = routed
@@ -426,7 +430,8 @@ class ModelRouter:
                     "model": comp.model_name,
                     "power_state": comp.power_state.name,
                     "token_budget": comp.token_budget if comp.token_budget > 0 else "unlimited",
-                    "thinking_budget": comp.thinking_budget if comp.thinking_budget > 0 else "model_default",
+                    "thinking_budget": (f"level:{comp.thinking_level}" if comp.thinking_level
+                                        else comp.thinking_budget if comp.thinking_budget > 0 else "model_default"),
                     "tokens_consumed": comp.tokens_consumed,
                     "calls_made": comp.calls_made,
                     "calls_refused": comp.calls_refused,

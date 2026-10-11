@@ -511,11 +511,11 @@ async def run_models_selftest(x_integra_admin: Optional[str] = Header(None)):
     MODEL_ROUTER.activate()
 
     components = [
-        ("y789_left", "Gemini 3.1 Pro (Analytical/Spock)"),
+        ("y789_left", "Gemini 3.8 Flash, high thinking (Analytical/Spock)"),
         ("nexus_right", "Claude Opus 5.5 (Synthesis/Kirk)"),
         ("cheshire_cat_kernel", "Gemini 3.8 Flash (Thalamic Arbitrator)"),
         ("rodin_retrieval", "Gemini 3.8 Flash + Embedding (Rodin KNN)"),
-        ("jean_grey_phoenix", "Gemini 3.1 Pro (SWDS Phoenix Force)"),
+        ("jean_grey_phoenix", "Gemini 3.8 Flash, high thinking (SWDS Phoenix Force)"),
         ("cheshire_protocol", "Gemini 3.8 Flash (Protocol Conduit)"),
         ("shiva_orchestrator", "Claude Sonnet 5.5 (Multi-Lens Orchestrator)"),
     ]

@@ -33,14 +33,17 @@ phoenix = kernel.phoenix
 receipts = kernel.hoard.sync_all_save_states()
 print(f"  Synced {len(receipts)} save states into ChromaDB + SQLite")
 
-print("\n[PHASE 2-4] Executing Full SWDS Cycle...")
-receipt = phoenix.execute_swds(
+print("\n[PHASE 2-4] Executing Full SWDS Cycle (Heimdall opens and closes it)...")
+kernel.heimdall.open_swds_cycle(cheshire_kernel=kernel)
+work = phoenix.execute_swds(
     cheshire_cat=kernel,
     library_domain="SWDS_PHASE_G_LOCAL_SOVEREIGNTY"
 )
+receipt = kernel.heimdall.close_swds_cycle(cheshire_kernel=kernel, phoenix_receipt=work)
 
-print(f"  Status:          {receipt['swds_status']}")
-print(f"  Entropy Vented:  {receipt['entropy_vented']}")
+print(f"  Phoenix:         {work['phoenix_status']}")
+print(f"  Status:          {receipt['swds_status']} (closed by {receipt['closed_by']})")
+print(f"  H_smooth vented: {receipt['h_smooth_before_vent']} -> {receipt['h_smooth_after_vent']}")
 print(f"  Zenkai Boost:    {receipt.get('zenkai_boost_multiplier', 'N/A')}")
 print(f"  Generation:      {receipt.get('generation', 'N/A')}")
 print(f"  Library File:    {receipt.get('library_file', 'N/A')}")

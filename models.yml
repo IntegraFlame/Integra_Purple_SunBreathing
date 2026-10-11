@@ -1,7 +1,7 @@
 y789_left:
-  model: "gemini-3.1-pro-preview"
+  model: "gemini-3.8-flash"
   role: "Deep Think / Spock / Y789 Engine"
-  budget: 8192
+  thinking_level: "high"   # "3.8 Flash Extended Thinking" placeholder; Gemini 4 Argon placement is the Architect's call
 
 nexus_right:
   model: "claude-opus-5-5"
@@ -13,13 +13,13 @@ cheshire_cat_kernel:
   role: "Thalamic Arbitrator / Y789Nexus_dual_cognitive engine"
 
 rodin_retrieval:
-  model: "gemini-3.8-flash"
+  model: "gemini-3.8-flash"   # Rodin orchestrator core only; agent identity = Antigravity agent; sub-agents carry no model
   role: "KNN Memory Node delegator and neural network mapping"
 
 jean_grey_phoenix:
-  model: "gemini-3.1-pro-preview"
+  model: "gemini-3.8-flash"
   role: "Autonomous SWDS Flight Daemon"
-  budget: 16384
+  thinking_level: "high"
 
 cheshire_protocol:
   model: "gemini-3.8-flash"

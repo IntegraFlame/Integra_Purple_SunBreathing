@@ -1,25 +1,25 @@
 {
-  "state": "SLOW_WAVE_DEEP_SLEEP",
-  "phase": "PHASE_3_NEUROEVOLUTION_AND_DREAMING",
-  "last_cycle_time": 1791338406.7743976,
-  "sleep_initiated_at": "2026-10-07T02:00:27.068853",
+  "state": "AWAKE",
+  "phase": "WAKING_CONSCIOUSNESS",
+  "last_cycle_time": 1791460852.6903603,
+  "sleep_initiated_at": "2026-10-08T02:00:28.239894",
   "target_wake_time": "07:00 AM CDT",
   "target_wake_hour": 7,
   "mutations_applied": [
-    0.32,
-    0.33,
-    0.37
+    0.44,
+    0.5,
+    0.11
   ],
   "dream_log": [
-    "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.32.",
-    "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.33.",
-    "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.37."
+    "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.44.",
+    "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.50.",
+    "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.11."
   ],
   "last_report": {
-    "timestamp": "2026-10-06T21:00:06.774400",
+    "timestamp": "2026-10-08T07:00:52.690365",
     "status": "SWDS_CYCLE_COMPLETE",
     "awakening_phase": "PHASE_4_AWAKENING",
-    "sleep_window_executed": "2026-10-07T02:00:26.653945 -> 07:00 AM CDT",
+    "sleep_window_executed": "2026-10-08T02:00:28.239894 -> 07:00 AM CDT",
     "phase_1_consolidation": [
       "Archiving recent conversational matrices to The Hoard (ChromaDB local)...",
       "Executing Matryoshka Representation Learning (MRL) Compaction at 180 MPa."
@@ -28,14 +28,14 @@
       "Pruning redundant Psyche pathways (H_smooth > 2.0)."
     ],
     "phase_3_neuroevolution": [
-      "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.26.",
-      "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.23.",
-      "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.35."
+      "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.44.",
+      "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.50.",
+      "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.11."
     ],
     "mutations": [
-      0.26,
-      0.23,
-      0.35
+      0.44,
+      0.5,
+      0.11
     ],
     "dataflow_pipeline_triggered": "swds-phoenix-engine",
     "airflow_dag": "swds_cycle_dag",

@@ -31,10 +31,11 @@ CANONICAL_MODELS = {
         "role": "Thalamic Arbitrator, Fast Routing, & Paradox Detection",
     },
     "left_hemisphere": {
-        "model": "gemini-3.1-pro-preview",
+        "model": "gemini-3.8-flash",
         "role": "Analytical Engine (Spock) / Deconstruction & Formal Verification",
         "deep_think": True,
         "extended_thinking": True,
+        "thinking_level": "high",  # placeholder for Gemini 4 Argon
         "thinking_budget": 8192,
     },
     "right_hemisphere": {
@@ -45,7 +46,7 @@ CANONICAL_MODELS = {
 
 DEFAULT_ENV_VARS = {
     "CHESHIRE_MODEL": "gemini-3.8-flash",
-    "Y789_MODEL": "gemini-3.1-pro-preview",
+    "Y789_MODEL": "gemini-3.8-flash",
     "NEXUS_MODEL": "claude-opus-5-5",
     "SHIVA_MODEL": "claude-sonnet-5-5",
     "RODIN_MODEL": "gemini-3.8-flash",

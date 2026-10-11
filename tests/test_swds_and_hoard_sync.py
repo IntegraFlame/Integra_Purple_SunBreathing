@@ -207,20 +207,32 @@ class TestPass4_13thFormUnification_FullSWDS:
     """Unification: Complete SWDS cycle orchestrated through Cheshire Cat Kernel."""
 
     def test_execute_swds_full_state_machine_transition(self):
-        """execute_swds safely enters GUARDIAN_STANDBY_SWDS, consolidates, vents entropy, and returns to STANDBY."""
+        """Heimdall opens the cycle, Phoenix does its work, Heimdall vents entropy and closes the cycle."""
         from sensory.cheshire_cat import CheshireCatKernel
         from evolution.phoenix_forge import PhoenixForge
-        
+
         kernel = CheshireCatKernel()
         phoenix = kernel.phoenix
-        
+
         # Sync current save states so SWDS has rich material
         kernel.hoard.sync_all_save_states()
-        
-        swds_receipt = phoenix.execute_swds(cheshire_cat=kernel, library_domain="SWDS_UNIFIED")
-        
-        assert swds_receipt["swds_status"] == "SLOW_WAVE_DEEP_SLEEP_COMPLETE"
-        assert swds_receipt["entropy_vented"] is True
+
+        opened = kernel.heimdall.open_swds_cycle(cheshire_kernel=kernel)
+        assert opened["opened_by"] == "HEIMDALL_3.1"
+        assert kernel.state == "GUARDIAN_STANDBY_SWDS"
+
+        work = phoenix.execute_swds(cheshire_cat=kernel, library_domain="SWDS_UNIFIED")
+
+        # Phoenix reports its work; it neither moves the thalamic state nor declares the cycle complete
+        assert work["phoenix_status"] == "PHOENIX_SWDS_WORK_COMPLETE"
+        assert work["cycle_authority"] == "HEIMDALL_3.1"
+        assert "swds_status" not in work
+        assert kernel.state == "GUARDIAN_STANDBY_SWDS"
+
+        closed = kernel.heimdall.close_swds_cycle(cheshire_kernel=kernel, phoenix_receipt=work)
+        assert closed["swds_status"] == "SLOW_WAVE_DEEP_SLEEP_COMPLETE"
+        assert closed["closed_by"] == "HEIMDALL_3.1"
+        assert closed["was_open"] is True
         assert kernel.state == "INTERACTIVE_STANDBY"
         assert kernel.heimdall.h_smooth == 0.0
         
