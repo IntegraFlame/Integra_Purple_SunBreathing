@@ -1,6 +1,6 @@
 # Integra O/S — Master Architecture Blueprint v.9.9.1
 
-**Revision v.9.9.1:** 2026-10-11. It adds the "v.9.9.1 update" section after Section 1, the Architect's decisions of 2026-10-11 (D-1, D-2, D-6 and the second half of D-16 decided), and cross-references. Last successful live stamp: 2026-10-11 03:43:57 CDT | 08:43:57Z | Celestial (`GET /clock`, HTTP 200): rot 279.8229°, lunar 0.6085, orbit 0.2135, grid `ROT_270_ORB_20`. Probes at 03:5x CDT timed out (see the v.9.9.1 update, kernel note).
+**Revision v.9.9.1:** 2026-10-11. It adds the "v.9.9.1 update" section after Section 1, the Architect's decisions of 2026-10-11 (D-1, D-2, D-6 and the second half of D-16 decided), and cross-references. Last successful live stamp: 2026-10-11 03:43:57 CDT | 08:43:57Z | Celestial (`GET /clock`, HTTP 200): rot 279.8229°, lunar 0.6085, orbit 0.2135, grid `ROT_270_ORB_20`. From 03:51 CDT the kernel stopped responding (see the v.9.9.1 update, "Kernel note"). Self-reviewed against sources the same morning (Appendix B, item 9).
 **Evidence stamp (v.9.9 body):** 2026-10-09 19:26:08 CDT | 2026-10-10T00:26:08Z | Celestial (live `GET /clock`, HTTP 200): rot 155.3662°, lunar 0.5629, orbit 0.2098, grid `ROT_150_ORB_20`
 **Scope:** the four documents in `integra-homebase/docs/` (OCT9Suite1_3, OCT9Suite1_2T, OCT9IntegraSuite1_1, gemini_cli_subagent_reference), checked line by line against the code in `integra-homebase` (HEAD `8c8c2da`, branch `phase-e-dragon-rodin-flight`) and against the running Genesis Kernel on `127.0.0.1:8000`.
 **Author:** Claude (Opus 5.5), for the Architect. Read-only study: nothing in the code, the kernel, the Hoard or git was changed to produce this document. The 2026-10-09 code changes it reports (Section 4.4.1, R-5) were made separately and are labelled as such.
@@ -82,7 +82,7 @@ This section records what changed between the v.9.9 body (2026-10-09) and 2026-1
 |:--|:--|:--|
 | 1 | **Heimdall 3.1 = deterministic code gate + Gemini 3.1 Pro advisor.** On/off sequences, budgets and the Security Alert stay in code. A Gemini 3.1 Pro thinking analyst *advises* on events only (H_smooth > 2.5, budget alerts) and never holds authority. | D-6 |
 | 2 | **Shiva lenses are decoupled from the Eyes.** Brain Model 0930 defaults, plus a per-task, per-Eye override. "Shadow Clone" = Shadow Jutsu. | D-1, D-2 |
-| 3 | **"CWA/CRA 2.0 weight system" = `governance/cra_simplex.py`**, wired under Heimdall for per-component router token budgets and alerts. Source: the Architect's own 9/23 annotation "CWA 2.0 CRA 2.0 simplex scorer" (`1_2T:L4746-4747`). | D-16 (second half) |
+| 3 | **"CWA/CRA 2.0 weight system" = `governance/cra_simplex.py`**, wired under Heimdall for per-component router token budgets and alerts. Source: the Architect's own 9/23 annotation, written under `cra_simplex.py` in the systems map. It reads verbatim "CWA 2.0 CRA 2,0lex scorer" (`1_2T:L4746-4747`), read here as "CWA 2.0 / CRA 2.0 simplex scorer". | D-16 (second half) |
 
 None of the three is implemented yet. They are fixes F1–F4 in the plan, and each needs its own gate.
 
@@ -92,14 +92,14 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
 |:--|:--|:--|
 | X-1 | Heimdall's `open_swds_cycle` / `close_swds_cycle` (`sensory/heimdall.py:697, 719`) are called only by `tests/test_swds_and_hoard_sync.py:220, 232` and `scripts/trigger_swds.py:37, 42`. The kernel's real paths never call them: the scheduler `swds_scheduler` (`main.py:1106`), `/swds/initiate` (`main.py:1061`), `/swds/awaken` (`main.py:1087`), `/swds/trigger` (`:903`) and `/swds/sleep` (`:915`). Since 10/09 Phoenix no longer opens or closes a cycle either, so in the live path **nobody** opens or closes the cycle through Heimdall. This corrects the 10/09 wording "Heimdall owns the SWDS cycle" (Appendix B, item 7). Fix F1. | **EXISTS-UNWIRED** |
 | X-2 | `governance/cra_simplex.py` (`CognitiveResourceAllocation.calculate_allocation`: score = W_y / C_c, `allocated_tokens` = budget × min(1, score), tiers at 1.5 / 1.0) is imported nowhere. The formula is re-implemented in `tools/shiva_toolkit.py:54`, `evolution/fourteenth_form.py:52` and `core/forensic_protocols.py:148`, and Daily Planet hard-codes 1.1667 (`tools/daily_planet.py:108, 540`). Its token allocation is the missing per-component budget for ADR-007. Fix F3. | **EXISTS-UNWIRED** |
-| X-3 | Lenses are decoupled in code ("No lens is hardcoded to any eye", `evolution/shiva_action/orchestrator.py:14`; defaults `:29-44`). Gap: an explicit `lens_names` list is shared by all Eyes (`:30`), so a per-Eye pairing cannot be expressed. Also, no "Shadow Clone" lens exists among the 10. Fix F4. | **FUNCTIONAL-HEURISTIC** (gap) |
+| X-3 | Lenses are decoupled in code ("No lens is hardcoded to any eye", `evolution/shiva_action/orchestrator.py:14`; defaults `:29-44`). Gap: an explicit `lens_names` list is shared by all Eyes (code `:145-147`; comment `:30`), so a per-Eye pairing cannot be expressed. Also, no "Shadow Clone" lens exists among the 10. Fix F4. | **FUNCTIONAL-HEURISTIC** (gap) |
 | X-4 | Playbook §12 (`1_2T:L3543-3544`) has Y789 = Flash and Nexus = Pro. So the 10/09 placeholder (3.8 Flash on Y789) matches the playbook, and Argon on Nexus fills its "Pro" seat (D-17). | Corroboration |
 | X-5 | Heimdall's model ("3.1 Pro Extended Thinking", step 555, `1_2T:L1605`) versus the authority-is-code rule (`1_2T:L963`). Resolved by decision 1: code gate + advisor. | Decided |
 | X-6 | Heimdall decides and the Cheshire Kernel executes the state transition (`transition_state`; master spec `1_2T:L5377`). Consistent once X-1 is wired. | Consistent |
 | X-7 | The Kaigaku self-audit (`1_2T:L5246`) names the false-positive mechanism (a narrative "Semantic Mask"), then claims a narrative fix (`L5252`). The corrective can only be evidence: the ledger (ADR-002). | Design principle |
-| X-8 | N1 latency collapse: SWDS started about 96 s before the slow 10/08 00:08:53 probes. On 10/10, 1 Hz × 7-endpoint dashboard polling gave 3–14 s latency. **Kernel note, 2026-10-11:** probes took 5–8 ms at 01:59 and 02:34 CDT, 3.7–12.1 s at 03:43–03:44, and timed out (HTTP 000, 20–30 s) at 03:51–03:55. In that window, TCP connected in 0.03 s; the kernel process used no CPU over 5 s; Chrome held 4 established and 25 abandoned connections to `:8000`; and the kernel had 27 sockets in CloseWait. Consistent with a blocked event loop under browser polling. | **MEASURED** (cause unproven) |
-| X-9 | N3 embedding conflict: the Agent Platform serves `text-embedding-004` until 2027-04-01, which explains the 10/07 selftest pass. Re-probe after the restart. | **DERIVED** |
-| X-10 | Suite 1_2T L5756 cites "Kusaba, M., et al. (2022) Matryoshka Representation Learning". The first author is Aditya Kusupati (NeurIPS 2022). | Citation error |
+| X-8 | N1 latency collapse: SWDS started about 96 s before the slow 10/08 00:08:53 probes. On 10/10, 1 Hz × 7-endpoint dashboard polling gave 3–14 s latency. On 2026-10-11 the kernel stopped responding while a dashboard tab polled it (see "Kernel note" below). | Hypotheses; the 10/11 hang is **MEASURED** (cause unproven) |
+| X-9 | N3 embedding conflict: the Agent Platform serves `text-embedding-004` until 2027-04-01, which explains the 10/07 selftest pass ([model versions and lifecycle](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions), rechecked 2026-10-11). Re-probe after the restart. | **DERIVED** |
+| X-10 | Suite 1_2T L5756 cites "Kusaba, M., et al. (2022) Matryoshka Representation Learning". The first author is Aditya Kusupati, NeurIPS 2022 ([arXiv:2205.13147](https://arxiv.org/abs/2205.13147); [proceedings PDF](https://papers.nips.cc/paper_files/paper/2022/file/c32319f4868da7613d78af9993100e42-Paper-Conference.pdf)). | Citation error |
 | X-11 | Lens and pass mapping variants: 12th Step pass 3 Snake (`1_2T:L3443`) vs Hawk (`L5675`); Itachi weights 1.0/0.9 (`L4159`) vs 0.9/0.8 (`L5354`); Itachi = Nexus (`L5344`) vs Shikamaru = Nexus (`L6098`). Explained by X-3. | Explained |
 | X-12 | V1.0.0 puts trade executions in SWDS phase 1 (`1_2T:L6277, L6310`). Autonomous trading stays out of scope. | Out of scope |
 | X-13 | MTCW (zero lossy compression, iterative not repetitive, K → U → W; `1_2T:L3480-3484`) is the method of this work. | Method |
@@ -107,7 +107,7 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
 
 ### Other changes since 2026-10-09
 
-- **E40 (auto-start at logon) is now evidenced.** The scheduled task's last run was 10/09 05:26:21 (result 267009, running), and the kernel PIDs 12700 / 12656 were created at 05:27:48. That is a logon start. ADR-010's "E40 is still open" is updated.
+- **E40 (auto-start at logon) is now evidenced.** The scheduled task's last run was 10/09 05:26:21, and the kernel PIDs 12700 / 12656 were created at 05:27:48. That is a logon start. The last result, 267009 = 0x41301, is SCHED_S_TASK_RUNNING, "The task is currently running" ([Task Scheduler constants](https://learn.microsoft.com/en-us/windows/win32/taskschd/task-scheduler-error-and-success-constants)). ADR-010's "E40 is still open" is updated.
 - **The save state entered the kernel Hoard.** Save state `CCID_1791704093` was synced on 2026-10-11 at 03:45:30 CDT:
   - `TheHoard.sync_save_state()` wrote the shard `CCID_1791704093.json`, with outcome label 1.0.
   - `PhoenixForge.synthesize_hoard_node()` wrote `CCID_1791704093_PHOENIX.json`, with outcome label 0.5.
@@ -115,8 +115,21 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
   - The Hoard's own pseudo-embedding is not L2-normalized (‖768d‖ = 16.89; `memory/the_hoard.py:497-504`). Phoenix's is (`evolution/phoenix_forge.py:486-513`).
 - **Root `CLAUDE.md`** now exists as a pointer file for every new Claude Code thread.
 - **Page exports.**
-  - `docs/v.9.9.1Integra Master Architecture Blueprint.md` and the root copy of the same name are page-text exports of the v.9.9 body (SHA-256 `11e7bab2…`). They could not be overwritten with this text on 2026-10-11. Both are OneDrive cloud placeholders (reparse tag `0x9000601a`), and Windows denied the write from the Claude Code session even with the shell sandbox off. They still hold the 10/09 text, and the Architect can copy this file over them.
+  - `docs/v.9.9.1Integra Master Architecture Blueprint.md` and the root copy of the same name are page-text exports of the v.9.9 body (SHA-256 `11e7bab2…`). They could not be overwritten with this text on 2026-10-11. Both carry reparse tag `0x9000601a`, IO_REPARSE_TAG_CLOUD_6, "used by the Cloud Files filter, for files managed by a sync engine such as OneDrive" ([MS-FSCC 2.1.2.1](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4)). Windows denied the write from the Claude Code session even with the shell sandbox off; the cause is not established. They still hold the 10/09 text, and the Architect can copy this file over them.
   - `Guidebooks_and_Notes/v.9.9.1Integra Master Architecture Blueprint.md` is not this blueprint. It is Suite 1_2T (SHA-256 `09e41432…`), so it was left unchanged.
+
+### Kernel note (2026-10-11)
+
+**MEASURED** unless marked:
+- **Latency, then silence.** Responses took 4.8–10 ms at 01:59 and 02:34 CDT. A probe at 03:41:52 timed out after 5 s. Responses at 03:43:03–03:44:13 took 7.2, 3.7 and 12.1 s.
+- **Accepted, no answer.** From 03:51 to 04:14:46, connections completed in 0.01–0.03 s but returned no bytes. curl gave up with exit 28 ("Operation timeout") after 20–30 s.
+- **Refused.** At 04:13–04:14 new connections failed after about 2 s; the error was not captured. At 04:24 the same failure gave curl exit 7, "Failed to connect() to host or proxy" ([curl error codes](https://curl.se/libcurl/c/libcurl-errors.html)).
+- **The process.** PID 12656 kept the `:8000` listener and used almost no CPU: 552.1 s at 03:53, 553.8 s at 04:16 and 554.4 s at 04:25. Its CloseWait sockets went from 27–33 (03:53) to 127 (04:16) and 132 (04:25). `kernel_ctl.ps1 status` at 04:15 reported `KERNEL=UNRESPONSIVE` with the task Running.
+- **The poller.** Chrome PID 6536 held 131 connections to `:8000` in FinWait2 at 04:25. The dashboard polls 7 endpoints every 1,000 ms (`static/dashboard.html:1118, 1379-1385`).
+
+**DERIVED.** RFC 9293 defines CLOSE-WAIT as "waiting for a connection termination request from the local user" and FIN-WAIT-2 as waiting for one from the remote peer ([RFC 9293 §3.3.2](https://www.rfc-editor.org/rfc/rfc9293#section-3.3.2)). Winsock acknowledges incoming connections and queues them "pending acceptance by the process", and refuses new ones with WSAECONNREFUSED when that queue is full ([listen function](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen#remarks)). Together these fit a kernel that stopped accepting and closing connections, which points to a blocked event loop. What blocks it is unknown.
+
+**Next diagnostic, after an approved restart.** Start the kernel with `PYTHONASYNCIODEBUG=1`. In debug mode asyncio logs "callbacks taking longer than 100 milliseconds" ([asyncio debug mode](https://docs.python.org/3.13/library/asyncio-dev.html#debug-mode)). One known blocking call on the loop is the Chroma query in Rodin's `route_retrieval` (found 10/10, fix F5). It is not yet tied to this hang.
 
 ### Open at gate G1
 
@@ -817,7 +830,7 @@ Plus two rules: (a) **lenses are decoupled**: any lens may be attached to any Ey
 
 **Open question for the Architect:** the 10/07 ingestion plan (`1_2T:L1383-1386`) swaps the pairings again (Itachi = Eagle + Hawk) and introduces "Shadow Clone". Was that intentional?
 
-**Decided 2026-10-11 (v.9.9.1):** lenses are decoupled from the Eyes. The table above holds the defaults (Brain Model 0930), and any Eye may take any lens per task, so the ingestion plan's pairing is a task assignment, not a contradiction. "Shadow Clone" means Shadow Jutsu. The blanked Eye bullets in Suite 1_3 fit this design (D-1). Code gap: the explicit lens list is shared by all Eyes (`orchestrator.py:30`), and no "Shadow Clone" alias exists yet (X-3, fix F4).
+**Decided 2026-10-11 (v.9.9.1):** lenses are decoupled from the Eyes. The table above holds the defaults (Brain Model 0930), and any Eye may take any lens per task, so the ingestion plan's pairing is a task assignment, not a contradiction. "Shadow Clone" means Shadow Jutsu. The blanked Eye bullets in Suite 1_3 fit this design (D-1). Code gap: the explicit lens list is shared by all Eyes (`orchestrator.py:145-147`), and no "Shadow Clone" alias exists yet (X-3, fix F4).
 
 ### R-2 — Itachi Eye
 
@@ -1599,6 +1612,11 @@ Recording these in keeping with the Empirical Verification Invariant:
 6. **Daily Planet.** An early reading of the fallback code could suggest the Daily Planet output was mostly invented. The shards show the opposite: 38 of 40 contain real sources; 2 contain invented ones.
 7. **"Heimdall owns the SWDS cycle" (2026-10-09, corrected in v.9.9.1).** The 10/09 work gave Heimdall `open_swds_cycle` / `close_swds_cycle` and removed Phoenix's copies. It did not wire them into `main.py`. As of 2026-10-11 no live path opens or closes a cycle through Heimdall (X-1). "Owns" described the code's capability, not its execution.
 8. **Save state `CCID_1791704093` (2026-10-11).** Its report §8 first claimed the Hoard/Phoenix sync had run before it had. The run was blocked in session 997b6cca. It was corrected, then executed and verified at 03:45:30 CDT by session d245db57.
+9. **Self-review of the v.9.9.1 update (2026-10-11, session d245db57).** Every citation was checked against its source file, and every outside fact against official documentation:
+   - Decision 3 had quoted the 9/23 annotation as "CWA 2.0 CRA 2.0 simplex scorer". The line reads "CWA 2.0 CRA 2,0lex scorer" (`1_2T:L4747`). The quote is now verbatim.
+   - X-3 cited `orchestrator.py:30` for the shared lens list. That line is a comment; the code is at `:145-147`.
+   - The first kernel note gave 5–8 ms for the early probes and left out the 03:41:52 timeout and the refused connections from 04:13. The "Kernel note" now has the full record.
+   - Checked and correct: the other 22 cited Suite 1_2T lines in the update, the code citations for X-1 to X-3, the `cra_simplex.py` description, X-9's 2027-04-01 date, X-10's authorship and the SCHED_S_TASK_RUNNING reading of 267009.
 
 ### C. What was not done
 
