@@ -19,6 +19,8 @@ There is **one canonical blueprint**. Edit only that file. The two "v.9.9.1…" 
 | `integra-homebase/docs/v.9.9.1Integra Master Architecture Blueprint.md` | 188,333 | `cbcebbf137168db1` | **Exact copy.** The export name is kept. Refreshed 2026-10-12 15:12; it held the 10/09 v.9.9 text (`11e7bab245c89c1f`) until then. |
 | `v.9.9.1Integra Master Architecture Blueprint.md` | 188,333 | `cbcebbf137168db1` | **Exact copy**, same history as the row above. |
 
+Relative links inside the blueprint resolve only from `integra-homebase/docs/`. In the root copy, the two links to `RODIN_SUBAGENT_MODEL_RESEARCH.md` do not resolve; that is expected for a byte-identical copy.
+
 The 10/11 attempt to refresh the two copies failed. The cause was Windows Defender Controlled Folder Access (events 1123), not OneDrive; see the canonical, "Other changes → Page exports".
 
 ## 3. Misnamed file
