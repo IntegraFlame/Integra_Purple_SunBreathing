@@ -173,9 +173,30 @@ The quiz answers and the full to-do (E1–E101, N1–N7, with changes since 10/0
   - the quiz grade
   - D-18 and D-19
   - the paid selftest
-  - the two "v.9.9.1" page-export copies. Defender Controlled Folder Access blocked the overwrite on 10/11 (corrected 10/12; it was not the OneDrive placeholder state). With CFA now off, they can be written once the Architect says so.
-  - whether to re-enable Controlled Folder Access, with `claude.exe` and `git` allowed
-  - pushing the local commits
+  - ~~the two "v.9.9.1" page-export copies~~: **done 10/12** (see below)
+  - re-enabling Controlled Folder Access with `claude.exe` allowed (the Architect's action, plan section A)
+  - ~~pushing the local commits~~: done 10/12 after a clean pre-push review (see below)
+- **2026-10-12 afternoon: the Architect's four answers, carried out** (plan sections A-F, top of the realignment file):
+  - **C, blueprints.** Appendix B item 11 ("Step 2 interim corrections", each citing a ledger row) and a "Kernel note (2026-10-12)". Page **v13** (`1791835991-322b`). Both "v.9.9.1" exports are now byte-identical copies of the canonical (sha16 `cbcebbf137168db1`). New `integra-homebase/docs/BLUEPRINTS_INDEX.md` maps every blueprint-like file; nothing was moved.
+  - **D1, Antigravity conversations.** A local, git-ignored copy in `The Hoard/antigravity_conversations/`:
+    - 179 conversations;
+    - 174 transcript files with 174 lossless readable renderings, each parsed back and matched record for record;
+    - 600 artifact files;
+    - `INDEX.md` and `MANIFEST.json`, with every SHA-256 verified.
+
+    The GitHub repo is public, so none of it is pushed. Folder 13 is read from it by the D2 method.
+  - **F, kernel auto-launch review.** `integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md` (F1-F21, read-only):
+    - **F1:** the wrapper sits in a Windows Terminal-hosted console (microsoft/terminal#12464), so it can be closed. None of the 10 wrappers since 10/08 logged a stop event.
+    - **F20 (new):** startup takes 26 s to about 13 min.
+    - Step 4 proposals only.
+  - **B, push.**
+    - The pre-push review was clean: 0 secret hits in 1,811 added lines; JSON parses; tables and links checked.
+    - Two formatting defects were found and fixed.
+    - Homebase was pushed first, then root.
+  - **Open:**
+    - **A:** the Architect re-enables CFA. Command: `Add-MpPreference -ControlledFolderAccessAllowedApplications "C:\Users\Javon Jenkins\AppData\Roaming\Claude\claude-code\*\*\claude.exe"`, then `Set-MpPreference -EnableControlledFolderAccess Enabled`. I verify after.
+    - **One question:** was a terminal window or tab closed after logon or after 13:06?
+  - **Next:** Step 2, folder 6 (`temporal`).
 
 ## 9. Next thread: boot line
 Paste this into a new thread:
