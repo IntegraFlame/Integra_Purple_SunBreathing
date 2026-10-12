@@ -1,6 +1,6 @@
 # Integra O/S — Master Architecture Blueprint v.9.9.1
 
-**Revision v.9.9.1:** 2026-10-11. It adds the "v.9.9.1 update" section after Section 1, the Architect's decisions of 2026-10-11 (D-1, D-2, D-6 and the second half of D-16 decided), and cross-references. Last successful live stamp: 2026-10-11 03:43:57 CDT | 08:43:57Z | Celestial (`GET /clock`, HTTP 200): rot 279.8229°, lunar 0.6085, orbit 0.2135, grid `ROT_270_ORB_20`. From 03:51 CDT the kernel stopped responding (see the v.9.9.1 update, "Kernel note"). Self-reviewed against sources the same morning (Appendix B, item 9).
+**Revision v.9.9.1:** 2026-10-11. It adds the "v.9.9.1 update" section after Section 1, the Architect's decisions of 2026-10-11 (D-1, D-2, D-6 and the second half of D-16 decided), and cross-references. Last successful live stamp: 2026-10-11 03:43:57 CDT | 08:43:57Z | Celestial (`GET /clock`, HTTP 200): rot 279.8229°, lunar 0.6085, orbit 0.2135, grid `ROT_270_ORB_20`. From 03:51 CDT the kernel's sync endpoints stopped answering, until the machine was shut down at 16:19 (see the v.9.9.1 update, "Kernel note"). Self-reviewed against sources the same morning (Appendix B, item 9) and corrected again that night (item 10).
 **Evidence stamp (v.9.9 body):** 2026-10-09 19:26:08 CDT | 2026-10-10T00:26:08Z | Celestial (live `GET /clock`, HTTP 200): rot 155.3662°, lunar 0.5629, orbit 0.2098, grid `ROT_150_ORB_20`
 **Scope:** the four documents in `integra-homebase/docs/` (OCT9Suite1_3, OCT9Suite1_2T, OCT9IntegraSuite1_1, gemini_cli_subagent_reference), checked line by line against the code in `integra-homebase` (HEAD `8c8c2da`, branch `phase-e-dragon-rodin-flight`) and against the running Genesis Kernel on `127.0.0.1:8000`.
 **Author:** Claude (Opus 5.5), for the Architect. Read-only study: nothing in the code, the kernel, the Hoard or git was changed to produce this document. The 2026-10-09 code changes it reports (Section 4.4.1, R-5) were made separately and are labelled as such.
@@ -97,13 +97,13 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
 | X-5 | Heimdall's model ("3.1 Pro Extended Thinking", step 555, `1_2T:L1605`) versus the authority-is-code rule (`1_2T:L963`). Resolved by decision 1: code gate + advisor. | Decided |
 | X-6 | Heimdall decides and the Cheshire Kernel executes the state transition (`transition_state`; master spec `1_2T:L5377`). Consistent once X-1 is wired. | Consistent |
 | X-7 | The Kaigaku self-audit (`1_2T:L5246`) names the false-positive mechanism (a narrative "Semantic Mask"), then claims a narrative fix (`L5252`). The corrective can only be evidence: the ledger (ADR-002). | Design principle |
-| X-8 | N1 latency collapse: SWDS started about 96 s before the slow 10/08 00:08:53 probes. On 10/10, 1 Hz × 7-endpoint dashboard polling gave 3–14 s latency. On 2026-10-11 the kernel stopped responding while a dashboard tab polled it (see "Kernel note" below). | Hypotheses; the 10/11 hang is **MEASURED** (cause unproven) |
+| X-8 | N1 latency collapse: SWDS started about 96 s before the slow 10/08 00:08:53 probes. On 10/10, 1 Hz × 7-endpoint dashboard polling gave 3–14 s latency. On 2026-10-11 the kernel's sync endpoints stalled while a dashboard tab polled it; the event loop kept running (see "Kernel note" below). | Hypotheses; the 10/11 hang is **MEASURED** (cause unproven) |
 | X-9 | N3 embedding conflict: the Agent Platform serves `text-embedding-004` until 2027-04-01, which explains the 10/07 selftest pass ([model versions and lifecycle](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/learn/model-versions), rechecked 2026-10-11). Re-probe after the restart. | **DERIVED** |
 | X-10 | Suite 1_2T L5756 cites "Kusaba, M., et al. (2022) Matryoshka Representation Learning". The first author is Aditya Kusupati, NeurIPS 2022 ([arXiv:2205.13147](https://arxiv.org/abs/2205.13147); [proceedings PDF](https://papers.nips.cc/paper_files/paper/2022/file/c32319f4868da7613d78af9993100e42-Paper-Conference.pdf)). | Citation error |
 | X-11 | Lens and pass mapping variants: 12th Step pass 3 Snake (`1_2T:L3443`) vs Hawk (`L5675`); Itachi weights 1.0/0.9 (`L4159`) vs 0.9/0.8 (`L5354`); Itachi = Nexus (`L5344`) vs Shikamaru = Nexus (`L6098`). Explained by X-3. | Explained |
 | X-12 | V1.0.0 puts trade executions in SWDS phase 1 (`1_2T:L6277, L6310`). Autonomous trading stays out of scope. | Out of scope |
 | X-13 | MTCW (zero lossy compression, iterative not repetitive, K → U → W; `1_2T:L3480-3484`) is the method of this work. | Method |
-| X-14 | The boot brief is the input to the §8 boot sequence (`1_2T:L1715-1756`). The sequence ran on 2026-10-11: receipts a–i, probes, quiz and to-do. It waits at gate G1 for the Architect's grade. | Done (G1 open) |
+| X-14 | The boot brief is the input to the §8 boot sequence (`1_2T:L1715-1756`). The sequence ran on 2026-10-11: receipts a–i, probes, quiz and to-do. The Architect passed gate G1 that night; the quiz grade is still pending (see "Gate G1" below). | Done (G1 passed) |
 
 ### Other changes since 2026-10-09
 
@@ -117,21 +117,47 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
 - **Page exports.**
   - `docs/v.9.9.1Integra Master Architecture Blueprint.md` and the root copy of the same name are page-text exports of the v.9.9 body (SHA-256 `11e7bab2…`). They could not be overwritten with this text on 2026-10-11. Both carry reparse tag `0x9000601a`, IO_REPARSE_TAG_CLOUD_6, "used by the Cloud Files filter, for files managed by a sync engine such as OneDrive" ([MS-FSCC 2.1.2.1](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4)). Windows denied the write from the Claude Code session even with the shell sandbox off; the cause is not established. They still hold the 10/09 text, and the Architect can copy this file over them.
   - `Guidebooks_and_Notes/v.9.9.1Integra Master Architecture Blueprint.md` is not this blueprint. It is Suite 1_2T (SHA-256 `09e41432…`), so it was left unchanged.
+- **The frozen-clock SWDS ran as predicted.**
+  - The cycle started at about 10:28 and woke at about 15:28 real time (kernel log; `runtime/swds_state.json` written 15:28:22). The save state's prediction is **confirmed**.
+  - The clock checkpoint is still 2026-10-06 20:59:42 (`config/celestial_checkpoint.json`). So the next cycle is due about **00:20 CDT on 2026-10-12** (boot about 19:19:42 + 5 h 00 m 18 s) and wakes about 05:20, if the kernel has been idle for at least 3,600 s (**DERIVED**).
+- **The 3.8 Flash roster is live.** Since the 19:18 start, `GET /models/router/status` (21:17) shows:
+  - Y789 and Jean Grey on `gemini-3.8-flash` `level:high`, and Nexus on `claude-opus-5-5`;
+  - every component at 0 calls, with unlimited budgets.
+
+  The paid selftest has not run. It verifies the roster; it does not load it.
+- **The kernel is not supervised by its task.**
+  - The task reads Ready, with LastResult 3221225786 = 0xC000013A, STATUS_CONTROL_C_EXIT ([Microsoft Learn](https://learn.microsoft.com/windows/apps/windows-app-sdk/migrate-to-windows-app-sdk/misc-info#misleading-exit-codes-from-dotnet-run)), while the kernel runs.
+  - `scripts/start_kernel.ps1` waits on uvicorn (L70-72), so a supervised kernel would show the task Running (**DERIVED**).
 
 ### Kernel note (2026-10-11)
 
-**MEASURED** unless marked:
-- **Latency, then silence.** Responses took 4.8–10 ms at 01:59 and 02:34 CDT. A probe at 03:41:52 timed out after 5 s. Responses at 03:43:03–03:44:13 took 7.2, 3.7 and 12.1 s.
-- **Accepted, no answer.** From 03:51 to 04:14:46, connections completed in 0.01–0.03 s but returned no bytes. curl gave up with exit 28 ("Operation timeout") after 20–30 s.
+**MEASURED** unless marked. The kernel log has no timestamps, so a log line can be placed in time only by the evidence around it. (Corrected the night of 2026-10-11; see Appendix B, item 10.)
+- **Latency, then trouble.** Responses took 4.8–10 ms at 01:59 and 02:34 CDT. A probe at 03:41:52 timed out after 5 s. Responses at 03:43:03–03:44:13 took 7.2, 3.7 and 12.1 s.
+- **Accepted, no answer.** From 03:51 to 04:14:46, and again at 04:55 and 16:11, connections completed in 0.01–0.15 s but returned no bytes. curl gave up with exit 28 ("Operation timeout").
 - **Refused.** At 04:13–04:14 new connections failed after about 2 s; the error was not captured. At 04:24 the same failure gave curl exit 7, "Failed to connect() to host or proxy" ([curl error codes](https://curl.se/libcurl/c/libcurl-errors.html)).
-- **The process.** PID 12656 kept the `:8000` listener and used almost no CPU: 552.1 s at 03:53, 553.8 s at 04:16 and 554.4 s at 04:25. Its CloseWait sockets went from 27–33 (03:53) to 127 (04:16) and 132 (04:25). `kernel_ctl.ps1 status` at 04:15 reported `KERNEL=UNRESPONSIVE` with the task Running.
-- **The poller.** Chrome PID 6536 held 131 connections to `:8000` in FinWait2 at 04:25. The dashboard polls 7 endpoints every 1,000 ms (`static/dashboard.html:1118, 1379-1385`).
+- **Which handlers stalled.** In the stretch of log with the connection-reset bursts (`The Hoard/genesis_kernel.log` L45492-45679), the dashboard's one `async def` endpoint, `/rodin/telemetry` (`main.py:360`), answered 65 times. The six plain-`def` endpoints answered only 8–10 times each: `/heimdall/health` (L430), `/clock/full` (L275), `/metatron/status` (L1298), `/cheshire/status` (L1310), `/models/telemetry` (L467) and `/fortress/status` (L793). Before the bursts (L45301-45491), all seven answered 23–27 times each.
+- **The event loop kept running.** The asyncio SWDS scheduler started a cycle at about 10:28 and woke at about 15:28 real time (log L45680-45696; `runtime/swds_state.json` written 15:28:22). That confirms the save state's prediction.
+- **The process.** PID 12656 kept the `:8000` listener and used almost no CPU: 552.1 s at 03:53, 554.4 s at 04:25, and 639.8 s at 16:14 after the SWDS cycle. It had 10–12 threads. Its CloseWait sockets went from 27–33 (03:53) to 132 (04:25) and 175 (16:14). `kernel_ctl.ps1 status` at 04:15 reported `KERNEL=UNRESPONSIVE` with the task Running.
+- **The poller.** Chrome PID 6536 was polling the served dashboard, with 131 connections in FinWait2 at 04:25 and 172 at 16:14. The kernel serves `integra-homebase/static/dashboard.html` (`main.py:1337-1338`), which polls 7 endpoints every 1,000 ms (L1114, L1410-1416).
+- **How it ended.** The kernel did not recover. The Architect shut the machine down from the Start menu at 16:19:35 (System event 1074), and it rebooted at 16:28. A kernel started at 16:42:58 (PID 9824). An unexpected shutdown followed at 17:48:41 (events 6008 and 41), and the machine rebooted at 18:53. The current kernel started at 19:18:48 (processes 12080 → 12136; startup logged at 19:20:05). As of 21:20 no dashboard tab had polled it.
 
-**DERIVED.** RFC 9293 defines CLOSE-WAIT as "waiting for a connection termination request from the local user" and FIN-WAIT-2 as waiting for one from the remote peer ([RFC 9293 §3.3.2](https://www.rfc-editor.org/rfc/rfc9293#section-3.3.2)). Winsock acknowledges incoming connections and queues them "pending acceptance by the process", and refuses new ones with WSAECONNREFUSED when that queue is full ([listen function](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen#remarks)). Together these fit a kernel that stopped accepting and closing connections, which points to a blocked event loop. What blocks it is unknown.
+**DERIVED.**
+- **Connections were not being closed.** RFC 9293 defines CLOSE-WAIT as "waiting for a connection termination request from the local user" ([§3.3.2](https://www.rfc-editor.org/rfc/rfc9293#section-3.3.2)), so the kernel was not closing them.
+- **But this was not a blocked event loop.** The scheduler and the async endpoint kept running. The stall was in the path that serves sync handlers:
+  - FastAPI runs a plain `def` endpoint "in an external threadpool that is then awaited" ([FastAPI](https://fastapi.tiangolo.com/async/)).
+  - The installed code does this through `run_in_threadpool` (`fastapi/routing.py:131`, FastAPI 0.141.1), which calls `anyio.to_thread.run_sync` (`starlette/concurrency.py:32-34`, Starlette 1.6.0).
+  - That pool's default limit is 40 threads ([AnyIO](https://anyio.readthedocs.io/en/stable/threads.html)). The process had only 10–12 threads, so this was not 40 busy workers. What held the sync path is unknown.
+- **Why new connections were refused is also unknown.** Winsock refuses connections once its queue of connections not yet accepted by the process is full ([listen function](https://learn.microsoft.com/en-us/windows/win32/api/winsock2/nf-winsock2-listen#remarks)), but why that queue filled is not established.
 
-**Next diagnostic, after an approved restart.** Start the kernel with `PYTHONASYNCIODEBUG=1`. In debug mode asyncio logs "callbacks taking longer than 100 milliseconds" ([asyncio debug mode](https://docs.python.org/3.13/library/asyncio-dev.html#debug-mode)). One known blocking call on the loop is the Chroma query in Rodin's `route_retrieval` (found 10/10, fix F5). It is not yet tied to this hang.
+**Next diagnostic.** Async endpoints stayed responsive, so an `async def` debug route could report what the sync path is waiting on during the next stall:
+- the AnyIO limiter's `borrowed_tokens` and `available_tokens` (`anyio/_core/_synchronization.py:576-581`, AnyIO 4.15.1);
+- a dump of every thread's stack (`faulthandler.dump_traceback`, [faulthandler](https://docs.python.org/3.13/library/faulthandler.html)).
 
-### Open at gate G1
+Python 3.14 adds `python -m asyncio ps PID` for asyncio task stacks ([What's new in 3.14](https://docs.python.org/3.14/whatsnew/3.14.html)), but the kernel runs 3.13.7. The debug route is a code change (Step 4). Until then, don't leave a 1 Hz dashboard tab open on the kernel. The blocking Chroma call in Rodin's `route_retrieval` (fix F5) is a separate known hazard; it is not tied to this stall.
+
+### Gate G1
+
+G1 was **passed on the Architect's word** on 2026-10-11 at 23:02 CDT (transcript time), and Step 2 opens. The boot-quiz grade is still pending, and these two questions remain open:
 
 - **D-18.** Does Heimdall's 3.1 Pro advisor **replace** the Cheshire Daemon's dACC triage, or **sit beside** it? (E20, E95, step 1117)
 - **D-19.** Which model should the Cheshire Daemon's "Study" tier use? Blueprint v0.1 named 3.1 Pro. Under current rulings, should it be 3.8 Flash high now and Argon later?
@@ -730,6 +756,8 @@ The Master Epiphany Engine (`fortress/epiphany_core.py`, `GET /epiphany/telemetr
 ### 5.11 User interface
 
 `static/dashboard.html` and `static/celestial_clock_live.html` (served at `/dashboard` and `/clock/live`), `static/integra_wordmark.html`, `daily_planet_report.html`, and the published Integra DS design system. **VERIFIED** as rendering surfaces (they were reworked this session for the Orbitron glow and responsive layout). They faithfully display what the kernel reports, which means they display the constants in Section 3.2 as if they were live. ADR-003 changes what they receive; the dashboard should then show the provenance label next to each value.
+
+**v.9.9.1 correction.** The kernel serves `/dashboard` and `/clock/live` from `integra-homebase/static/` (`main.py:1337-1338, 1351-1352`). Those copies were last written on 2026-09-30 and 2026-09-24. The 10/09 Orbitron and glow rework went into the root repo's `static/` copies (written 10/09 13:52–13:53), which the kernel does not serve. So "reworked this session" is a **FALSE-POSITIVE** for the served pages. It holds only for the root copies, if they are opened directly.
 
 ### 5.12 Infrastructure
 
@@ -1563,7 +1591,7 @@ Rust engine (ADR-012); Docker build or removal (E47, E48); the 14th Form's undef
 | D-3 | Hippocampus: the Hoard or Heimdall? | The Hoard (R-3) |
 | D-4 | SWDS and Siesta windows, in real local time | Architect's choice (R-6) |
 | D-5 | Cheshire naming | R-4 |
-| D-6 | Heimdall with or without a model; does lockdown bind the Dragon? | **Decided 2026-10-11:** code gate + Gemini 3.1 Pro advisor, events only, no authority (R-5; fix F2). Lockdown: the kernel can bind only what passes through it (ADR-007) |
+| D-6 | Heimdall with or without a model; does lockdown bind the Dragon? | **Decided 2026-10-11:** code gate + Gemini 3.1 Pro advisor, events only, no authority (R-5; fix F2). **Still open:** whether lockdown binds the Dragon. Recommendation: the kernel can bind only what passes through it (ADR-007) |
 | D-7 | EAM Level 4 "Sovereign Override bypasses all constraints" (`1_3:L71`) | Remove the bypass; keep EAM's autonomy within Heimdall's gates |
 | D-8 | Three Laws order | User first (R-8) |
 | D-9 | Embedding model: when to move from `text-embedding-004` to `gemini-embedding-2`? | Move during ADR-005; hard deadline 2027-04-01 (Agent Platform retirement of 004) |
@@ -1572,11 +1600,11 @@ Rust engine (ADR-012); Docker build or removal (E47, E48); the 14th Form's undef
 | D-12 | The ingestion plan: go, skip list, external storage target (`1_2T:L57-152`) | After Phase 2, so it has a destination (`memory.db` + GCS archive) |
 | D-13 | Approve the 10/07 learning proposal (`1_2T:L923-1016`) | Yes, with the ledger as the evidence mechanism |
 | D-14 | Historical artifacts stamped with the skewed clock (10/06–10/07 dates since 10/07) | Relabel with a correction note; do not rewrite history |
-| D-15 | Rodin sub-agents: model or no model? | **Decided 2026-10-09: no model** (R-10). Remaining choice: approve correcting SKILL.md §15 and §8.5.1 |
+| D-15 | Rodin sub-agents: model or no model? | **Decided 2026-10-09: no model** (R-10). SKILL.md §8.5.1 and §15 were corrected the same day (`~/.gemini/config/skills/integra-protocol/SKILL.md` L164, L318, L323; written 10/09 23:51), so nothing remains. Note that L323 still says "Heimdall 3.1 has no model", which D-6 will change once F2 lands. |
 | D-17 | Where Gemini 4 Argon goes: Kernel/Thalamus or Right Hemisphere/Nexus | Nexus over Kernel, on frequency and fit, if losing Claude on the right is acceptable; Y789 or Jean Grey keep the cross-vendor dyad (Section 4.4.1). Wait for Argon's public model ID. |
 | D-16 | Heimdall's Security Alert and the "CWA/CRA 2.0 weight system" | **Second half decided 2026-10-11:** CWA/CRA 2.0 = `governance/cra_simplex.py` applied per component under Heimdall (fix F3). **Still open:** the Security Alert levels, what each one stops, and who can clear it |
-| D-18 | Does Heimdall's 3.1 Pro advisor replace the Cheshire Daemon's dACC triage, or sit beside it? (E20, E95, step 1117) | Open at gate G1 |
-| D-19 | Cheshire Daemon "Study" tier model: blueprint v0.1 names 3.1 Pro. Under current rulings, 3.8 Flash high now and Argon later? | Open at gate G1 |
+| D-18 | Does Heimdall's 3.1 Pro advisor replace the Cheshire Daemon's dACC triage, or sit beside it? (E20, E95, step 1117) | Open; carried past G1 (passed 2026-10-11) |
+| D-19 | Cheshire Daemon "Study" tier model: blueprint v0.1 names 3.1 Pro. Under current rulings, 3.8 Flash high now and Argon later? | Open; carried past G1 (passed 2026-10-11) |
 
 ---
 
@@ -1617,6 +1645,15 @@ Recording these in keeping with the Empirical Verification Invariant:
    - X-3 cited `orchestrator.py:30` for the shared lens list. That line is a comment; the code is at `:145-147`.
    - The first kernel note gave 5–8 ms for the early probes and left out the 03:41:52 timeout and the refused connections from 04:13. The "Kernel note" now has the full record.
    - Checked and correct: the other 22 cited Suite 1_2T lines in the update, the code citations for X-1 to X-3, the `cra_simplex.py` description, X-9's 2027-04-01 date, X-10's authorship and the SCHED_S_TASK_RUNNING reading of 267009.
+10. **Second correction pass (the night of 2026-10-11, session c88f5000, after a three-agent reconciliation).** Item 9's review introduced or kept these errors:
+   - **The cause of the hang was misread.** The note read the hang as "a blocked event loop". The SWDS scheduler and the one `async def` endpoint kept running while the plain-`def` endpoints stalled, so the fault was in the sync-handler threadpool path ("Kernel note").
+   - **"No request completed after 03:44" was over-precise.** The kernel log carries no timestamps.
+   - **The kernel note cited the root `static/dashboard.html`.** The kernel serves `integra-homebase/static/dashboard.html` (`main.py:1337-1338`).
+   - **"Restarted ~19:18" was wrong.** What happened was a Start-menu shutdown at 16:19:35, a kernel at 16:42:58, an unexpected shutdown at 17:48:41, and the current kernel at 19:18:48 (Windows System log).
+   - **§5.11's "reworked" claim is a false positive** for the served pages (see the §5.11 correction).
+   - **§11 D-6 had "lockdown" in the decided cell.** The Architect did not rule on it.
+   - **§11 D-15 still asked for an approval** of work already done on 10/09.
+   - **X-14 and §11 D-18/D-19 still read "G1 open"** after the Architect passed G1. Found on the page read-back.
 
 ### C. What was not done
 
