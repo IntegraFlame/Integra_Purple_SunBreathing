@@ -65,3 +65,7 @@ rust/target/
 # --- Byte-compiled / optimized ---
 *.pyc
 *.pyo
+
+# --- Local-only archives (the GitHub repo is public; never push these) ---
+# Copies of the Antigravity conversations (from ~/.gemini/antigravity/brain), kept on this PC only.
+The Hoard/antigravity_conversations/
