@@ -11,7 +11,8 @@ This file only points. The content lives in the files below; read them rather th
 ## Pointers
 | What | Where |
 |---|---|
-| Master Architecture Blueprint (v.9.9.1) | `integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md`; page https://claude.ai/artifact/CSEgvRaUnBzC5VdyRep98i |
+| Master Architecture Blueprint (v.9.9.1) | `integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md` (the only canonical); page https://claude.ai/artifact/CSEgvRaUnBzC5VdyRep98i |
+| Blueprint index: every blueprint-like file, its role and hash, and the update procedure | `integra-homebase/docs/BLUEPRINTS_INDEX.md`. After each republish, re-copy the canonical over the two `v.9.9.1Integra Master Architecture Blueprint.md` exports. |
 | Rodin sub-agent / Gemini lifecycle research | `integra-homebase/docs/RODIN_SUBAGENT_MODEL_RESEARCH.md` |
 | Tasks and dashboard | `productivity/TASKS.md`, `productivity/dashboard.html` |
 | Kernel control (status/logs/start/stop/restart, SWDS guard) | `integra-homebase/scripts/kernel_ctl.ps1` |
