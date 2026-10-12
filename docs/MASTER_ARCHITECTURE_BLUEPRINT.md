@@ -1,6 +1,6 @@
 # Integra O/S — Master Architecture Blueprint v.9.9.1
 
-**Revision v.9.9.1:** 2026-10-11. It adds the "v.9.9.1 update" section after Section 1, the Architect's decisions of 2026-10-11 (D-1, D-2, D-6 and the second half of D-16 decided), and cross-references. Last successful live stamp: 2026-10-11 03:43:57 CDT | 08:43:57Z | Celestial (`GET /clock`, HTTP 200): rot 279.8229°, lunar 0.6085, orbit 0.2135, grid `ROT_270_ORB_20`. From 03:51 CDT the kernel's sync endpoints stopped answering, until the machine was shut down at 16:19 (see the v.9.9.1 update, "Kernel note"). Self-reviewed against sources the same morning (Appendix B, item 9) and corrected again that night (item 10).
+**Revision v.9.9.1:** 2026-10-11. It adds the "v.9.9.1 update" section after Section 1, the Architect's decisions of 2026-10-11 (D-1, D-2, D-6 and the second half of D-16 decided), and cross-references. Last successful live stamp: 2026-10-11 03:43:57 CDT | 08:43:57Z | Celestial (`GET /clock`, HTTP 200): rot 279.8229°, lunar 0.6085, orbit 0.2135, grid `ROT_270_ORB_20`. From 03:51 CDT the kernel's sync endpoints stopped answering, until the machine was shut down at 16:19 (see the v.9.9.1 update, "Kernel note"). Self-reviewed against sources the same morning (Appendix B, item 9) and corrected again that night (item 10). Interim corrections from the Step 2 reading of folders 1-5 were applied on 2026-10-12 (item 11).
 **Evidence stamp (v.9.9 body):** 2026-10-09 19:26:08 CDT | 2026-10-10T00:26:08Z | Celestial (live `GET /clock`, HTTP 200): rot 155.3662°, lunar 0.5629, orbit 0.2098, grid `ROT_150_ORB_20`
 **Scope:** the four documents in `integra-homebase/docs/` (OCT9Suite1_3, OCT9Suite1_2T, OCT9IntegraSuite1_1, gemini_cli_subagent_reference), checked line by line against the code in `integra-homebase` (HEAD `8c8c2da`, branch `phase-e-dragon-rodin-flight`) and against the running Genesis Kernel on `127.0.0.1:8000`.
 **Author:** Claude (Opus 5.5), for the Architect. Read-only study: nothing in the code, the kernel, the Hoard or git was changed to produce this document. The 2026-10-09 code changes it reports (Section 4.4.1, R-5) were made separately and are labelled as such.
@@ -53,13 +53,13 @@ Integra today is a **real, running, well-instrumented host process wrapped aroun
 
 The twelve findings that matter most, in order of consequence:
 
-1. **The kernel's clock restarts at 2026-10-06 20:59:42 on every boot (VERIFIED, root cause).** `celestial_time()` returns a checkpoint written on 10/06 plus the seconds since boot (`core/celestial_middleware.py:324-328`; checkpoint file last written 2026-10-06 20:59:42). The checkpoint is only refreshed when someone calls `GET /celestial/checkpoint` (`core/celestial_middleware.py:250`). The sleep scheduler reads the hour from this clock (`main.py:1134`), so **slow-wave deep sleep (SWDS) fires exactly 5 hours after every boot and wakes 10 hours after, whatever the real time is.** Today it slept from about 10:28 to 15:28 in the afternoon. Every report is stamped with a 10/06 or 10/07 date, report filenames collide, and the previous thread's "SWDS stuck asleep for 22 hours" (`1_2T:L1545`) was a misdiagnosis of this.
+1. **The kernel's clock restarts at 2026-10-06 20:59:42 on every boot (VERIFIED, root cause).** `celestial_time()` returns a checkpoint written on 10/06 plus the seconds since boot (`core/celestial_middleware.py:324-328`; checkpoint file last written 2026-10-06 20:59:42). The checkpoint is only refreshed when someone calls `GET /celestial/checkpoint` (`core/celestial_middleware.py:250`). The sleep scheduler reads the hour from this clock (`main.py:1134`). It has done so since commit `6021755` (2026-09-23 22:01, "Complete celestial injection"), which replaced the `datetime.now()` calls in `runtime/swds_simulator.py` and `main.py` (v.9.9.1, item 11). So **slow-wave deep sleep (SWDS) fires exactly 5 hours after every boot and wakes 10 hours after, whatever the real time is.** Today it slept from about 10:28 to 15:28 in the afternoon. Every report is stamped with a 10/06 or 10/07 date, report filenames collide, and the previous thread's "SWDS stuck asleep for 22 hours" (`1_2T:L1545`) was a misdiagnosis of this.
 2. **The kernel has made zero model calls since it started 14 hours ago (VERIFIED).** All seven routed models show `calls_made: 0`, `tokens_consumed: 0`. The model wiring itself is real (the 10/07 self-test passed 7/7), but no running path invokes it.
 3. **When the cognition pipeline does run, its answer is thrown away (VERIFIED).** `POST /cognitive/cycle` runs the four Zenitsu passes through Y789 and Nexus (up to 12 model calls in dyad mode), then stores a Hoard node built from weights and route strings rather than the model's text (`sensory/cheshire_cat.py:339-382`). The response to the caller does not include the text either, and the event that carries it is drained and dropped by the 30 Hz loop (`sensory/cheshire_cat.py:574-576`).
 4. **The hallucination guard (P-SSR) cannot trigger on real models (VERIFIED).** Every real client yields `probabilities=[]` (`core/api_clients.py:416, 556, 663`), and the in-flight check requires probabilities (`core/cognitive_engine.py:374`). In dyad mode it is skipped entirely (`core/cognitive_engine.py:347-349`). Only the test placeholder supplies probabilities, fixed at `[0.8, 0.1, 0.05, 0.05]` (`core/cognitive_engine.py:550`), which is why tests pass.
-5. **The pre-generation entropy gate is mathematically unreachable (VERIFIED by computation).** It measures character-frequency entropy of the prompt (`sensory/heimdall.py:113-124`). With α = 0.3 and the thermostat reset to 0 before every cycle, tripping it needs more than 8.33 bits per character; ordinary English is about 4.2 and random printable text about 6.5.
+5. **The pre-generation entropy gate is mathematically unreachable (VERIFIED by computation).** It measures character-frequency entropy of the prompt (`sensory/heimdall.py:117-128`). With α = 0.3, the thermostat is reset *after* each completed cycle (`sensory/cheshire_cat.py:402`), and between cycles the 30 Hz loop nudges it to about 0.3. So a one-shot breach needs more than about 7.6 bits per character (8.33 starting from zero). Ordinary English is about 4.2, and printable ASCII cannot exceed 6.57. Repeated `/heimdall/evaluate` or `/ignite` calls are never reset, and three English prompts in a row breach the shared thermostat before the next cycle starts (v.9.9.1, item 11).
 6. **SWDS is a script that writes a report, not a sleep cycle (VERIFIED).** Phases 1–2 are string assignments, the "dream mutations" are `random.uniform(0.1, 0.5)` (`runtime/swds_simulator.py:90-108`), ΔE and L_t are printed as constants (`:190`), the celestial value is always the 282.85° fallback because the report writer calls a method that does not exist (`:171-172`), and Phoenix re-reads the same first 10 of 305 shards each cycle and appends the same four hard-coded axioms (`evolution/phoenix_forge.py:120-143`).
-7. **Most "live" telemetry is constant or proxied (VERIFIED).** Thermodynamic stress 131.625 MPa, Mach 4.2, KL divergence 0.0, `all_forms_verified: true`, angular momentum 500, Epiphany Ω 269.819457 (a constant times e^0.1), ΔE 0.0001 (a 9/23 test row), the startup line "ALL PHASE D SUBSYSTEMS ONLINE" (printed unconditionally, `main.py:157`), and Heimdall's `alerts_active: true` (`sensory/heimdall.py:711`).
+7. **Most "live" telemetry is constant or proxied (VERIFIED).** Thermodynamic stress 131.625 MPa, Mach 4.2, KL divergence 0.0, `all_forms_verified: true`, angular momentum 500, Epiphany Ω 269.819457 (a constant **plus** e^0.1: 268.714286 + 1.105171), ΔE 0.0001 (a 9/23 test row), the startup line "ALL PHASE D SUBSYSTEMS ONLINE" (printed unconditionally, `main.py:157`), and Heimdall's `alerts_active: true` (`sensory/heimdall.py:769`).
 8. **Heimdall the gatekeeper does not exist yet (MISSING).** Heimdall's entropy math matches the docs, but the role the Architect defined on 10/07 (budgets, power sequencing, lockdown, permit/deny, connectivity and MCP watch) has no implementation. A token-budget circuit breaker exists in the model router (`core/model_router.py:285-317`), but every budget is set to unlimited.
 9. **Memory is real but thin and partly fake (VERIFIED / FALSE-POSITIVE).** The Hoard and ChromaDB exist. But the "true MRL" embeddings are SHA-512 hashes (`evolution/phoenix_forge.py:498-516`), Rodin silently falls back to SHA-256 pseudo-vectors when its embedding call fails (`memory/rodin_protocol.py:343-351`), the embedding model defaults to `text-embedding-004`, which is shut down on the Gemini Developer API (2026-01-14) and served on the Agent Platform, the kernel's actual path, only until **2027-04-01** (see `RODIN_SUBAGENT_MODEL_RESEARCH.md`), and the live Metatron database sits inside OneDrive.
 10. **Daily Planet mixes real sources with invented ones (VERIFIED).** 38 of 40 Daily Planet shards in the Hoard contain real Firecrawl sources, but every source gets the same default bias scores. Two shards contain sources fabricated by a silent fallback that invents titles, publishers, SEC and arXiv URLs, and figures (`tools/daily_planet.py:208-276`).
@@ -115,7 +115,10 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
   - The Hoard's own pseudo-embedding is not L2-normalized (‖768d‖ = 16.89; `memory/the_hoard.py:497-504`). Phoenix's is (`evolution/phoenix_forge.py:486-513`).
 - **Root `CLAUDE.md`** now exists as a pointer file for every new Claude Code thread.
 - **Page exports.**
-  - `docs/v.9.9.1Integra Master Architecture Blueprint.md` and the root copy of the same name are page-text exports of the v.9.9 body (SHA-256 `11e7bab2…`). They could not be overwritten with this text on 2026-10-11. Both carry reparse tag `0x9000601a`, IO_REPARSE_TAG_CLOUD_6, "used by the Cloud Files filter, for files managed by a sync engine such as OneDrive" ([MS-FSCC 2.1.2.1](https://learn.microsoft.com/en-us/openspecs/windows_protocols/ms-fscc/c8e77b37-3909-4fe6-a4ea-2b9d423b1ee4)). Windows denied the write from the Claude Code session even with the shell sandbox off; the cause is not established. They still hold the 10/09 text, and the Architect can copy this file over them.
+  - `docs/v.9.9.1Integra Master Architecture Blueprint.md` and the root copy of the same name held the v.9.9 page text (SHA-256 `11e7bab2…`). They could not be overwritten on 2026-10-11.
+    - **Cause, established 2026-10-12 (MEASURED, Windows Defender Operational log):** **Controlled Folder Access** (CFA) blocked the writes. Event 1123 shows `cp.exe` blocked on `integra-homebase\docs\` at 04:00:10 and 04:00:30, and `pwsh.exe` blocked on the repo root at 04:01:59. CFA had been enabled on 2026-10-08 at 20:25:15 (event 5007).
+    - The OneDrive cloud reparse tag (`0x9000601a`) both files carry was not the cause.
+    - Since 2026-10-12 both files are **byte-identical copies of this canonical file**, refreshed after each republish; see `docs/BLUEPRINTS_INDEX.md`.
   - `Guidebooks_and_Notes/v.9.9.1Integra Master Architecture Blueprint.md` is not this blueprint. It is Suite 1_2T (SHA-256 `09e41432…`), so it was left unchanged.
 - **The frozen-clock SWDS ran as predicted.**
   - The cycle started at about 10:28 and woke at about 15:28 real time (kernel log; `runtime/swds_state.json` written 15:28:22). The save state's prediction is **confirmed**.
@@ -128,6 +131,7 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
 - **The kernel is not supervised by its task.**
   - The task reads Ready, with LastResult 3221225786 = 0xC000013A, STATUS_CONTROL_C_EXIT ([Microsoft Learn](https://learn.microsoft.com/windows/apps/windows-app-sdk/migrate-to-windows-app-sdk/misc-info#misleading-exit-codes-from-dotnet-run)), while the kernel runs.
   - `scripts/start_kernel.ps1` waits on uvicorn (L70-72), so a supervised kernel would show the task Running (**DERIVED**).
+  - **2026-10-12 (MEASURED): 3 of 3 launches lost supervision.** They were the 10/11 logon launch, the 10/12 logon launch and the 10/12 13:06:57 `kernel_ctl restart`. The task was Running at 13:16 and was Ready / 0xC000013A by 14:52. See "Kernel note (2026-10-12)".
 
 ### Kernel note (2026-10-11)
 
@@ -154,6 +158,44 @@ None of the three is implemented yet. They are fixes F1–F4 in the plan, and ea
 - a dump of every thread's stack (`faulthandler.dump_traceback`, [faulthandler](https://docs.python.org/3.13/library/faulthandler.html)).
 
 Python 3.14 adds `python -m asyncio ps PID` for asyncio task stacks ([What's new in 3.14](https://docs.python.org/3.14/whatsnew/3.14.html)), but the kernel runs 3.13.7. The debug route is a code change (Step 4). Until then, don't leave a 1 Hz dashboard tab open on the kernel. The blocking Chroma call in Rodin's `route_retrieval` (fix F5) is a separate known hazard; it is not tied to this stall.
+
+### Kernel note (2026-10-12)
+
+**MEASURED** unless marked. On 10/12 the machine shut down unexpectedly at 10:09:44 and rebooted. The logon task launched the kernel at 11:59:47. The Architect asked for a relaunch, and `kernel_ctl restart` ran at 13:06:57.
+
+- **Supervision is lost on every launch (3 of 3).**
+  - The task's PowerShell wrapper exits with 0xC000013A, so the task reads Ready.
+  - `cmd.exe` and uvicorn keep running, orphaned, each on its own classic `conhost.exe`.
+  - The Windows PowerShell log has engine-start event 400 for both 10/12 wrappers (12:00:21, 13:06:59) and no matching 403 (engine stop).
+  - Restart-on-failure did not fire after the 13:06 wrapper died; LastRunTime did not change.
+- **Leading cause (DERIVED, not proven): the default console host is Windows Terminal.**
+  - `HKCU\Console\%%Startup` delegates consoles to Windows Terminal (`{2EACA947-…}` / `{E12CFF52-…}`).
+  - A Windows Terminal instance started at 12:00:10, 23 s after the logon task ran.
+  - The likely mechanism: the "hidden" wrapper is hosted in a terminal window or tab, and closing it kills only the wrapper.
+  - Fix direction (Step 4): a headless console host for the wrapper, never `-NoNewWindow` alone.
+- **Task priority 7.** The task XML sets no priority, so Task Scheduler's default of 7 applies: below-normal CPU, plus low I/O and memory priority. The kernel's python and `cmd.exe` processes run BelowNormal (base 6); Chrome runs Normal (base 8).
+- **Task Scheduler history is disabled** (`wevtutil gl Microsoft-Windows-TaskScheduler/Operational` → `enabled: false`). So the wrapper deaths leave no record. Turning it on is the Architect's call.
+- **Startup takes about 94 s.**
+  - Timeline: the process started at 13:07:03; `chroma.sqlite3` was written at 13:08:33; lifespan ran at 13:08:37. The lifespan time comes from the log's "Celestial reboot delta" plus the checkpoint epoch.
+  - So imports and constructors take about 90 s, and lifespan about 4 s.
+  - `kernel_ctl`'s "answering after ~50s" undercounts. It adds 2 s per loop and ignores the time the probe itself takes (`scripts/kernel_ctl.ps1:144-148`).
+- **uvicorn runs startup before it binds the port.** In uvicorn 0.52.4, `server.py` `startup()` runs the lifespan first. A duplicate launch therefore runs `main.py`'s whole startup, including SWDS reconciliation, before it fails to bind. `start_kernel.ps1`'s single-instance check is one 3 s probe with an empty catch (L52-58).
+- **Short stalls on the first probes, which clear on their own.**
+  - At 13:09, on a 2-minute-old kernel, `/clock` (sync) got no reply for 12 s while `/rodin/telemetry` (async) took 5.2 s. The next probes took 0.17 s, then under 30 ms.
+  - A Chrome tab restored after the reboot was polling the 7 dashboard endpoints at 1 Hz.
+  - On 10/11 at 23:31, after about 4 h idle, `/clock` timed out at 10 s and answered normally a minute later.
+  - Unlike the 10/11 stall, these recover on their own.
+- **`Get-NetTCPConnection` is unreliable on this machine.** At 13:04 it showed only "Closed" for the kernel, while `netstat -ano -p TCP` showed LISTENING and `/clock` returned 200. Judge liveness by `netstat` plus an HTTP probe.
+- **The frozen-clock SWDS ran a third time as predicted.** The cycle due about 00:20 CDT on 10/12 ran and woke at 05:20:05. Its report, `2026-10-07_07-00-08_CDT_CEL-282.85deg_SWDS_Report.md`, carries the frozen 10/07 date.
+- **The kernel needs Defender's allow-list.** With Controlled Folder Access on, the kernel writes the repo only because `C:\Python313\python.exe` and `cmd.exe` are allowed (since 10/09 01:30). Between 10/08 20:25 and 10/09 01:30 its writes were blocked (events 1123).
+
+**DERIVED.**
+- **A lead for the sync-path stalls (not established).** Metatron uses one shared `sqlite3` connection (`memory/database/metatron_deploy.py:37-53`, `check_same_thread=False`, WAL).
+  - The event loop uses it: the Kintsugi hypervisor loop queries it every 5 s (`evolution/kintsugi_sandbox.py:341-408`).
+  - So do threadpool handlers (`/heimdall/health`, `/metatron/status`).
+  - Contention on that connection would slow the sync path while the async endpoints stay responsive.
+- **The next frozen-clock SWDS** after the 13:07 relaunch is due about 18:07-18:09 CDT and would wake about 23:07-23:09, if the kernel has been idle for at least 3,600 s.
+- The full auto-launch review is in progress: `docs/KERNEL_AUTOLAUNCH_REVIEW.md` (plan section F, read-only; fixes are Step 4 proposals).
 
 ### Gate G1
 
@@ -265,15 +307,15 @@ A value is only telemetry if something measured it. In Integra many dashboard va
 | Value shown | Where it comes from | Status |
 |:--|:--|:--|
 | ΔE_cycle 0.0001 "MECHANICAL" | The last of two test rows inserted 2026-09-23 (session `CCID_1790212674`); nothing has inserted a row since, because the only caller of `record_loop()` is `auto_crystallize()` (`memory/the_hoard.py:658`), which nothing calls | CONSTANT (stale) |
-| 7th Form stress 131.625 MPa, Mach 4.2, drag 0.0 N | `rust/sun_breathing_engine/python_bridge.py` constants (the Rust crate was never compiled) | CONSTANT |
+| 7th Form stress 131.625 MPa, Mach 4.2, drag 0.0 N | `rust/sun_breathing_engine/python_bridge.py` hard-codes 202.5 MPa × 0.65 (`:133-135, 158`). The Rust crate has never been built: on 2026-10-12 it compiled but could not link on this machine, and its own formula gives 33,036 MPa at this benchmark | CONSTANT |
 | 13th Form ΔE 0.0, angular momentum 500.0, `all_forms_verified: true` | Same bridge | CONSTANT |
-| Epiphany Ω 269.819457 | baseline 268.714286 × e^0.1 (rogue spike 1.105171) | CONSTANT |
+| Epiphany Ω 269.819457 | baseline 268.714286 **+** e^0.1 (rogue spike 1.105171), a sum (`python_bridge.py:310-312`; `lib.rs:188-189`) | CONSTANT |
 | 12th Step `passes_completed: 4` | Bridge constant | CONSTANT |
 | Starfire KL divergence 0.0 | KL between the anchor vector and itself, unless a POST supplies an observed vector | CONSTANT by construction |
 | Heimdall H_smooth 0.0 | No inference has run; when the 30 Hz loop has queued events it feeds the entropy of a uniform distribution sized by queue depth (`sensory/cheshire_cat.py:584-589`) | PROXY |
-| `alerts_active`, `system_governance_active`, `all_systems_true` | Literal `True` (`sensory/heimdall.py:709-711, 730`) | CONSTANT |
-| Cheshire Protocol and Looking Glass "HEALTHY" | Literal strings (`sensory/heimdall.py:430, 442`) | CONSTANT |
-| Impedance latency L_t 0.000 in the health matrix | Literal (`sensory/heimdall.py:420`) | CONSTANT |
+| `alerts_active`, `system_governance_active`, `all_systems_true` | Literal `True` (`sensory/heimdall.py:767-769, 788`) | CONSTANT |
+| Cheshire Protocol and Looking Glass "HEALTHY" | Literal strings (`sensory/heimdall.py:434, 446`) | CONSTANT |
+| Impedance latency L_t 0.000 in the health matrix | Literal (`sensory/heimdall.py:424`) | CONSTANT |
 | `/clock/full` sync packet `causal_valid`, `loop_closed`, `dragon_active`, `starfire_locked` | Literal `True` (`main.py:293-296`) | CONSTANT |
 | `/fortress/status` `vix_regime: "NORMAL (VIX < 20)"`, `active_strategy` | Literal strings (`main.py:806-807`) | CONSTANT |
 | SWDS report "ΔE = 0.0000, L_t = 0.000 s", "Earth Rotation 282.85°" | Report template (`runtime/swds_simulator.py:168-190`) | CONSTANT |
@@ -286,7 +328,7 @@ The consequence is that the dashboards cannot tell a working Integra from a brok
 
 Several safety mechanisms are built so that they never fire in practice:
 
-- **Pre-generation entropy gate.** Character-frequency entropy, EMA from zero, threshold 2.5. Tripping it needs H_t > 8.33 bits; English prompts score about 4.2 (computed on a sample Architect prompt: 4.214 bits → first EMA step 1.264).
+- **Pre-generation entropy gate.** Character-frequency entropy, EMA from zero, threshold 2.5. Tripping it needs H_t > 8.33 bits from zero, or about 7.6 after the loop's between-cycle nudge; English prompts score about 4.2 (computed on a sample Architect prompt: 4.214 bits → first EMA step 1.264).
 - **P-SSR in-flight surveillance.** Needs token probabilities; no real client supplies them.
 - **Metatron loop-closure trigger.** Aborts any insert whose |Δ| exceeds 0.0001 and logs any insert whose Δ ≠ 0. So a catastrophic violation is rejected and never logged, and only float noise in (0, 0.0001] is ever recorded (Section 5.3).
 - **Model-router budget breaker.** Real code (`core/model_router.py:305-307`), but every budget is 0 = unlimited.
@@ -297,7 +339,7 @@ A guard that cannot trip is worse than no guard, because it produces green light
 
 ### 3.4 Pattern C — health equals existence
 
-Heimdall's health matrix (`sensory/heimdall.py:385+`) mostly checks that an object exists and is configured: the Cheshire polling rate is between 20 and 45 Hz, the dyad weights sum to 1.0, the Hoard directory exists, Rodin has two named methods (`hasattr`). None of these checks asks whether the component did its job. That is why the matrix shows HEALTHY_OPTIMAL while the clock is frozen, the models are idle and sleep runs in the afternoon.
+Heimdall's health matrix (`sensory/heimdall.py:389+`) mostly checks that an object exists and is configured: the Cheshire polling rate is between 20 and 45 Hz, the dyad weights sum to 1.0, the Hoard directory exists, Rodin has two named methods (`hasattr`). None of these checks asks whether the component did its job. That is why the matrix shows HEALTHY_OPTIMAL while the clock is frozen, the models are idle and sleep runs in the afternoon.
 
 ### 3.5 Pattern D — two clocks
 
@@ -634,7 +676,7 @@ Each component below gives the specification (where the documents define it), th
 |:--|:--|
 | **Spec (math)** | EMA of Shannon entropy, α = 0.3, threshold 2.5, P-SSR with at most 3 interventions, then VASOVAGAL_SYNCOPE (`1_3:L85`; `1_2T:L5384-5387`); ω floor 0.40 and a four-step circuit breaker (`1_2T:L5801-5812`). |
 | **Spec (role, Architect 10/07)** | Gatekeeper and controller: dashboard back end and front end, token and cost tracking with alerts, power sequencing for Siesta and SWDS, scheduled lockdown in which only the Cheshire Daemon operates, watching error codes, connectivity, MCP connections and time alignment; authority in deterministic code (`1_2T:L1269-1279`, `L963`). |
-| **Code** | `sensory/heimdall.py`: entropy (`:63-111`), character-entropy gate (`:113-124`), gravitational mass (`:126-166`), health matrix (`:385+`), telemetry (`:702-730`); circuit breaker states (THROTTLE, VETO, ISOLATE, UGL_RESET). |
+| **Code** | `sensory/heimdall.py`: entropy (`:67-115`), character-entropy gate (`:117-128`), gravitational mass (`:130-170`), health matrix (`:389+`), telemetry (`:760-790`) (lines as of 2026-10-12); circuit breaker states (THROTTLE, VETO, ISOLATE, UGL_RESET). |
 | **Live** | HEALTHY_OPTIMAL, H_smooth 0.0, 0 interventions, 23 monitored components. |
 | **Status** | Math: **VERIFIED**, and it matches the documents exactly. As a guard: **cannot trip** (Section 3.3). As the gatekeeper the Architect defined: **MISSING** — none of the six duties is implemented in Heimdall (update 2026-10-09: Heimdall now owns the SWDS cycle's open and close steps through `open_swds_cycle` / `close_swds_cycle`, per the Architect's ruling in R-5; the live scheduler does not call them yet. v.9.9.1: no live path calls them, so they are **EXISTS-UNWIRED** (X-1, fix F1). The Architect decided on 2026-10-11 that Heimdall is a code gate plus a 3.1 Pro advisor that runs on events only.). The docstring's "token-by-token logprob tracking" (`:25`) is a **FALSE-POSITIVE**: no code requests log-probabilities. |
 | **Gap** | ADR-007 (gatekeeper) and ADR-008 (a real uncertainty signal). |
@@ -767,7 +809,7 @@ The Master Epiphany Engine (`fortress/epiphany_core.py`, `GET /epiphany/telemetr
 | Single-instance guard | None. Five kernels started in about 2.5 days; uvicorn on Windows can share a port with another instance | **MISSING** |
 | Kernel log | One 1.5 MB file, mixed UTF-16 and UTF-8, no timestamps on lines, no rotation | **Defect** (E69) |
 | Docker | Dockerfile and compose file present; the image was never built (E47) | **EXISTS-UNEXERCISED** |
-| Rust Sun Breathing Engine | `rust/sun_breathing_engine/src/lib.rs` and `Cargo.toml` exist; there is no `target/` folder (never compiled); `python_bridge.py` is a Python implementation of the constants | **CONCEPT-ONLY** as Rust; the bridge is **CONSTANT** |
+| Rust Sun Breathing Engine | `rust/sun_breathing_engine/src/lib.rs` and `Cargo.toml` exist; there is no `target/` folder. On 2026-10-12, a scratch-copy `cargo test` compiled and then failed to link (`LNK1104 msvcrt.lib`; the MSVC x64 libraries are not installed). The crate has no FFI exports. `python_bridge.py` does not mirror it: it hard-codes 202.5 MPa where the Rust physics gives 50,824 MPa | **CONCEPT-ONLY** as Rust; the bridge is **CONSTANT** |
 | Airflow / Dataflow | `orchestration/swds_dag.py` imports Airflow; Airflow is not installed in `.venv`; SWDS reports still name `swds_cycle_dag` and `swds-phoenix-engine` | **FALSE-POSITIVE** labels |
 | Tests | 23 files, 285 test functions (counted); not run for this blueprint (running them would touch the live Hoard and database inside OneDrive). The "217/217 passing" claims date from 9/21 | **UNVERIFIED** today |
 | Secrets | `.env` inside OneDrive; 17 key names; the 10/08 report notes keys were printed into an earlier session (E13) | **Risk** |
@@ -802,7 +844,7 @@ Each entry gives the claim, where it was made, and the evidence that contradicts
 | FP-15 | Heimdall "token-by-token logprob tracking" and Brain Model "Hippocampus: token logprob tracking"; Sharingan "reads token logprobs" | `sensory/heimdall.py:25`; `1_2T:L6095, L6149` | No code requests log-probabilities from any provider. |
 | FP-16 | "CWA 3.0 … allows the system to autonomously learn which contexts require deeper synthesis" | `1_2T:L4172` | Fixed prior, posterior equals the complexity score, no stored outcomes (`core/cwa_router.py:16-25`). |
 | FP-17 | SWDS reports: "Archiving recent conversational matrices to The Hoard (ChromaDB local)…", "Executing MRL Compaction at 180 MPa", "Paradoxes resolved and topologies mapped", "3 transdisciplinary bridges forged via Cheshire Cat Protocol" | Every SWDS report; `/swds/status` | Hard-coded strings (`runtime/swds_simulator.py:92-98, 108, 155`); the "mutations" are `random.uniform`; the Cheshire Protocol is not called during SWDS. |
-| FP-18 | SWDS report "Celestial Kinematic Coordinates: Earth Rotation 282.85°" | All 66 reports (`CEL-282.85deg` in every filename) | The report writer calls `get_celestial_coordinates()`, which does not exist; the exception is swallowed and the constant used (`runtime/swds_simulator.py:168-174`). |
+| FP-18 | SWDS report "Celestial Kinematic Coordinates: Earth Rotation 282.85°" | All 56 template-written reports (50 in the root `The Hoard`, 6 in `integra-homebase/The Hoard`). The 11 other report files (6 unique, 9/16-9/29, plus 5 copies) were written another way; the two-decimal ones match `scripts/enter_swds.py:89` | The report writer calls `get_celestial_coordinates()`, which does not exist; the exception is swallowed and the constant used (`runtime/swds_simulator.py:168-174`). |
 | FP-19 | SWDS report "Dataflow Pipeline: swds-phoenix-engine; Airflow DAG: swds_cycle_dag" | Every SWDS report | Airflow is not installed; no Dataflow job runs. |
 | FP-20 | "Thermodynamic Closure ΔE = 0.0000, L_t = 0.000 s" in SWDS reports | Every report | Template text (`runtime/swds_simulator.py:190`). |
 | FP-21 | 7th Form "stress 131.625 MPa, Mach 4.2, drag 0.0 N"; 13th Form "ΔE 0.0, angular momentum 500"; `all_forms_verified: true` | Live `/thermodynamic/telemetry` | Python constants standing in for an uncompiled Rust crate. |
@@ -1064,7 +1106,7 @@ Option A, implemented as a sibling `provenance` map so existing consumers keep w
 #### Action Items
 1. [ ] Replace the unconditional startup lines (`main.py:143, 157`) with a summary computed from what succeeded.
 2. [ ] Add `provenance` to `/`, `/heimdall/health`, `/thermodynamic/telemetry`, `/starfire/identity`, `/epiphany/telemetry`, `/fortress/status`, `/clock/full` (the sync flags), `/metatron/status` (with `last_row_at`).
-3. [ ] Remove the hard-coded "HEALTHY" entries (`sensory/heimdall.py:420, 430, 442, 490`) or label them CONSTANT.
+3. [ ] Remove the hard-coded "HEALTHY" entries (`sensory/heimdall.py:424, 434, 446, 494`) or label them CONSTANT.
 4. [ ] Dashboard: render the labels; show "no data since …" instead of a stale number.
 
 ---
@@ -1654,6 +1696,19 @@ Recording these in keeping with the Empirical Verification Invariant:
    - **§11 D-6 had "lockdown" in the decided cell.** The Architect did not rule on it.
    - **§11 D-15 still asked for an approval** of work already done on 10/09.
    - **X-14 and §11 D-18/D-19 still read "G1 open"** after the Architect passed G1. Found on the page read-back.
+11. **Step 2 interim corrections (2026-10-12, session c88f5000).** These come from the full reading of folders 1-5 (runtime, rust, scratch, scripts, sensory). Each cites its row in `orchestration/UNIFY_READING_LEDGER.md`; the ledger is append-only, so the line numbers are stable.
+   - **Ω is a sum, not a product.** 269.819457 = 268.714286 **+** e^0.1 (`python_bridge.py:311-312`, `lib.rs:189`). Fixed in finding 7 and the CONSTANT table (ledger L164).
+   - **FP-18 count.** It is not "all 66". There are 67 report files: 56 template reports carry 282.85° (50 in the root, 6 in `integra-homebase/The Hoard`). The other 11 (6 unique, 9/16-9/29, plus 5 copies) were written another way. The two-decimal ones match `scripts/enter_swds.py:89` (ledger L49, L55).
+   - **The frozen clock's origin.** Commit `6021755` (2026-09-23 22:01:57) moved `runtime/swds_simulator.py` and `main.py` from `datetime.now()` to `celestial_time()`. Added to finding 1 (ledger L52).
+   - **Rust engine (ADR-012 context).** The crate compiles in a scratch copy but cannot link here: `LNK1104 msvcrt.lib`, because the MSVC x64 libraries are missing. So its tests have never run.
+     - Its own formula gives 50,824 / 33,036 MPa at the benchmark.
+     - `python_bridge.py` hard-codes 202.5 → 131.625 MPa (`:133-135, 158`), a figure that comes from a doc comment in the original `CODE/Zero_latency_thermal_core.rs:42`.
+     - Fixed in the CONSTANT table and the status table (ledger L124-125, L129).
+   - **Heimdall citation drift.** `heimdall.py` has grown since the v.9.9 audit. `:113-124` → `:117-128`, `:711` → `:769`, `:709-711, 730` → `:767-769, 788`, `:420/430/442/490` → `:424/434/446/494`, `:385+` → `:389+` (ledger L387).
+   - **Entropy-gate mechanics.** The thermostat is reset *after* each completed cycle (`sensory/cheshire_cat.py:402`), not before. One-shot tripping needs about 7.63 bits per character after the loop's between-cycle nudge. Repeated `/heimdall/evaluate` or `/ignite` calls carry over. Fixed in finding 5 and the FP table (ledger L388).
+   - **Page-export cause.** Controlled Folder Access blocked the 10/11 overwrite of the two exports, not the OneDrive reparse tag. Fixed under "Other changes → Page exports"; both copies were refreshed on 10/12.
+   - **Kernel supervision and startup.** The first "Kernel note (2026-10-11)" is unchanged. The new facts (3 of 3 launches unsupervised, priority 7, task history disabled, startup about 94 s, uvicorn startup before bind, the `Get-NetTCPConnection` caution, the transient stalls) are in "Kernel note (2026-10-12)".
+   - **Still queued for Step 3** (after G2): the remaining ledger findings for folders 1-5 (the `*-G` gap rows), plus everything from folders 6-14.
 
 ### C. What was not done
 
@@ -1680,4 +1735,4 @@ Recording these in keeping with the Empirical Verification Invariant:
 
 ---
 
-*End of blueprint v.9.9.1. Every claim above is tied to a line, a file, a log entry or a probe taken at the stated time. The v.9.9 body was probed 2026-10-09 19:26 CDT; the v.9.9.1 update was checked on 2026-10-11, with the last successful probe at 03:43:57 CDT. Re-probe before acting on any live value.*
+*End of blueprint v.9.9.1. Every claim above is tied to a line, a file, a log entry or a probe taken at the stated time. The v.9.9 body was probed 2026-10-09 19:26 CDT; the v.9.9.1 update was checked on 2026-10-11, with the last successful probe at 03:43:57 CDT. The 2026-10-12 corrections (Appendix B, item 11) were stamped 2026-10-12 15:10:34 CDT | 2026-10-12T20:10:34Z | rot 91.4767°, lunar 0.6585, orbit 0.2175, ROT_90_ORB_20. Re-probe before acting on any live value.*
