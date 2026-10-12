@@ -40,8 +40,19 @@ This file only points. The content lives in the files below; read them rather th
 - `The Hoard/genesis_kernel.log` mixes UTF-16 and UTF-8. Read the bytes, strip NULs, and decode as UTF-8.
 - `celestial_time()` restarts from a frozen checkpoint at every boot (ADR-001). SWDS times and artifact dates are skewed, so use file times on disk as the true times.
 - Set `PYTHONIOENCODING=utf-8`; cp1252 crashes on Δ. With `python -I`, that variable is ignored (as is every `PYTHON*` variable), so use `-X utf8` instead.
-- Shell writes into this OneDrive repo are inconsistent:
-  - On 2026-10-09 the sandbox blocked them.
-  - On 2026-10-11, Python and git wrote new files without trouble. But `cp` and `Copy-Item` could not overwrite files carrying OneDrive's cloud reparse tag (`0x9000601a`), even with the sandbox off.
-  - Check `(Get-Item <file>).Attributes` for `ReparsePoint` before planning an overwrite.
-- If the kernel stops answering, compare `GET /rodin/telemetry` (an `async def` endpoint) with `GET /clock` (a plain `def` endpoint). On 2026-10-11 the plain-`def` endpoints stalled while the async one and the SWDS scheduler kept running; the cause is unknown. Also check `Get-NetTCPConnection -RemotePort 8000` for a browser tab polling it: a dashboard tab was polling throughout (blueprint v.9.9.1, "Kernel note").
+- Failed writes into this repo come from Windows Defender **Controlled Folder Access** (CFA), which blocks per program. This is MEASURED from the Defender Operational log, 10/08-10/12: event 1123 = blocked write, 5007 = setting changed.
+  - The earlier diagnoses "the sandbox blocked writes" (10/09) and "OneDrive cloud placeholders deny overwrites" (10/11) were both CFA.
+  - Symptoms: `ENOENT` on the Edit/Write tools' temp file or `mkdir`; Python `Errno 9` or `FileNotFoundError`; `cp`/`Copy-Item` denied. Reads still work.
+  - Diagnose with `(Get-MpPreference).EnableControlledFolderAccess` and the 1123 events. Never change the setting yourself; ask the Architect.
+  - The Architect turned CFA off on 2026-10-12 at 12:54.
+- `python` on PATH is `C:\Python314` (3.14). The kernel runs 3.13 from `integra-homebase\.venv`.
+- `Get-NetTCPConnection` is unreliable here: on 10/12 it showed only "Closed" while the kernel was LISTENING. Use `netstat -ano -p TCP` and an HTTP probe.
+- Every launch leaves the kernel outside its task, sooner or later. Seen 3 times out of 3:
+  - the 10/11 logon launch;
+  - the 10/12 logon launch;
+  - the 10/12 13:06:57 `kernel_ctl.ps1 restart` (task Running at 13:16, Ready / 0xC000013A by 14:52).
+  - Each time the wrapper PowerShell exits 0xC000013A and `cmd.exe` and uvicorn are orphaned, so restart-on-failure never covers the kernel.
+  - **Leading cause (DERIVED):** Windows Terminal is the default console host, and closing its window or tab kills the wrapper.
+  - **Also:** the task runs at priority 7 (below-normal CPU, low I/O and memory priority), and Task Scheduler history is disabled.
+  - See `integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md`.
+- If the kernel stops answering, compare `GET /rodin/telemetry` (an `async def` endpoint) with `GET /clock` (a plain `def` endpoint). On 2026-10-11 the plain-`def` endpoints stalled while the async one and the SWDS scheduler kept running; the cause is unknown. Also check for a browser tab polling it, using `netstat -ano -p TCP` (Chrome restores the `/dashboard` tab after a reboot). A dashboard tab was polling throughout (blueprint v.9.9.1, "Kernel note").

@@ -146,7 +146,24 @@ The quiz answers and the full to-do (E1–E101, N1–N7, with changes since 10/0
   - **The current kernel** started at 19:18:48 (PIDs 12080 → 12136). It is not supervised by its scheduled task: the task reads Ready / 0xC000013A while the kernel runs.
   - Full record: blueprint v.9.9.1, "Kernel note".
 - **After the restart (MEASURED at 21:17):** the 3.8 Flash roster is live, with 0 model calls; the selftest has not run.
-- **SWDS:** the 10:28 prediction was confirmed. The next frozen-clock cycle is due about **00:20 CDT on 10/12** (boot about 19:19:42 + 5 h 00 m 18 s) and wakes about 05:20.
+- **SWDS:** the 10:28 prediction was confirmed. The next frozen-clock cycle was due about **00:20 CDT on 10/12** (boot about 19:19:42 + 5 h 00 m 18 s), waking about 05:20.
+  - **Confirmed again (MEASURED).** It started between the 00:20:20 and 00:20:43 CDT `/clock` stamps (kernel log L45819-45823).
+  - `/swds/status` reads `sleep_initiated_at` 2026-10-07T02:00:45, a frozen-clock time.
+  - **Woke on schedule (MEASURED, third confirmation).** The report `2026-10-07_07-00-08_CDT_CEL-282.85deg_SWDS_Report.md` was written at 05:20:05 real time (log L45830-45841).
+- **2026-10-12: reboot and relaunch (MEASURED).**
+  - **Unexpected shutdown at 10:09:44** (System events 6008 and 41), then a reboot at 11:52.
+  - **The logon task relaunched the kernel at 12:00:26, unsupervised again** (task Ready / 0xC000013A; the wrapper PowerShell gone, `cmd.exe` orphaned). This is the second time out of two logon launches.
+  - **The Architect asked for a relaunch.** `kernel_ctl.ps1 restart` at 13:06:57 left the task **Running** (0x41301) with the wrapper alive at 13:16.
+    - **By 14:52 that wrapper had died too:** task Ready / 0xC000013A, `cmd.exe` orphaned. That makes **3 of 3** launches unsupervised, not logon-only.
+    - **Leading cause (DERIVED):** Windows Terminal is the default console host, and closing its window or tab kills the wrapper.
+    - **Also MEASURED:** the task runs at priority 7 (below-normal CPU, low I/O and memory priority); Task Scheduler history is disabled; startup took about 94 s (import about 90 s, lifespan about 4 s).
+  - **The live preview is attached** at `http://127.0.0.1:8000/`. The `genesis-kernel-launch` preview config, which would have started a second uvicorn, was removed from `.claude/launch.json`.
+  - **A Chrome `/dashboard` tab restored after the reboot is polling at 1 Hz**, the 10/11 stall precondition. First probes at 13:09 stalled briefly (`/clock` no reply for 12 s, async 5.2 s) and then recovered; the cause is not established.
+  - **Next SWDS (DERIVED from the uptime origin 13:07:08).** The frozen clock reaches 02:00 at about **18:07-18:09 CDT** and wakes at about **23:07-23:09**, if the kernel stays idle (GETs do not count) and is not restarted.
+- **Repo write failures: the root cause is found (MEASURED, Windows Defender Operational log).** It is **Controlled Folder Access** (CFA), not OneDrive and not the sandbox.
+  - CFA has been enabled since 2026-10-08 20:25:15. It blocked `cp.exe` and `pwsh.exe` on 10/11 04:00-04:02, which is the page-export failure. On 10/12 from 00:55 it blocked `claude.exe` and `C:\Python314\python.exe`; the folder-5 ledger write was delayed and nothing was lost silently.
+  - The Architect turned CFA **off** at 2026-10-12 12:54:34 (event 5007).
+  - Re-enabling it with `claude.exe` (and `git`) allowed would restore ransomware protection. That is the Architect's call.
 - **Gate G1:** **passed on the Architect's word** at 23:02:21 CDT on 2026-10-11 (transcript time; session c88f5000, line 1716). The quiz grade is still pending, and D-18/D-19 are still open. Step 1b (errata) runs, then Step 2.
 - **Self-review corrections (the same morning):**
   - The 9/23 annotation is quoted verbatim now ("CWA 2.0 CRA 2,0lex scorer", L4747) in §3, the JSON and the blueprint.
@@ -156,7 +173,8 @@ The quiz answers and the full to-do (E1–E101, N1–N7, with changes since 10/0
   - the quiz grade
   - D-18 and D-19
   - the paid selftest
-  - the two "v.9.9.1" page-export copies, which are OneDrive placeholders the session could not overwrite
+  - the two "v.9.9.1" page-export copies. Defender Controlled Folder Access blocked the overwrite on 10/11 (corrected 10/12; it was not the OneDrive placeholder state). With CFA now off, they can be written once the Architect says so.
+  - whether to re-enable Controlled Folder Access, with `claude.exe` and `git` allowed
   - pushing the local commits
 
 ## 9. Next thread: boot line

@@ -5,13 +5,6 @@
       "name": "genesis-kernel",
       "url": "http://127.0.0.1:8000",
       "port": 8000
-    },
-    {
-      "name": "genesis-kernel-launch",
-      "runtimeExecutable": "C:\\Users\\Javon Jenkins\\OneDrive\\Desktop\\Integra_Purple_SunBreathing\\integra-homebase\\.venv\\Scripts\\python.exe",
-      "runtimeArgs": ["-m", "uvicorn", "main:app", "--host", "127.0.0.1", "--port", "8000"],
-      "cwd": "C:\\Users\\Javon Jenkins\\OneDrive\\Desktop\\Integra_Purple_SunBreathing\\integra-homebase",
-      "port": 8000
     }
   ]
 }
