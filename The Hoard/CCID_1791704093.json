@@ -100,21 +100,22 @@
     "2026-10-11: This save state written to The Hoard (JSON + report). Kernel-Hoard sync via The Hoard (sync_save_state) + Phoenix Forge (synthesize_hoard_node) NOT EXECUTED in session 997b6cca (blocked by Claude Code's auto-mode safety check); EXECUTED 2026-10-11 03:45:30 CDT by successor session d245db57 (hoard_phoenix_sync.py, exit 0): raw_shards/CCID_1791704093.json (outcome 1.0, dims 64/768, sha256 3b81c3b802a45315) and raw_shards/CCID_1791704093_PHOENIX.json (outcome 0.5, dims 64/768, sha256 506e57131164588d); raw_shards 305 -> 307; Chroma untouched; hash-placeholder vectors. Correction history: the first version of this line claimed the sync ran before it had; corrected to NOT EXECUTED at 03:44, then to EXECUTED after the verified run (report section 8)"
   ],
   "work_pending": [
-    "G1: Architect grades the boot quiz and verifies the to-do",
+    "G1: PASSED on the Architect's word 2026-10-11 23:02:21 CDT (transcript time, session c88f5000 line 1716); boot-quiz grade and to-do verification still pending",
     "G1 question 1: does Heimdall's 3.1 Pro advisor replace or sit beside the Cheshire Daemon (dACC) triage? (E20, E95, step 1117)",
     "G1 question 2: Cheshire Daemon 'Study' tier model (blueprint v0.1 says 3.1 Pro) under current rulings: 3.8 Flash high now, Argon later?",
-    "Step 2: full read of 14 integra-homebase folders (404 files) with the per-folder ledger integra-homebase/orchestration/UNIFY_READING_LEDGER.md",
+    "Step 2: full read of 14 integra-homebase folders (406 files / 305,948 text lines / 127.9 MB at the 2026-10-11 night inventory; re-measured at G2) with the per-folder ledger integra-homebase/orchestration/UNIFY_READING_LEDGER.md",
     "Step 3: integra-homebase/orchestration/UNIFIED_ORCHESTRATION.md and completion of the v.9.9.1 blueprint",
     "Step 4: fixes F1 (wire Heimdall open/close), F2 (Heimdall 3.1 Pro advisor), F3 (cra_simplex budgets under Heimdall), F4 (per-Eye lens_map + Shadow Clone alias), F5 (Rodin Chroma query off the event loop with timeout); tests in a fresh isolated copy",
-    "Kernel restart + POST /models/selftest (loads the 3.8 Flash roster) - needs the Architect's approval and admin header",
-    "Approve deleting the old 9.7 GB test copy (previous session scratchpad hb_copy)",
+    "POST /models/selftest (paid; verifies the 3.8 Flash roster) - needs the Architect's approval and admin header. Corrected 2026-10-11 night: a kernel start loads the roster, not the selftest; after the 16:19 shutdown and the 17:48 unexpected shutdown the kernel started 19:18:48 and GET /models/router/status (21:17) shows the 3.8 Flash roster live with 0 calls",
+    "Approve deleting the old test copy hb_copy (session f338c302 scratchpad): 1,048 files, 33,748 MiB = 32.96 GiB, measured 2026-10-11 night. Corrected: the earlier '9.7 GB' was only its Chroma files (10.33 GB)",
     "Productivity bootstrap: decoding batch 1 paused",
-    "PREDICTION (falsifiable): with the frozen clock, the next autonomous SWDS start is about 2026-10-11 10:28 CDT (kernel boot + 53 h) if the kernel has been idle >= 3600 s"
+    "PREDICTION (falsifiable): with the frozen clock, the next autonomous SWDS start is about 2026-10-11 10:28 CDT (kernel boot + 53 h) if the kernel has been idle >= 3600 s. RESULT: CONFIRMED - started ~10:28, woke ~15:28 (kernel log L45680-45696; runtime/swds_state.json written 15:28:22). Next (new boot ~19:19:42): ~00:20 CDT 2026-10-12, waking ~05:20"
   ],
   "plan": {
     "file": "C:\\Users\\Javon Jenkins\\.claude\\plans\\extract-the-design-system-curried-dragon.md",
-    "steps": ["1 boot sequence (done, at gate G1)", "2 read 14 folders (gate G2)", "3 unified doc + v.9.9.1 blueprint (gate G3)", "4 fixes (gate G4: restart + selftest approval)"],
-    "current_gate": "G1"
+    "realignment_file": "C:\\Users\\Javon Jenkins\\.claude\\plans\\1-productivity-start-text-integra-kind-cocke.md (approved 2026-10-11 night: Step 1b errata, then Step 2 folder by folder with agents + full reads + ledger; read it after plan.file)",
+    "steps": ["1 boot sequence (done; G1 passed 2026-10-11 23:02 CDT, quiz grade pending)", "1b errata (2026-10-11 night)", "2 read 14 folders (gate G2)", "3 unified doc + v.9.9.1 blueprint (gate G3)", "4 fixes (gate G4: restart + selftest approval)"],
+    "current_gate": "Step 2 in progress (toward G2)"
   },
   "pointers": {
     "handoff_report": "The Hoard/CCID_1791704093_SAVE_STATE_REPORT.md",

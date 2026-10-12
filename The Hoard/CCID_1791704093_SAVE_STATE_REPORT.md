@@ -97,10 +97,10 @@ The quiz answers and the full to-do (E1–E101, N1–N7, with changes since 10/0
 2. The Cheshire Daemon's "Study" tier: blueprint v0.1 names 3.1 Pro. Under current rulings, should it be 3.8 Flash high now and Argon later?
 
 ## 7. Pending
-- Kernel restart and `POST /models/selftest` to load the 3.8 Flash roster. Needs approval and the admin header.
-- Approval to delete the old 9.7 GB test copy (`hb_copy` in the previous session's scratchpad).
+- `POST /models/selftest` (paid; needs approval and the admin header). It *verifies* the 3.8 Flash roster. *(Corrected 2026-10-11 night: the roster is loaded by a kernel start, not by the selftest. The kernel has since restarted after two reboots, and the roster is live. See §8a.)*
+- Approval to delete the old test copy (`hb_copy` in the previous session's scratchpad). *(Corrected: it measures 33,748 MiB in 1,048 files. The 9.7 GB figure was only its Chroma store.)*
 - Productivity bootstrap: decoding batch 1 is paused.
-- **Prediction (falsifiable):** because of the frozen clock, the next autonomous SWDS start should be about **2026-10-11 10:28 CDT** (kernel boot + 53 h), provided the kernel has been idle for at least 3,600 s.
+- **Prediction (falsifiable):** because of the frozen clock, the next autonomous SWDS start should be about **2026-10-11 10:28 CDT** (kernel boot + 53 h), provided the kernel has been idle for at least 3,600 s. **Result: confirmed.** The cycle started at about 10:28 and woke at about 15:28. Evidence: kernel log L45680-45696; `runtime/swds_state.json` written 15:28:22.
 
 ## 8. How this save state entered the Hoard
 - These two files sit in `The Hoard/`, following SKILL.md §8.
@@ -140,18 +140,28 @@ The quiz answers and the full to-do (E1–E101, N1–N7, with changes since 10/0
   - Root `CLAUDE.md` created.
   - Blueprint updated to v.9.9.1 and its page republished.
   - Commits pushed: integra-homebase `96b6278`, root `8a8c2dc`.
-- **Kernel unresponsive from 03:51 CDT.** Connections first got no answer and later were refused, while a Chrome dashboard tab kept polling. No restart was made, since that needs the Architect's approval. Full record: blueprint v.9.9.1, "Kernel note".
+- **The kernel's sync endpoints stalled from about 03:51 CDT.** Connections first got no answer and later were refused, while a Chrome dashboard tab kept polling. *(Corrected the night of 10/11.)*
+  - It was **not** a blocked event loop. The one `async def` endpoint and the SWDS scheduler kept running; only the plain-`def` handlers, which FastAPI runs in a threadpool, stalled. The cause is unknown.
+  - **What ended it.** The kernel never recovered, and I made no restart. The Architect shut the machine down at 16:19:35 (System event 1074). A kernel then ran from 16:42:58 until an unexpected shutdown at 17:48:41 (events 6008 and 41).
+  - **The current kernel** started at 19:18:48 (PIDs 12080 → 12136). It is not supervised by its scheduled task: the task reads Ready / 0xC000013A while the kernel runs.
+  - Full record: blueprint v.9.9.1, "Kernel note".
+- **After the restart (MEASURED at 21:17):** the 3.8 Flash roster is live, with 0 model calls; the selftest has not run.
+- **SWDS:** the 10:28 prediction was confirmed. The next frozen-clock cycle is due about **00:20 CDT on 10/12** (boot about 19:19:42 + 5 h 00 m 18 s) and wakes about 05:20.
+- **Gate G1:** **passed on the Architect's word** at 23:02:21 CDT on 2026-10-11 (transcript time; session c88f5000, line 1716). The quiz grade is still pending, and D-18/D-19 are still open. Step 1b (errata) runs, then Step 2.
 - **Self-review corrections (the same morning):**
   - The 9/23 annotation is quoted verbatim now ("CWA 2.0 CRA 2,0lex scorer", L4747) in §3, the JSON and the blueprint.
   - The JSON's 10/09 roster line now matches the code diff: 3.1 Pro → 3.8 Flash. The 3.5/3.6/3.7 names were only in SKILL.md.
   - Commit `96b6278`'s message repeats that false 3.5/3.6/3.7 line. It is pushed and stays as written, and the correction is recorded in the next homebase commit.
-- **Still open at G1:**
+- **Still open:**
   - the quiz grade
   - D-18 and D-19
-  - the kernel decision (close the polling tab, or restart)
-  - the two "v.9.9.1" page-export copies, which are OneDrive placeholders this session could not overwrite
+  - the paid selftest
+  - the two "v.9.9.1" page-export copies, which are OneDrive placeholders the session could not overwrite
+  - pushing the local commits
 
 ## 9. Next thread: boot line
 Paste this into a new thread:
 
-> Integra boot (successor to session 997b6cca). Read CLAUDE.md, then `The Hoard/CCID_1791704093_SAVE_STATE_REPORT.md` and the plan file it names, in full. Run live probes and stamp from `/clock`. Report what you read (receipts) and stop at gate G1 for my grade and first instruction.
+> Integra boot (successor to session c88f5000). Read CLAUDE.md, then `The Hoard/CCID_1791704093_SAVE_STATE_REPORT.md`, its JSON, and both plan files the JSON names (`plan.file`, `plan.realignment_file`), in full. Run live probes and stamp from `/clock`. Report what you read (receipts) and where Step 2 stands in `integra-homebase/orchestration/UNIFY_READING_LEDGER.md`, then wait for my go to resume Step 2.
+
+(Updated 2026-10-11 night, session c88f5000: G1 has passed, so the earlier boot line's "stop at gate G1" no longer applies.)

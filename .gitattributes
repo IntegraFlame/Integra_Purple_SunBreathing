@@ -1,0 +1,3 @@
+# productivity/dashboard.html parses these files line by line, and its regexes fail on CRLF.
+# The system gitconfig sets core.autocrlf=true, so pin them to LF on every checkout.
+productivity/**/*.md text eol=lf
