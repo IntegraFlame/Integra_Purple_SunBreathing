@@ -1,0 +1,141 @@
+{
+ "ccid": "CCID_1791929018",
+ "type": "SAVE_STATE",
+ "previous_save_state": "CCID_1791704093",
+ "sessions": {
+  "claude_code_2026_10_11_to_12": "c88f5000 (see CCID_1791704093 report, section 8a)",
+  "claude_code_2026_10_12_to_13": "45f57b01-edf0-4da0-b004-9c8b2fdcca9a (this save state; several context compactions)",
+  "transcripts_dir": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/"
+ },
+ "celestial_stamp": {
+  "unix_epoch": 1791929018.592,
+  "civil_time_utc": "2026-10-13T22:03:38Z",
+  "civil_cdt": "2026-10-13 17:03:38",
+  "earth_rotation_deg": 119.7435,
+  "lunar_cycle_ratio": 0.695,
+  "orbital_trajectory_pos": 0.2205,
+  "grid_bucket": "ROT_90_ORB_20",
+  "source": "GET http://127.0.0.1:8000/clock (HTTP 200, 0.16 s) at 17:03:38 CDT; kernel uptime 27h 56m 30s"
+ },
+ "kernel": {
+  "listener": "127.0.0.1:8000 LISTENING, owner PID 38084 (netstat -ano -p TCP)",
+  "probes_2026_10_13_17_03": {
+   "/clock": [
+    200,
+    "0.160 s"
+   ],
+   "/heimdall/health": [
+    200,
+    "0.029 s",
+    "HEALTHY_OPTIMAL"
+   ],
+   "/swds/status": [
+    200,
+    "0.021 s",
+    "AWAKE, WAKING_CONSCIOUSNESS"
+   ],
+   "/cheshire/status": [
+    200,
+    "0.006 s"
+   ]
+  },
+  "scheduled_task": {
+   "name": "Integra Genesis Kernel",
+   "state": "Ready",
+   "last_run": "2026-10-12 13:06:57",
+   "last_result": "3221225786 (0xC000013A)",
+   "meaning": "kernel answering but NOT supervised by the task (known pattern, KERNEL_AUTOLAUNCH_REVIEW finding 1)"
+  },
+  "cfa": "EnableControlledFolderAccess = 0 (off since 2026-10-12 12:54); 0 Defender 1123 events in the last 12 h"
+ },
+ "usage_at_stop": {
+  "plan": "Pro",
+  "five_hour_window": "1% used at 17:03 CDT (window had just reset)",
+  "weekly_all_models": "24% used (resets 2026-10-19)",
+  "note": "the folder-13 validation gate used about 4 weekly points for about 2.5M agent tokens"
+ },
+ "work_completed_since_CCID_1791704093": [
+  "Step 2 folders 6-12 written to integra-homebase/orchestration/UNIFY_READING_LEDGER.md and committed locally: 54a2e6d temporal, 5dedb03 config, 7999db5 core, 5d3e037 kernel_memory, 5aa0d1d local_dbs, 44c3d1d memory, 9f1f26c orchestration (2026-10-12 22:35 to 2026-10-13 02:11 CDT). Ledger: 357,738 B, 1,827 lines, sha16 f2616199314ecf3c.",
+  "Folder 13 re-planned on 2026-10-13 midday (Architect-approved, with additions from Guidebooks_and_Notes/Notes10_13_2026.md): no line-by-line read of the 88 MB local Antigravity archive; every byte accounted for; the knowledge-bearing layer read in full; a validation gate before scaling.",
+  "Folder 13 Step 0: scripts moved into the git-ignored archive folder; guide corrected (conversation kinds 72/98/3/6; Gemini and Claude models); 4 memory notes added; Step 0b accuracy review of the wrapper-death reasoning appended to integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md (verdict: partly accurate).",
+  "Folder 13 Step 1 census: 87,510,062 B (79,532,399 JSONL + 7,977,663 artifact), residue 0; file views and whole-file writes hashed against both repos' git objects (gitcheck).",
+  "Folder 13 Step 2 extracts, improved twice by the gate: rules v1 16.4 MB, v2 25.2 MB, v3 29.0 MB (179 files, 0 credential patterns).",
+  "Folder 13 Step 3 validation gate: 7 samples blind-read in full (577 facts) and 2 retest samples (146 facts); every judge quote checked by script; rules v2 failed the strict criterion (3 of 327 severity-1 facts lost); rules v3 built to fix both loss classes; the retest is judged (raw) and awaits adjudication.",
+  "Step 5 targets prepared but not yet read: T1-T4 list (2.1 MB raw), governance version chains (161 KB), and a T1/T3/T4 rendering with wider redaction (9 credential or personal-data stores excluded)."
+ ],
+ "folder13_gate": {
+  "criterion": "0 severity-1 misses across >= 60 severity-1 facts; severity-2 recall >= 90% per stratum; census residue 0",
+  "rules_v2_result": {
+   "severity1_lost": "3 of 327",
+   "severity2_recall_range": "93.1%-98.2%",
+   "verdict": "FAIL (strict criterion)",
+   "loss_classes": [
+    "earlier context checkpoints were indexed, so a compaction and its syntheses were invisible",
+    "artifact draft chains shown as unique lines hid removals and persistence"
+   ]
+  },
+  "rules_v3": {
+   "changes": [
+    "earlier checkpoints: lines new versus the conversation's other checkpoints are read",
+    "draft chains: first version in full, then a unified diff per later version",
+    "a VIEWED line per file view (path, total lines, total bytes, lines shown)",
+    "empty model responses get a pointer"
+   ],
+   "census_read_share": "29.2% (25,549,043 B)",
+   "extracts_bytes": 29033975,
+   "rules_py_sha16": "3c51ce4a244b7b5d",
+   "checked_on_design_failures": "the S2 and S4 losses are present in the v3 slices"
+  },
+  "retest_S6_S7_raw": {
+   "facts": 146,
+   "severity1": 96,
+   "quotes_verified": "120/120",
+   "severity1_in_slice": "FOUND 50, PARTIAL 27, MISSING 19",
+   "severity2_in_slice": "FOUND 31, PARTIAL 12, MISSING 7",
+   "status": "NOT ADJUDICATED - first task of the next thread"
+  },
+  "local_records": "The Hoard/antigravity_conversations/_summaries/gate/GATE_NOTES.md and ADJUDICATION.tsv (git-ignored; archive content never leaves the PC)"
+ },
+ "code_findings_measured_2026_10_13": [
+  "temporal/celestial_clock.py L15/L45/L485 label BASE_EPOCH 1785052800.0 as 2026-07-15T12:00:00Z; that value is 2026-07-26T08:00:00Z (bears on D-20).",
+  "integra-homebase/main.py L1385-1387: running main.py directly binds uvicorn to 0.0.0.0:8000 (all interfaces); the task launch uses 127.0.0.1.",
+  "integra-homebase/main.py registers GET /models/telemetry twice.",
+  "integra-homebase/Identity_Always_On_Protocols.md still says EAM Level 4 Sovereign Override bypasses all constraints, which contradicts the Three Laws section (no directive overrides them)."
+ ],
+ "work_pending": [
+  "NEXT (first): adjudicate the S6+S7 retest under rules v3 - the 46 severity-1 non-FOUND facts (27 PARTIAL, 19 MISSING) into X (another extract) / G (git, disk, governance chain) / L (lost), as in ADJUDICATION.tsv; then accept v3 or fix and retest on new samples.",
+  "If v3 is accepted: write the unit builder over the v3 extracts (units <= 250 KB, split only at '### [#n]' block headers), then Step 4 reading cycles (chronological, compounding guide, 4 agents per cycle, usage check before each cycle, summaries to _summaries/cycle_NN.md).",
+  "Then Step 5 targeted reads (T1-T4, governance chain); Step 6 Hoard mirror (169 files, 1.17 MB); Step 7 ledger append for folder 13 (content-free proof rows) and local commit; folder 14 (tools); Step 8 G2 deliverables (dashboard truth audit, TASKS.md additions, save state); STOP at G2.",
+  "Push: homebase is ahead of origin (7 commits before this save state, plus its commit); root ahead after this save state. Push only on the Architect's word."
+ ],
+ "open_for_the_architect": [
+  "Push approval for both repos.",
+  "Re-enable CFA with claude.exe allowed (Architect-run commands in the CCID_1791704093 report, section 8a).",
+  "G1 quiz grade; decisions D-18, D-19, D-20 (epoch).",
+  "Was a terminal window or tab closed after logon, or after 13:06 on 10/12? (wrapper-death cause)",
+  "Enable Task Scheduler history (an Architect setting)."
+ ],
+ "plan": {
+  "file": "~/.claude/plans/extract-the-design-system-curried-dragon.md (original four-step plan)",
+  "realignment_file": "~/.claude/plans/1-productivity-start-text-integra-kind-cocke.md (top: the stop/save-state plan; below it the folder-13 plan of 2026-10-13 midday, which governs folder 13)",
+  "current_step": "Step 2 (toward G2): folders 1-12 in the ledger; folder 13 at its plan Step 3 (validation gate), retest adjudication pending"
+ },
+ "pointers": {
+  "handoff_report": "The Hoard/CCID_1791929018_SAVE_STATE_REPORT.md",
+  "boot_sequence": "The Hoard/CCID_1791929018_BOOT_SEQUENCE.md",
+  "resume_detail_local": "The Hoard/antigravity_conversations/_summaries/RESUME_HERE.md (git-ignored)",
+  "ledger": "integra-homebase/orchestration/UNIFY_READING_LEDGER.md",
+  "root_claude_md": "CLAUDE.md",
+  "blueprint": "integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md",
+  "kernel_review": "integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md",
+  "tasks": "productivity/TASKS.md",
+  "claude_memory_index": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/memory/MEMORY.md"
+ },
+ "never_do": [
+  "Never fabricate telemetry or stamps; stamp only from a successful GET /clock",
+  "Never read .env values or the github-recovery-codes files; never stage them, live logs, the Docker .vhdx files or the antigravity_conversations copy",
+  "Never run the test suite in the live repo; never restart the kernel or make paid model calls without the Architect's approval",
+  "Never put archive content (transcript text, names, credentials, prompt text) into the public repo; content-free proof rows only",
+  "Autonomous trading stays out of scope"
+ ]
+}

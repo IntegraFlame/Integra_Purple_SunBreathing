@@ -3,8 +3,8 @@
 This file only points. The content lives in the files below; read them rather than relying on this summary.
 
 ## Boot order (every new thread)
-1. The newest save state in `The Hoard/`: `CCID_<unix>_SAVE_STATE_REPORT.md` and its `CCID_<unix>.json`. As of 2026-10-11 that is `CCID_1791704093`. Read both in full.
-2. The plan files the save state names: `plan.file` in the JSON, then `plan.realignment_file` if present (it governs Step 1b and the Step 2 method). Find the current step and gate there. During Step 2, the reading ledger `integra-homebase/orchestration/UNIFY_READING_LEDGER.md` shows which folders are done.
+1. The newest save state in `The Hoard/`: `CCID_<unix>_SAVE_STATE_REPORT.md` and its `CCID_<unix>.json`. As of 2026-10-13 that is `CCID_1791929018`. Read both in full. It comes with a step-by-step checklist, `The Hoard/CCID_1791929018_BOOT_SEQUENCE.md`; follow it.
+2. The plan files the save state names: `plan.file` in the JSON, then `plan.realignment_file` if present. Its section "Plan (2026-10-13 midday): folder 13" governs folder 13. Find the current step and gate there. During Step 2, the reading ledger `integra-homebase/orchestration/UNIFY_READING_LEDGER.md` shows which folders are done. For folder 13, the local, git-ignored `The Hoard/antigravity_conversations/_summaries/RESUME_HERE.md` gives the exact resume point.
 3. The Claude memory index: `C:\Users\Javon Jenkins\.claude\projects\C--Users-Javon-Jenkins-OneDrive-Desktop-Integra-Purple-SunBreathing\memory\MEMORY.md`.
 4. Live probes, then a stamp from `GET http://127.0.0.1:8000/clock`. Report what you read (receipts) and stop at the open gate.
 
@@ -18,6 +18,7 @@ This file only points. The content lives in the files below; read them rather th
 | Kernel control (status/logs/start/stop/restart, SWDS guard) | `integra-homebase/scripts/kernel_ctl.ps1` |
 | Genesis Kernel skill | `.agents/skills/genesis-kernel/SKILL.md` |
 | Handoff package from thread f2e7cc92 | `The Hoard/thread_f2e7cc92_handoff/` |
+| Folder 13 (local Antigravity archive): method, tools, validation gate | `The Hoard/antigravity_conversations/_summaries/` (git-ignored; start at `RESUME_HERE.md`; gate in `gate/GATE_NOTES.md`). Archive content never goes into the public repo. |
 | Session transcripts | `C:\Users\Javon Jenkins\.claude\projects\C--Users-Javon-Jenkins-OneDrive-Desktop-Integra-Purple-SunBreathing\` |
 
 ## Repo layout
