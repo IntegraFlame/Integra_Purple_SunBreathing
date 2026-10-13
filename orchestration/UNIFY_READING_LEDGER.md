@@ -573,3 +573,110 @@ ADR-001 stands unchanged: it already makes `time.time()` the one civil clock, an
   - "protocol_verified" / "checksum_verified", "fidge_mattern_active";
   - "Proves the chain was produced by this session, not forged externally";
   - "Celestial Sentinel … LIVE".
+
+## Folder 7: config
+
+Read 2026-10-12 night (session c88f5000). Stamp before the folder: 2026-10-12 22:35:57 CDT | 2026-10-13T03:35:57Z | rot 202.823°, lunar 0.669, orbit 0.2184, ROT_180_ORB_20. Guards (MEASURED, 22:3x): CFA off, 0 new 1123 events since 22:00; task Ready; a few sockets on :8000 (dashboard quiet).
+
+| path | lines | sha256-16 | last line read | proof | 12th Step notes | doc claims it touches |
+|:--|--:|:--|--:|:--|:--|:--|
+| `config/brand_tokens.json` | 87 | `1b8257a2387d8411` | 87 | The subtitle gradient's `css_value` has four stops, including `#FF7A00` at 70% (L40), though only three gradient colours are named (L34-39); `#FF7A00` is `solar_flame.primary_orange` (L56). | Design tokens only: name, gist link, Orbitron typography, palette (Soft Monolith `#E5E7EB`, Sentinel Cyan `#00F0FF`, Solar Gold `#FFAA33`, Deep Ember `#FF5500`, Purple Epiphany), Mermaid theme. **Named by no code** (MEASURED, Grep over `*.py`, `*.ps1`, `*.html`, `*.js`, `*.yml`). The paths it names exist (`static/integra_wordmark.html`, `LOGO/`). | The Integra DS design system (memory note); no blueprint claim. |
+| `config/celestial_checkpoint.json` | 11 | `038f3894cd5fda8d` | 11 | `unix_epoch` 1791338382.557 (L4) is **2026-10-06 20:59:42 CDT**, but `civil_dt` says "2026-10-07 01:59:42 CDT" (L2): the UTC time labelled CDT. `celestial_vector` is `{}` (L5) and `grid_bucket` null (L7). | **The frozen-clock checkpoint (ADR-001).** Written at 20:59:42 CDT on 10/06 (file mtime) by a kernel that had booted at 20:56:41 (`boot_uptime_s` 181.5, L10; DERIVED). Read at import by `core/celestial_middleware.py:46, 91-107`; `celestial_time()` = this epoch + seconds since boot (`:324-328`). For the current kernel (boot 13:07:08) it runs **490,045 s = 5 d 16 h 07 m 25 s** behind real time (DERIVED; the log's "Celestial reboot delta" lines prove the file is read at every start, 8 lines). Written only through `GET /celestial/checkpoint` (`main.py:1361` → `celestial_middleware.py:250`). The empty vector and null bucket match agent A's folder-6 lead that `_build_sovereign_timestamp` reads keys `/clock/full` does not return (verify in folder 8). No trailing newline (10 CR in 11 lines). | ADR-001; §5.7.2; §1 finding 1. Folder 1's open item "`civil_dt` is UTC labelled CDT" is now **verified**. |
+| `config/celestial_seed.json` | 14 | `35d9d70efa6eab6b` | 14 | `alignment_epoch_unix` 1785052800.0 (L12) carries no date label, unlike every other copy, which mis-labels it 2026-07-15T12:00Z (folder 6). | Restates `temporal/celestial_clock.py:43-49` exactly (anchor; rates, with rotation written as 0.0041666666666667; epoch). **Named by no code** (MEASURED, Grep): dead config. | §5.7.1 Spec; D-20. |
+| `config/cheshire_identity.json` | 54 | `6bd2bfc67df80cc7` | 54 | `role.distinction` (L12) says the Kernel must "Never conflate" with the Protocol, and `behavioral_constraints.never_conflate_with_protocol` (L49) repeats it; yet the file is loaded by nothing, so the rule reaches no model and no code. | **Dead config** (MEASURED, Grep: only `# To-D0.py:1340` records its creation). Its values are design claims that the code does not follow: "20-45 Hz" (the loop is fixed at 30 Hz, folder 5); RRF k = 60 (check folder 8); DREAMING ω 0.3 / SWDS ω 0.0 (no code); `entropy_critical_threshold` 3.0 (Heimdall has one threshold, 2.5, folder 5); `gate_iii_tau` 0.85 (check folder 11). | R-4 (Cheshire naming); realignment plan §6 "loaded by no code": **confirmed**. |
+| `config/env_loader.py` | 193 | `48ed5ba9f5835ec7` | 193 | It loads up to 11 files in a fixed order with `.env` last as the "authoritative master" (L70-82). For bare-format files it assigns the whole content to one fixed variable (L118-126), so only `=`-format files can set an arbitrary name such as `INTEGRA_SESSION_KEY`. | Imported at import time by `core/api_clients.py:11` (reached from `main.py:23` via `sensory/cheshire_cat.py`) and by `tools/daily_planet.py:31`. Runs `load_integra_env()` at import (L193), before `main.py:47` configures logging, so its INFO override messages are dropped (log: 0 `env_loader` lines). It also puts `Git_personal_access.env` into the kernel's environment (L71), which no kernel feature needs (ADR-011). `CANONICAL_MODELS` (L28-45) and `DEFAULT_ENV_VARS` (L47-54) hard-code the 10/09 roster; L38 holds the Argon placeholder note. Per-file errors become warnings (L128-129). All 11 files exist (name-only check). Read in full earlier tonight for the auto-launch review (F15); hash unchanged. | §4.4 roster; D-17 (Argon); ADR-011. |
+| `config/integra_identity_matrix.json` | 125 | `b50e3fc722829269` | 125 | The four Paradigm Weaver archetypes carry weight 0.25 each (L46, L53, L60, L67), and the file ends with a `voltron_protocol` block whose axiom is "Do NOT go fast. Do NOT expand agents or actions beyond the current assigned task" (L119-124). | Loaded by `core/starfire_protocol.py:98-122` (folder 8 shows which keys it reads) and by `tests/test_systems_audit_and_protocols.py:365`. Served through `GET /starfire/identity` (log: answered). `sovereign_constants` (L99-106) restate the `python_bridge` constants (folder 2). The KL-divergence anchor (L83-89: 0.15, "HALT → Starfire recalibration") and the anti-drift signatures (L108-117) are enforcement *specs*; whether any code applies them is checked in folder 8. The dashboard's "KL divergence 0.0" is a constant (§1 finding 7). | §5.1 Starfire; finding 7. |
+| `config/sovereign_payload.json` | 45 | `29fdcce0d9a0232e` | 45 | `trajectory_vector_flexibility` is the string "94.5% (Closed-Loop Steered Stream)" (L41), and `lactic_acid_accumulation_rate_mg_dl` is 0.0 (L32): physiological metaphors written as engine variables. | **Named by no code** (MEASURED, Grep): dead config. Its values duplicate constants reported elsewhere as telemetry: L_t 0.000 (`heimdall.py:424`, folder 5), 200 / 145 MPa (`python_bridge`, folder 2), drag 0.0 N, Bayesian priors 0.5 / 0.5. | Pattern A (constants as telemetry); finding 7. |
+| `config/swds_config.json` | 59 | `a81f9cf68f950d42` | 59 | Phase 1 gives its duty cycle only as the string "20 min ON / 40 min OFF" (L14), but `main.py:1161-1162` reads numeric `duty_cycle_on_minutes` / `duty_cycle_off_minutes`, which no phase defines, so the 20 / 40 come from the code defaults (MEASURED key lists). | Loaded at import by `main.py:51-66` ("SWDS config loaded" ×10 in the log). Keys read: sleep window (`main.py:1052, 1120-1121`), inactivity (`:1053, 1122`), wake hour and minute (`:85-86, 1077-1078, 1123-1124`), `auto_reconcile_on_startup` (`:82, 1055`), phase 1 `active_components` (`:1163-1165`). **Effective difference from the code defaults** (`main.py:52-58, 1163-1165`): only `heimdall_local` added to the P2 component list (matches log L45682); everything else equals the defaults (DERIVED). **Dead keys:** `report_format`, `_phase_documentation`, phases 2 and 3, all `duration_minutes`, `phoenix_force_override`, `anchor_location`, `report_directory`, `hoard_directory`, `codex_path` (no reader; `swds_simulator.py:164` builds its own report path; `CODEX_OF_ACTIONS.md` exists in both Hoard folders, read by nothing in code). Also read by `scripts/system_diagnostic.py:63` (no encoding). Brain Model 0930's three phases exist only as text here. | ADR-006 (a real SWDS); R-6 (SWDS schedule); §5.9. |
+| `config/system_config.yaml` | 45 | `cbe41b38682a758c` | 45 | Its `models` block (L25-37) was updated to 3.8 Flash / Opus 5.5 at 10/09 23:35:12 (mtime, the same minute as `env_loader.py`), yet no code reads this file. | **Named by no code** (MEASURED, Grep): dead config. Its values duplicate hard-coded constants elsewhere (entropy 2.5 / α 0.3 in Heimdall; angular momentum 500; ΔE 0.0000; 145 / 200 MPa; MRL [64, 768]; Fortress floor 20000 and 75 / 20 / 5 allocations). The router reads `models.yml` (`core/model_router.py:131-186`), not this. | §4.4 roster: three roster sources (`models.yml` read by the router; `env_loader` defaults; this dead YAML). |
+| `config/__pycache__/` (2 files) | n/a | n/a | not read | `env_loader.cpython-313.pyc` (10-11 16:30:14, the 10/11 16:30 boot); `env_loader.cpython-314.pyc` (09-28 16:05:12). | Derived bytecode. | none |
+
+**Totals:** 9 source files, 633 lines, all read to the last line; 2 bytecode files listed.
+
+### Iteration 3: unify (config)
+
+**Agent.** One Explore agent mapped all nine files (82 tool calls, about 15 min). It made 2 GETs (`/swds/status` 22:43:02, `/starfire/identity` 22:44:21) and no writes, did not open this ledger or any `.env`, and kept to the new load guard (no tree-wide scans). The kernel answered both GETs normally.
+
+**Verified while unifying (MEASURED, my reads).**
+- **The checkpoint writer.** `core/celestial_middleware.py:198-219`:
+  - It asks `/clock/full` for keys it never returns (`digital_numerical_clock`, `celestial_spacetime_vector` / `celestial_kinematic_vector`, a top-level `grid_bucket`).
+  - It then falls back to `datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S CDT")` (L204-206), with a `{}` vector and `None` bucket (L202, L217).
+  - That explains the file's L2, L5 and L7 exactly. Folder 8 reads the whole module.
+- **A second checkpoint writer.** The Celestial lens (`evolution/shiva_action/lenses.py:460-480`) calls `asyncio.run(get_celestial_timestamp())` in a thread pool.
+  - **DERIVED:** if it succeeds, it rewrites the checkpoint and sets `_last_response`. `celestial_time()` then switches to its real-time branch (`celestial_middleware.py:317-322`), jumps forward about 490,000 s, and the scheduler wakes SWDS at once (`main.py:1137-1145`).
+  - The file's mtime has not moved since 10/06 20:59:42, and all 8 reboot-delta lines grow against one epoch, so this has not happened in any logged boot.
+- **Unused helpers.** `config/env_loader.py`'s `get_model_config`, `verify_env`, `CANONICAL_MODELS` and `_loaded` have no caller outside the file (Grep).
+- **The blueprint contradicts itself.** C-10 (L875) still cites "stale defaults in `config/env_loader.py`", while L478 says the defaults are aligned. They have been current since 10/09 23:35 (mtime; L30, L42, L48-53).
+
+| Finding | Agent | Me | Status |
+|:--|:-:|:-:|:--|
+| Five of nine files are read by no code (`brand_tokens`, `celestial_seed`, `cheshire_identity`, `sovereign_payload`, `system_config.yaml`) | yes | yes | MEASURED (Grep) |
+| Checkpoint `civil_dt` is UTC labelled CDT; empty vector and null bucket, from the writer's key mismatch | yes | yes (plus writer lines read) | MEASURED |
+| Checkpoint never refreshed in any logged boot (8 reboot-delta lines against one epoch; mtime = epoch + 0.0003 s) | yes | partly (mtime) | MEASURED |
+| Scheduling clock 490,045 s (5 d 16 h 07 m) behind for this kernel; `_boot_time` within about 1 s of 13:07:08 (cross-checked with `idle_seconds` and the trigger log) | yes | yes | DERIVED |
+| The Celestial lens can also write the checkpoint and jump the clock (never has) | yes | verified call site | DERIVED |
+| `swds_config.json`: duty-cycle numbers missing (strings only), so code defaults apply; phase 3's 10/20 never applied | yes | yes | MEASURED |
+| `swds_config.json` applied at runtime: log L48305 lists `heimdall_local`, which only the file supplies | yes | yes (L45682 in folder 1) | MEASURED |
+| `swds_config.json` keys equal to the code defaults; 11 dead keys; `wake_minute` read but ignored at `main.py:86-87` | yes | partly | verified (read) |
+| `env_loader.py` overwrites existing OS environment variables (L116, L125), against its docstring (L61-64); `.env` wins among files | yes | no | verified (my earlier full read) |
+| `env_loader.py`: format decided by the first non-comment line (L98), so `None`-mapped bare files load nothing; inline comments kept (L107); bad bytes replaced silently (L92) | yes | no | verified (read) |
+| `env_loader.py` INFO lines lost (import before `main.py:47`); puts `Git_personal_access.env` in the kernel env | yes (first) | yes | MEASURED (log: 0 lines) |
+| `integra_identity_matrix.json` loaded by the running kernel (live `sovereign_constants` equal L100-105); `voltron_protocol` read only by a test | yes | partly | agent-MEASURED; keys verified in folder 8 |
+| `cheshire_identity.json` values without code counterparts: critical threshold 3.0, RRF k 60 | yes | partly | agent-read |
+| Same constants under different names across files (200, 145, 500, 2.5); matrix 170 MPa vs `swds_simulator.py:33` "180 MPa" | yes | partly | verified (read) |
+| `brand_tokens.json` disagrees with itself (3 named stops vs 4) and is hard-coded separately in four static files | yes | yes (stops) | MEASURED |
+| `scripts/system_diagnostic.py:63` tests the window on real time while the kernel uses the shifted clock (16 h 07 m apart today) | yes | no | agent-read (folder 4) |
+| Docs: `1_2T:L854, L1641` stale model names now FALSE; `MAB:875` C-10 FALSE now; `MAB:349` "2.36 days" was 10/09's kernel (5.67 today); `1_2T:L3509` / `1_3:L105` "02:00-07:00 CDT" runs on the shifted clock, not CDT; `1_2T:L6949` "written on each poll" FALSE | yes | verified (MAB lines read) | Step 3 |
+| `1_2T:L4812-4820` config file sizes = today's minus the CRLF count for five files (an LF→CRLF conversion since) | yes | no | agent-MEASURED |
+| `config/` is a namespace package (no `__init__.py`); nothing shadows it; no static mount serves these files | yes | no | agent-MEASURED |
+
+**Knowledge.** Of the nine files in `config/`:
+- **Four are read by code:**
+  - `swds_config.json` (scheduler and reconciliation);
+  - `celestial_checkpoint.json` (the frozen-clock root);
+  - `integra_identity_matrix.json` (Starfire);
+  - `env_loader.py` (keys and roster defaults).
+- **Five are read by nothing:** `brand_tokens.json`, `celestial_seed.json`, `cheshire_identity.json`, `sovereign_payload.json` and `system_config.yaml`.
+- **Of the four that are read:**
+  - `swds_config.json` changes exactly one effective value from the code defaults (it adds `heimdall_local` to the P2 component list).
+  - The checkpoint is the frozen-clock root (ADR-001), and it carries two defects of its own: UTC labelled CDT, and an empty celestial vector. A dormant second writer (the Celestial lens) could rewrite it and jump the clock.
+  - `env_loader.py` overrides the OS environment it claims to respect.
+
+**Understanding.** Most of this folder is documentation written as configuration.
+- Identities, "physics" and "phases" are written as parameters but parameterise nothing. The running system uses hard-coded duplicates of the same numbers: 30 Hz, 2.5 bits, 145 / 200 MPa, ΔE 0.0000. So editing these files changes nothing, which is Pattern A seen from the configuration side.
+- The one dynamic file, the checkpoint, holds the system's most consequential bug. It also shows the middleware's key mismatch: its `civil_dt` label and its empty vector come from the same function that should have filled them.
+- Brain Model 0930's three SWDS phases live only as prose in `swds_config.json`. The scheduler runs one undifferentiated window, so the phases are a design, not a behaviour.
+
+**Wisdom** (value against cost):
+- **Wire or relabel, in that order of value:**
+  1. Make `swds_config.json` the single source: numeric duty-cycle keys, one reader, and dead keys removed or marked `_doc`.
+  2. Mark the five unread files as documentation, or move them under `docs/`, so no one edits a file expecting behaviour to change.
+  3. Fix the checkpoint's writer together with ADR-001 (folder 8).
+- **Cheap safety step:** stop exporting `Git_personal_access.env` into the kernel process.
+- **Not worth doing now:** wiring the identity files into prompts. That is a Step 3 / D-decision question (what the Cheshire Kernel's prompt should be), not a config fix.
+
+**New gaps for Step 4:**
+- **C-G1.** `swds_config.json`:
+  - add numeric duty-cycle keys (or parse the strings);
+  - implement Brain Model 0930's phases 2-3 (ADR-006) or delete them;
+  - remove or mark the 11 dead keys;
+  - honour `target_wake_minute` in reconciliation (`main.py:86-87`).
+- **C-G2.** The checkpoint writer (`core/celestial_middleware.py:198-219`, folder 8): read the keys `/clock/full` actually returns; label CDT correctly; fill the vector and the bucket. This comes with ADR-001.
+- **C-G3.** The second checkpoint writer in the Celestial lens (`evolution/shiva_action/lenses.py:460-480`) can jump the scheduling clock: remove it, or make it read-only.
+- **C-G4.** Five unread config files: wire them or move them under `docs/` as documentation.
+- **C-G5.** `env_loader.py`:
+  - respect existing OS environment variables, as its docstring says;
+  - configure logging before loading;
+  - stop exporting `Git_personal_access.env` into the kernel;
+  - list explicitly the keys the kernel needs.
+- **C-G6.** One roster source. Today there are three: `models.yml` (read by the router), the `env_loader` defaults, and the unread `system_config.yaml`.
+- **C-G7.** `scripts/system_diagnostic.py:63`: path relative to the working directory, no encoding, and a real-time window check that disagrees with the kernel.
+
+**For Step 3** (blueprint and unified document):
+- **§5.7.2 / ADR-001:**
+  - the checkpoint's own defects (UTC labelled CDT, empty vector), traced to the writer's key mismatch;
+  - the lag "2.36 days" in §3.5 was the 10/09 kernel's; today's is 5.67 days;
+  - add the lens path as a second (dormant) writer.
+- **§4.4 / C-10:** C-10's "stale defaults in `config/env_loader.py`" is outdated (current since 10/09) and contradicts L478. Add "three roster sources".
+- **§5.9 / R-6:** the "02:00-07:00 CDT" window runs on the shifted clock. Brain Model 0930's three phases exist only as prose; the duty-cycle numbers come from code defaults.
+- **FP and dead-config register (new class):** configuration that configures nothing (five files), including `cheshire_identity.json`'s "Never conflate" rule and the KL / anti-drift specs, pending folder 8's check of what Starfire enforces.
