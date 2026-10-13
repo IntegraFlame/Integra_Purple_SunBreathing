@@ -1401,3 +1401,123 @@ Their full reports are kept in the session scratchpad, outside the repo. Each cl
 - A whole-workspace ripgrep timed out at 20 s; re-ran it on `*.py` only.
 - A recursive glob that would have walked `.venv` was removed before the script ran.
 - A UTC/CDT slip from Git-Bash `date` was caught before writing; all times were recomputed with a fixed −05:00 offset.
+
+## Folder 10: local_dbs
+
+Read 2026-10-13 early (session c88f5000). Stamp before the folder: 2026-10-13 00:28:45 CDT | 2026-10-13T05:28:45Z | rot 231.0236°, lunar 0.6716, orbit 0.2186, ROT_210_ORB_20 (the folder-9 report stamp). Guards (00:22 CDT): CFA off; 0 new 1123 events; kernel answering; scheduled task Ready.
+
+**What is here (MEASURED).**
+- 9 files, 124,942,082 B. All git-ignored (`.gitignore:35`), so none is in any commit.
+- **The Chroma store:** `chroma.sqlite3` plus one HNSW segment folder of five files.
+- **The Metatron SQLite DB** with its `-wal` and `-shm` files.
+
+**How it was read.** Nothing live was opened except as the source of copies (`km10_backup.py`, scratchpad `local_dbs_copy/`, manifest kept):
+- **SQLite:** both databases were copied with the backup API, from read-only URIs. Both copies pass `integrity_check`; the Metatron copy includes its WAL.
+- **Segment files:** byte-copied, with equal SHA-256.
+- **`index_metadata.pickle`:** hashed and its first bytes read. It was never unpickled.
+- **My reading of the copies:**
+  - Metatron: every row.
+  - Chroma: every table counted; collections, segments, metadata keys, migrations and the queue read in full; id families, duplicates and the shard cross-check computed.
+  - HNSW: header parsed; all 5,305 elements, all of `length.bin` and all of `link_lists.bin` decoded.
+
+**Log facts (MEASURED).** There were 8 boots with a Metatron block. Each logged "Metatron Manifold connected", "schema deployed" and "Sessions already exist (1 rows), skipping seed". The log has 0 "Seeded", 0 ChromaDB warnings and 0 `[HOARD]` lines. The Kintsugi loop started at every boot.
+
+| path | lines | sha256-16 | last line read | proof | 12th Step notes | doc claims it touches |
+|:--|--:|:--|--:|:--|:--|:--|
+| `local_dbs/chroma_storage/575be6da-9a12-4c37-bc54-5978a6adeb3a/data_level0.bin` | n/a (17,039,660 B) | `394d72f92c1aefc7` | all 5,305 elements decoded (copy) | Exactly 5,305 × 3,212 B. The vectors are 5,245 SHA-256-tiled (period 32, non-negative, normalised to 1.0 by the cosine space) and 60 all-zero. 0 are SHA-512 (Daily Planet). Labels 1-5,305 are all distinct. Only 2,356 distinct vectors are stored: 2,126 duplicate groups cover 5,075 elements, the largest non-zero group has 8 copies. A level-0 walk from entry 220 reaches 5,249 of 5,305 nodes, and all 56 unreachable nodes are zero vectors, so search can never return them (MEASURED; L2 found the same). | Last persisted 2026-09-21 02:20:47; everything committed later lives only in the queue (see `chroma.sqlite3`). Element layout `<HBB32I768fQ` (count, flag, pad, 32 neighbours, vector at +132, label at +3204). | MAB L64 (no model vectors: confirmed in the index too) |
+| `local_dbs/chroma_storage/575be6da-9a12-4c37-bc54-5978a6adeb3a/header.bin` | n/a (100 B) | `66433e485586d02a` | parsed in full (copy) | A 4-byte version (1) plus the hnswlib header: max_elements 8,192; element count 5,305; element size 3,212 (768 float32 + 132 B links + 8 B label); max level 3; entry point 220; M 16 / maxM0 32; mult 0.3607 (= 1/ln 16); ef_construction 100. | Written 09-21 02:20:46. | - |
+| `local_dbs/chroma_storage/575be6da-9a12-4c37-bc54-5978a6adeb3a/index_metadata.pickle` | n/a (651,626 B) | `3702b441bb342572` | raw bytes only (first 16 B); never unpickled | Python pickle protocol 3: a dict whose first key is "dimensionality" (the segment's id↔label metadata, DERIVED). | Loading a pickle can execute code, so the standing rule holds: it is never loaded. | - |
+| `local_dbs/chroma_storage/575be6da-9a12-4c37-bc54-5978a6adeb3a/length.bin` | n/a (21,220 B) | `24a5ff5f6558bfca` | all 5,305 values decoded (copy) | 5,305 float32 values, one per element: the vector's L2 norm **before** normalisation. 60 are 0.0; the rest run 11.34-20.72 (mean 15.99). For all 5,242 lobe labels the value equals the norm recomputed from the SHA-256 digest of the document at SQLite rowid = label (max relative error 1.97e-6, MEASURED), which also confirms that label = rowid. | Not a link-list length (my first draft said so; corrected after L2, then re-measured). | - |
+| `local_dbs/chroma_storage/575be6da-9a12-4c37-bc54-5978a6adeb3a/link_lists.bin` | n/a (45,292 B) | `4c71e59cf1889f24` | parsed in full (copy) | For each element, a uint32 byte count (68 × level), then one 68-byte block per upper level. It consumes exactly 45,292 B. Levels: 4,974 elements at level 0 only, 310 at 1, 19 at 2, 2 at 3 (MEASURED). | | - |
+| `local_dbs/chroma_storage/chroma.sqlite3` | n/a (107,114,496 B) | `f741ff954b453428` | every table counted; collections, segments, metadata keys, migrations and queue read in full; id families and duplicates computed (backup copy `696f9384b4bee5be`, integrity ok) | One collection, `integra_hoard`: 768-d, cosine, 5,526 embeddings. They are 5,242 lobe chunks (2,447 untagged plus 2,795 extension-tagged ids, holding only 2,352 distinct texts: 2,890 surplus rows, 55.1%), 40 Daily Planet and 244 shard CCIDs (241 of them zero vectors). Three ingest passes left this: run A (untagged, 3 of 28 batches rejected for repeated ids), pass B1 (tagged, seq 2,589-5,383, fully overwritten, so that range is empty) and pass B2 (L1; seq gap re-measured). 28 chunks exceed 8,000 characters (largest 91,343). The vector segment's max_seq_id is 8,206 against 8,539 for the metadata segment: 334 queued upserts (09-21 to 10-06, 204 of them all-zero) are missing from the persisted index. 284 of 307 shards are present. The 23 absent are the 16 shards of 09-18 (before the store existed), 2 hand-authored, the 10/11 pair and 3 backtests. 18 shard ids were written 2-4 times in the same second with different content (`CCID_{int(time.time())}` collisions, `cheshire_cat.py:360`). A trigram FTS5 index covers all 5,526 documents, and no code uses it. `acquire_write` holds 169 rows, one per client open (L1, re-counted). | Untracked (`.gitignore:35`). Written by `the_hoard.py:244-266` (commit-time upserts) and `scripts/ingest_knowledge.py:403-421` (lobe batches). Read by `chroma_query` (:268-291) through Rodin. The collection schema names Chroma's "default" embedding function, which is never used because every upsert passes its own vector. mtime 10-12 13:08:33 = the kernel opening it at boot; the newest embedding is 10/06 23:46 CDT. | MAB L114 ("Chroma not touched": TRUE), L509, L617 |
+| `local_dbs/metatron_manifold.db` | n/a (32,768 B) | `90cb06ec2a7a41cf` | schema plus every row of every table (backup copy, WAL included) | 4 tables and 2 triggers. Rows: 1 chassis row (CCID_1790212674: Ω 1, myelination 1, latency 0 ms, 145 MPa, tolerance 0.0001); 2 loop rows (100→100 and 100→100.00005); 1 anomaly row written by trigger `log_entropy_anomalies_v3`, whose SQL hard-codes H = 2.6. `spatial_acoustic_map` is empty. All written 09-23 20:17-20:19 CDT; the timestamps are stored as UTC. | `bootstrap()` (`metatron_deploy.py:144-154`, called at `main.py:109`) re-runs CREATE IF NOT EXISTS and seeds a session only into an empty table, so nothing is written after 09-23. It still returns a fresh `CCID_<now>` as "active_session_id", and that id is never stored. One shared connection (`check_same_thread=False`, :43-53). The "LIVE Metatron data" is this seed. `record_loop` stores `round(\|Δ\|, 4)` (:191), so the 0.00005 test delta reads 0.0001. `get_status` returns "OPERATIONAL" as a literal and "MECHANICAL" whenever 2 triggers exist (:287, :296). Kintsugi's z = \|Δ\|/0.0003 (`kintsugi_sandbox.py:376`) can never reach its own 3.0 threshold, yet it sandboxes every anomaly (:380-396). Heimdall takes L_t before its Metatron SELECT (`heimdall.py:573` vs :580-585), and `heimdall_monitor.py:109-113` prints a literal 0.0000 against the API's 0.0001. | ledger folder 5, L376 (thermodynamic_loops static: confirmed) |
+| `local_dbs/metatron_manifold.db-shm` | n/a (32,768 B) | `a74a5dd0d2b34f38` | not read (WAL shared-memory index) | Touched at kernel boot, 10-12 13:08:37. | | - |
+| `local_dbs/metatron_manifold.db-wal` | n/a (4,152 B) | `c1a5b522e4d830c2` | folded into the backup copy | 4,152 B = 32 B header + one 24 B frame header + one 4,096 B page: exactly one committed frame, last written 09-23 20:51:17, after the main file (20:19:00). Most likely Kintsugi's `processed = 1` update (DERIVED, L3). It has never been checkpointed into the main file. | A copy of the `.db` alone would lose it, so snapshots must use the backup API or `VACUUM INTO`. | MAB L1196 (supported) |
+
+### Iteration 3: unify (local_dbs)
+
+Three Explore agents worked only on the copies:
+- L1: the Chroma SQLite store.
+- L2: the HNSW segment.
+- L3: Metatron.
+
+Their reports are in the session scratchpad. Each claim adopted below was re-measured by me (✓) or is labelled as the agent's.
+
+**Comparison: what each consumption caught.**
+
+| # | finding | L1 | L2 | L3 | me | verdict |
+|--:|:--|:--|:--|:--|:--|:--|
+| 1 | No model embedding in the store | ✓ all 5,526 classified | ✓ 5,305 index vectors classified | – | ✓ index families; queue families; shard regenerations (folder 9) | MEASURED |
+| 2 | The HNSW files lag the log: 5,305 vs 5,526 records, seq 8,206 vs 8,539, sync threshold 1,000 | ✓ | ✓ | – | ✓ watermarks; cutoff 5,305 at 09-21 07:20:47 UTC; 221 newer ids queued | MEASURED (the cause, threshold 1,000 > 333 pending, is DERIVED) |
+| 3 | `length.bin` = original vector norms | ✓ | ✓ | – | first draft wrongly said "link-list lengths"; re-measured: all 5,242 lobe labels match the digest norm (rel. err ≤ 1.97e-6) | MEASURED (corrected via L2) |
+| 4 | Lobe duplication: 2,890 surplus rows (55.1%) from three ingest passes | ✓ incl. pass model | ✓ only 2,356 distinct stored vectors | – | ✓ 2,352 distinct texts; tag split 2,447/2,795 (my regex had missed .rs/.sql); seq gap 2,589-5,383 empty | MEASURED (the pass model is L1's, DERIVED with exact match) |
+| 5 | Zero vectors are unreachable in the graph | – | ✓ | – | ✓ 56 unreachable nodes, all zero | MEASURED |
+| 6 | Same-second CCID collisions overwrite records | ✓ 18 ids | – | – | ✓ 15×2, 2×3, 1×4 queue rows | MEASURED |
+| 7 | Trigram FTS5 index exists and is unused | ✓ | – | – | ✓ DDL read | MEASURED |
+| 8 | Metatron is one 09-23 seed; nothing written since | – | – | ✓ incl. exact replay | ✓ every row; 8 boots skip the seed | MEASURED |
+| 9 | Boot session id is returned but never stored | – | – | ✓ (+ FK-failure mislabel in replica) | ✓ code `:120-121, :153`; `main.py:116` sole reader | MEASURED |
+| 10 | Kintsugi z = \|Δ\|/0.0003 can never reach 3.0, yet everything is sandboxed | – | – | ✓ | ✓ `kintsugi_sandbox.py:376-396` | MEASURED |
+| 11 | Heimdall L_t is taken before the Metatron SELECT; monitor prints 0.0000 | – | – | ✓ | ✓ `heimdall.py:573` vs :580-585; `heimdall_monitor.py:109-113` | MEASURED |
+| 12 | The one Metatron WAL frame is never checkpointed | – | – | ✓ (likely the `processed` update) | size arithmetic ✓ | MEASURED size, DERIVED content |
+| 13 | Declared MCP server `integra_hoard_mcp` cannot start | ✓ | – | – | ✓ `sdk_harness.py:313-320` runs `-m memory.the_hoard`, which has no `__main__` | MEASURED |
+| 14 | Agent overreach | read HNSW files beyond its brief (copies only, harmless) | – | one GET `/heimdall/health` (allowed) | my backup's later read made 0 B `-wal`/`-shm` sidecars next to the copy (scratchpad only) | noted |
+
+**Knowledge.**
+- **Chroma:** one collection, 768-d, cosine, holding 5,526 records:
+  - 5,242 lobe chunks, of which only 2,352 texts are distinct;
+  - 40 Daily Planet records;
+  - 244 shard records, 241 of them zero vectors.
+- **The HNSW files** hold 5,305 normalised vectors, persisted on 09-21. The other 221 records live only in the replay queue.
+- **Metatron:** 1 seed session, 2 test loops and 1 trigger-made anomaly, all written 09-23 20:17-20:19 CDT (stored as UTC). The single WAL frame has not been checkpointed.
+
+**Understanding.**
+- **Hash vectors only.** The vector store was filled by ingest scripts, tests and the cycle path, all with hash or zero vectors. So the "semantic" layer underneath Rodin is a hash table with cosine distances. Duplicates crowd the 7 slots, and zero vectors can never surface.
+- **Metatron is a 66-second seed batch from 09-23.** Every value labelled "LIVE", "MECHANICAL" or "OPERATIONAL" (ΔE 0.0001, H 2.6, "0 unprocessed") comes from that batch. The labels are code literals and triggers, not measurements.
+- **Persistence works by replay.** On every open the stores rebuild their newest state from a log the HNSW files never absorbed, and from a WAL frame the Metatron file never absorbed. Both sit inside OneDrive.
+
+**Wisdom.**
+- **Read every Hoard and Metatron number as provenance-free** until it is rewired.
+- **Back up only with the backup API or `VACUUM INTO`, and only as a pair.** That means the segment folder together with `chroma.sqlite3`, and the `.db` together with its WAL.
+- **Do not re-run the ingest script or the tests against the live tree.** They delete files, duplicate records and write the live store.
+
+**Gaps for Step 4.**
+- **LD-G1 Index persistence lag.** Record the HNSW / log pairing in the docs, persist explicitly or lower `hnsw:sync_threshold`, and never trim the queue by hand.
+- **LD-G2 Lobe duplication.**
+  - The problem: 2,890 surplus rows. Batch errors are swallowed (`ingest_knowledge.py:418-419`), so run A lost 300 chunks silently. 28 oversized chunks.
+  - The fix: dedupe by content hash, delete the legacy untagged ids, fail loudly, and fix the chunker.
+- **LD-G3 Zero vectors in a cosine index.** 241 records, 56 of them unreachable in the graph. Stop upserting them; this pairs with KM-G5.
+- **LD-G4 CCID collisions.** `CCID_{int(time.time())}` overwrote 18 ids, both their records and their shard files. Add sub-second precision or a uuid suffix.
+- **LD-G5 Metatron truthfulness.**
+  - Label the seed "STALE / SEED" with its last-row time.
+  - Measure L_t around the SELECT, not before it.
+  - Store the boot session; otherwise a future `record_loop` fails its FK check and is mislabelled REJECTED_CATASTROPHIC.
+  - Remove the literal "OPERATIONAL" / "MECHANICAL" / 0.0000 / H 2.6 values.
+  - Say that the stored times are UTC.
+- **LD-G6 Kintsugi.** Its threshold can never be reached, it sandboxes everything, and its state is in memory only.
+- **LD-G7 Shared SQLite connection.** It is used from the event loop and the threadpool with no lock (same as SN-G8).
+- **LD-G8 OneDrive and checkpoints.** The WAL has not been checkpointed in 19+ days and `local_dbs` lives in OneDrive. Move it out of OneDrive (autolaunch review F8) and snapshot with the backup API.
+- **LD-G9 Default embedding function.** The collection schema names Chroma's default embedding function, while the stored vectors are 768-d hashes. Pass `embedding_function=None` explicitly, so a stray `query_texts` cannot mix spaces.
+- **LD-G10 `integra_hoard_mcp`.** It is declared in `sdk_harness.py:313-320` but not implemented.
+- **LD-G11 Brittle id map.** The id↔label map lives only in a serde-pickle (never load it by hand). The format is tied to the chromadb 1.5.9 Rust build, and the label = rowid shortcut breaks after the first delete.
+- **LD-G12 Privacy.** The P-1 third-party details are also stored as Chroma documents. This store is local and untracked, but any remediation of P-1 must include it.
+
+**Contradictions queued for Step 3.**
+- **Blueprint (MAB):**
+  - L1181 "ChromaDB has no keyword search": FALSE. A trigram FTS5 index exists; it is unused.
+  - L617 "VERIFIED as a file-and-Chroma store": PARTLY (index lag, no model vectors, 55% duplicates).
+  - L627: retrieval is noise even when the embed call succeeds.
+  - L64: the Chroma hashes come from `the_hoard` / `ingest_knowledge` / `daily_planet`; there are 0 Phoenix ids in Chroma.
+  - L635: the trigger spans are `:89-99` and `:119-142`.
+  - L387-393: the boot table is stale (4 later boots).
+- **OCT9:**
+  - L4891-4892: `memory/database/__init__.py` "auto-imports" is FALSE (the file is 0 B).
+  - L6146, L6614, L6292, L6760: Keplerian or orbital indexing is FALSE for the vector index.
+  - L5222: the asset nodes were not indexed (L2).
+  - L6821 "OPERATIONAL" is a literal, and L6897's L_t is taken before the SELECT.
+  - L350: re-embedding means 11,994,640 characters (≈3M tokens), not 20M tokens.
+  - L5090: the trigger test runs on `:memory:`, not the live DB (L3, not re-checked by me).
+
+**Guard slips this folder.**
+- One verification command contained a `grep -rn` over the homebase tree, `.venv` included. It ran in the background past 120 s and finished. It should have used the Grep tool; noted for the error review.
+- A heredoc collapsed `\\` into `\`; I switched to `os.sep`.
+- Two of my own numbers were wrong and were corrected before writing, both caught through the agents: the tag split (2,458/2,784 → 2,447/2,795) and the meaning of `length.bin`.
