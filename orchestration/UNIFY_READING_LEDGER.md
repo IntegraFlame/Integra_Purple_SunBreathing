@@ -1521,3 +1521,156 @@ Their reports are in the session scratchpad. Each claim adopted below was re-mea
 - One verification command contained a `grep -rn` over the homebase tree, `.venv` included. It ran in the background past 120 s and finished. It should have used the Grep tool; noted for the error review.
 - A heredoc collapsed `\\` into `\`; I switched to `os.sep`.
 - Two of my own numbers were wrong and were corrected before writing, both caught through the agents: the tag split (2,458/2,784 → 2,447/2,795) and the meaning of `length.bin`.
+
+## Folder 11: memory
+
+Read 2026-10-13 early (session c88f5000). Stamp before the folder: 2026-10-13 01:01:48 CDT | 2026-10-13T06:01:48Z | rot 239.2839°, lunar 0.6724, orbit 0.2187, ROT_210_ORB_20 (the folder-10 report stamp). Guards at start (≈01:03 CDT): CFA off; 0 new 1123 events; kernel answering.
+
+**What is here (MEASURED).**
+- 8 tracked files, 1,770 lines in all:
+  - `the_hoard.py` 706
+  - `rodin_protocol.py` 394
+  - `database/metatron_deploy.py` 297
+  - `database/relational_hippocampus.sql` 142
+  - `alexandria_protocol.py` 116
+  - `token_stitching.py` 115
+  - two empty `__init__.py` files
+- `__pycache__` is ignored, and the working tree is clean.
+- Last changed: `the_hoard.py` in 6905f84 (09-23), `rodin_protocol.py` in e4e3949 (10-08).
+
+**How it was read.**
+- Every line with the Read tool (`the_hoard.py` in five ranges).
+- Callers found by Grep over `*.py`.
+- The SQL replayed in `:memory:`.
+- The supervisor path, `orchestration/rodin_supervisor.py:40-124`, read for the Rodin verdict. Folder 12 reads that file in full.
+
+**Log facts (MEASURED).**
+- 0 `POST /cognitive/cycle`, 0 `POST /rodin/query`, 0 `POST /token/stitch`.
+- 6 SWDS consolidations. Each one calls `get_stale_nodes` through Mad Hatter.
+- 8 Metatron bootstraps, each skipping the seed.
+
+| path | lines | sha256-16 | last line read | proof | 12th Step notes | doc claims it touches |
+|:--|--:|:--|--:|:--|:--|:--|
+| `memory/__init__.py` | 0 | `e3b0c44298fc1c14` | 0 (empty) | 0 B. It only makes `memory` a package. | - | - |
+| `memory/alexandria_protocol.py` | 116 | `4739d35ec38d1602` | 116 | `execute_loop_2_learning` (L34-83) calls Daily Planet with domain "general" and commit=True. On any exception (swallowed, L68-69) it falls back to stubs. The stubs invent "[EXTERNAL_DATA] Acquired new ground truth for '<query>'" (L85-88) and build a node with constant 0.5 vectors and outcome 1.0 that is never stored (L97-106). It still returns ALEXANDRIA_LEARNING_COMPLETE with a `new_node_id`. | `dispatch_scout` (L108-116) returns "DISPATCHED" and does nothing; it has no caller. Callers: `orchestration/rodin_supervisor.py:49, :118` and `tests/test_daily_planet_lifecycle.py:224-225` (live path). `sensory/cheshire_cat.py:480` passes `threshold=0.7`, which this constructor does not accept (L27), so that line would raise TypeError. Its function, `dispatch_protocol`, has no caller (this extends the folder-5 row). Domain "general" makes Daily Planet's synthetic fallback use its news templates (folder 9, S11). | MAB L627, L860 (FP-31 "always ANALYST": FALSE; the outcome is always Alexandria); OCT9 L6876 |
+| `memory/database/__init__.py` | 0 | `e3b0c44298fc1c14` | 0 (empty) | 0 B. It imports nothing. | - | OCT9 L4891-4892 ("auto-imports `metatron_deploy`"): FALSE |
+| `memory/database/metatron_deploy.py` | 297 | `6024dd0465641749` | 297 | The paths are module-relative (L27-31), so any importer opens the live `local_dbs/metatron_manifold.db`; tests and scripts included. One singleton connection: `check_same_thread=False`, FK ON, WAL (L37-53). `bootstrap` (L144-154) is idempotent, but it returns a fresh `CCID_<now>` as the active session and never stores it (L120-121, L153). `record_loop` stores `round(\|Δ\|, 4)` and labels every IntegrityError REJECTED_CATASTROPHIC, FK failures included (L172-207). `get_status` returns "OPERATIONAL" and "MECHANICAL" as literals (L287, L296). | **Exists / wired / ran:** `bootstrap` is wired (`main.py:109`) and ran 8 times (log). `record_loop` is reachable only through `auto_crystallize`, which has no caller. `query_anomalies` and `mark_anomaly_processed` are wired through Kintsugi (`kintsugi_sandbox.py:364-396`). `get_status` serves `/metatron/status` (`main.py:1298-1307`). Folder 10 holds the DB evidence. | MAB L62, L69, L193-196, L333, L378, L606, L634-637; OCT9 L6816-6824, L6878, L6897 |
+| `memory/database/relational_hippocampus.sql` | 142 | `6e89e1519dc677b8` | 142 | The header comments say the AFTER INSERT anomaly "already committed … WILL persist regardless" (L18-19, L110-114). That is FALSE: the trigger runs inside the same statement and transaction, so an abort rolls it back (replayed in `:memory:`). Trigger 1's comment says an unknown session falls back to 0.0001 through COALESCE (L82-84). With FK enforcement on, an unknown session is rejected outright; only a NULL session reaches the COALESCE. | 4 tables (L27-73); trigger 1 at L89-99; trigger 2 at L119-142, with H = 2.6 hard-coded (L137). `DECIMAL(p,s)` gives NUMERIC affinity only, so precision is not enforced. My `:memory:` replay of this file (MEASURED): 1.0→1.0001 passes but 2.0→2.0001 and 100→100.0001 abort (a float boundary). 1.0→1.00004 stores `net_energy_loss` 0 yet logs an anomaly. An unknown session fails the FK check, and a NULL session is accepted. A two-row insert with one catastrophic row rolls back the good row and its anomaly, and an explicit ROLLBACK removes the trigger's anomaly. | MAB L333, L635 (spans are :89-99 / :119-142), L637, L1050-1051; OCT9 L3558, L3697 |
+| `memory/rodin_protocol.py` | 394 | `233a8a9fb5e382e5` | 394 | The docstring gives M_knn = (1/K)·Σ I(O_i = SUCCESS)·exp(−d²/σ²) (L11), but the code (L145-178) returns the weight-normalised mean of the outcome labels. So when all neighbours share a label, M_knn equals that label at any distance: lobe chunks (1.0) always pass on density, cycle shards (0.5) never do. `check_staleness` (L184-200) compares real `time.time()` with the skewed `created_at`, and any stale neighbour halts the gate. At 2026-10-13 01:10 CDT, 296 of 302 shards are older than 7 days by `created_at` (the 6 younger ones are the four 10/06 shards and the 10/11 pair; MEASURED), and the skewed values make nodes look up to 7.8 days older than they are. `generate_query_vector` (L311-351) embeds through the router or RodinClient, pads or truncates to 768, and falls back to SHA-256 silently. `route_retrieval` (L357-394) returns no cohesion, relevance or is_stale. | Constants: K 7, τ 0.85, σ 0.5, 7-day staleness, coarse floor 0.60 (L49-53). `route_retrieval_sweep` (L252-264) has no caller. `review_node_integrity` is reached only from `orchestration/rodin_supervisor.py:90` and tests. `RodinSupervisor.dispatch` always passes `[]` and a mock `[0.1]*768` (`rodin_supervisor.py:78-93`), so M_knn = 0.0, the gate HALTs, and every `/rodin/query` call goes to Alexandria and from there to Daily Planet (network plus a Hoard write; `:110-121`). The ANALYST branch is unreachable (read; M2's replica agrees), and the log has 0 calls. Latent: a node's apparent age = boot time − checkpoint (490,045 s on this boot), so any boot after 2026-10-13 20:59:42 CDT makes every new node instantly stale. The folder-9 retrieval distances reproduce this file's fallback exactly. | MAB L509, L617, L625, L627, L838; OCT9 L5029-5031, L5365-5369, L6877, L7064 |
+| `memory/the_hoard.py` | 706 | `aed650e803798737` | 706 | `commit_node` (L364-379) drops the vectors, so the HoardNode zero defaults apply (L78-79). `created_at` = `celestial_time()` (L82). `get_telemetry` labels the schema "2.0" (L616) while `commit_node_v2` returns "2.1" (L355). `auto_crystallize` (L624-700) has no caller, and it returns "COMPLETE" even when its Metatron write failed. | The root defaults to the module's parent (L170-175), so tests and scripts write the live store. `load_shards_from_disk` dedupes in O(n²) and skips bad files silently (L468-495). `mark_outcome` rewrites shards in place and swallows errors (L385-414). `get_stale_nodes` uses the skewed clock and sets `is_stale` only in memory (L420-434). It is wired: `execute_swds` → Mad Hatter (`phoenix_forge.py:259`, :402-403) runs it on every kernel SWDS (6 in the log), against an empty cache, because nothing in the kernel loads shards (`load_shards_from_disk`'s only non-test caller is the unscheduled `scripts/enter_swds.py:34`). The 7-day rule thus runs on two clocks: here `celestial_time()`, in Rodin `time.time()`. The runtime dirs `hoard/modules`, `vectors` and `drop_in` exist and are empty (MEASURED). `query_internal` uses the whole prompt as one substring, and non-ASCII text never matches the ASCII-escaped JSON (M1). `query_internal` is Rodin's substring fallback (wired). If the middleware import fails, the clock falls back to `time.time` (L31-36). | MAB L61, L64, L111-L115, L615-L617, L717; OCT9 L6876, L6955 (6 call sites) |
+| `memory/token_stitching.py` | 115 | `f89d887d26628243` | 115 | `TokenStitchingEngine.is_active` and `verify_status()["all_systems_true"]` are literals (L24-39). `finalize_stitched_document` strips only the tag prefix `REGISTERED::CONTINUATION::STAGE_`, so the stage number stays in the text (L57-61). `SeasonalPatternMatcher` (L63-115) lives in memory only and has no caller. | Wired: an instance at `main.py:193`, registered with Heimdall at `:211`, and the `append_chunk` endpoint at `:983`. Buffered chunks are not persisted, so they vanish on restart. | - |
+
+### Iteration 3: unify (memory)
+
+Two Explore agents mapped the folder:
+- **M1:** `the_hoard`, `alexandria`, `token_stitching`.
+- **M2:** `rodin`, `metatron`, the SQL.
+
+Each claim adopted below was re-checked by me, by Read, Grep or replay (✓), or is labelled as the agent's.
+
+**Comparison: what each consumption caught.**
+
+| # | finding | M1 | M2 | me | verdict |
+|--:|:--|:--|:--|:--|:--|
+| 1 | Legacy `commit_node` drops vectors (zero shards) | ✓ | – | ✓ L364-379 | MEASURED |
+| 2 | `auto_crystallize` has no caller, so `record_loop` is unwired | ✓ | ✓ | ✓ Grep | MEASURED |
+| 3 | No kernel path loads shards; the cache is empty at SWDS | ✓ | – | ✓ Grep | MEASURED / DERIVED |
+| 4 | `get_stale_nodes` is wired via Mad Hatter (`phoenix_forge.py:259`, :402-403) | ✓ | – | I first wrote "tests only" (Grep output was truncated); corrected | MEASURED (correction via M1) |
+| 5 | `/rodin/query` always HALTs → Alexandria → Daily Planet (FP-31 "ANALYST" FALSE) | ✓ | ✓ replica | ✓ `rodin_supervisor.py:78-121` read | MEASURED code; 0 runs in log |
+| 6 | M_knn code ≠ docstring formula; no clamp | – | ✓ | ✓ L11 vs L145-178 | MEASURED |
+| 7 | `route_retrieval` runs no MRL / M_knn / Gate III and returns no relevance | – | ✓ | ✓ L357-394 | MEASURED |
+| 8 | Trigger comments false; float-dependent boundary; 4-dp rounding | – | ✓ replica | ✓ my own replay | MEASURED |
+| 9 | Bootstrap returns an unseeded session id; FK failures mislabelled | – | ✓ | ✓ code; folder-10 log | MEASURED |
+| 10 | The staleness rule runs on two clocks | ✓ | ✓ but "6.18 days" | ✓ age = boot − checkpoint = 5.67 d on this boot | MEASURED (M2's 6.18 corrected) |
+| 11 | `dispatch_protocol` latent crash (TypeError :480, AttributeError :524 and :526) | ✓ | ✓ | ✓ | MEASURED (latent: no caller) |
+| 12 | Alexandria's fallback fabricates and reports success | ✓ | – | ✓ L68-106 | MEASURED |
+| 13 | Token stitching: literals, digit leak, documented overlap and checksums absent | ✓ | – | ✓ | MEASURED |
+| 14 | Stale `RodinProtocol` imports; MCP server declared with no `__main__` | ✓ | ✓ (imports) | ✓ | MEASURED |
+| 15 | Test attribution | 194 by call site | – | 238 by verbatim topic (folder 9) | both kept (different methods) |
+| 16 | Slips | none found | "6.18 days" | mine: "tests only" and "every neighbour stale" (now 296/302 with a date), both corrected before writing | noted |
+
+**Knowledge.** The memory layer has five parts:
+- the Hoard: files plus Chroma;
+- Rodin: the KNN math, the query vector and `route_retrieval`;
+- Metatron: SQLite plus triggers;
+- Alexandria: Loop 2;
+- token stitching: an in-memory buffer.
+
+Code that the running kernel can reach:
+- `route_retrieval`, via `/cognitive/cycle`;
+- `review_node_integrity`, via `/rodin/query`;
+- Metatron's bootstrap, status and Kintsugi poll;
+- `get_stale_nodes`, via SWDS;
+- `append_chunk`, via `/token/stitch`.
+
+None of the POST routes ran in the logged window.
+
+**Understanding.**
+- **The vocabulary is real code; the runtime goes around it.** MRL two-phase, KNN density, Gate III, Loop 2 learning and the thermodynamic triggers all exist in code. But:
+  - the runtime retrieval skips them and does a plain Chroma top-k;
+  - the gate is fed empty input, so it always HALTs;
+  - the density formula is degenerate;
+  - the triggers guard a table that nothing writes;
+  - the fallbacks report success they did not achieve.
+- **The live paths run on nothing.** SWDS staleness and Metatron status run against an empty cache and a 09-23 seed.
+
+**Wisdom.**
+- **Order for Step 4:**
+  1. Truthfulness first: the Alexandria fallback and the status literals.
+  2. Data hygiene (folders 9-10).
+  3. Wiring: load the shards, pass real candidates, use real embeddings with provenance.
+  4. The gate math: normalise by K, clamp, one clock.
+- **Until then**, a Gate III PASS/HALT, a Metatron ΔE or an Alexandria "COMPLETE" is not evidence of anything.
+
+**Gaps for Step 4.**
+- **ME-G1 Alexandria truthfulness.** The fallback invents "ground truth" and returns COMPLETE with a node that was never stored. Daily Planet failures are swallowed, and `dispatch_scout` returns a literal. Fix: return FAILED / UNAVAILABLE, and never claim learning without a stored artifact.
+- **ME-G2 Gate III math.** The code does not match the docstring, there is no clamp, and unknown labels cap the score at 0.5. Implement the documented (1/K)·Σ I(success)·kernel or fix the doc, and clamp to [0, 1].
+- **ME-G3 Two clocks for staleness.** Rodin uses `time.time()`; the Hoard uses `celestial_time()`, and `created_at` is skewed. Any boot after 2026-10-13 20:59:42 CDT makes every new node instantly stale (latent). Fix: one clock plus a true `written_at` (KM-G6).
+- **ME-G4 `route_retrieval`.** It skips MRL, M_knn and Gate III and returns no relevance (see KM-G1). Either run `review_node_integrity` on the Chroma results, or stop calling them "MRL_COSINE_KNN".
+- **ME-G5 `/rodin/query`.** It uses a mock query vector and empty candidates, so it always ends in Alexandria → Daily Planet: a network call and a Hoard write, run synchronously inside an async handler. Fix: a real vector and real candidates, run off the loop, and no writes on a read path.
+- **ME-G6 `record_loop` and the triggers.**
+  - FK failures are labelled catastrophic, and `OperationalError` escapes.
+  - Rounding stores 5e-5 as 0.0001 and 4e-5 as 0.
+  - `pct` blows up when the input is 0.
+  - An aborted insert leaves the shared connection mid-transaction.
+  - The trigger boundary depends on float representation, and the trigger comments are false.
+  - Fix together with LD-G5.
+- **ME-G7 Hoard consistency.**
+  - Receipts say COMMITTED even when the write failed.
+  - Same-second CCIDs overwrite each other (LD-G4).
+  - `mark_outcome` skips Chroma and returns True on a disk failure.
+  - `is_stale` lives in memory only.
+  - The ccid is used unsanitised as a file name.
+  - The schema label says "2.0" in one place and "2.1" in another.
+- **ME-G8 Default paths point at the live tree.** This covers the `TheHoard` root and the module-relative Metatron path, so tests and scripts write live data (KM-G3).
+- **ME-G9 Token stitching.** Literal status flags, the digit leak, and an unbounded global buffer that nothing reads. The documented overlap and checksums do not exist.
+- **ME-G10 Dead or latent code.**
+  - `auto_crystallize`, `route_retrieval_sweep`, `SeasonalPatternMatcher`, `dispatch_scout`.
+  - `dispatch_protocol`'s TypeError and AttributeErrors.
+  - The `verify_syntax*.py` ImportError.
+  - The MCP declaration with no implementation (LD-G10).
+- **ME-G11 Concurrency.** The shared Hoard cache is touched from the event loop, the threadpool and the SWDS worker thread without locks. Several `TheHoard` instances (Daily Planet has its own) open the same Chroma path.
+
+**Contradictions queued for Step 3.**
+- **Blueprint (MAB):**
+  - L627 and L860 (FP-31): "always ANALYST" is FALSE. Every call HALTs into Alexandria → Daily Planet, which does dispatch: a network call and a write.
+  - L625: the embed default is at `api_clients.py:702`.
+  - L635: the trigger spans are `:89-99` and `:119-142`.
+  - L378: bootstrap idempotence is only PARTLY true; each boot mints a new unseeded session id.
+  - L645: only `execute_loop_2_learning` calls Daily Planet.
+  - L650: the token-stitching overlap, checksums and interception do not exist.
+  - L342 and L1662: Heimdall's "the_hoard HEALTHY" only means the directory exists.
+  - L385 and L403-406: the counts are outdated.
+- **OCT9:**
+  - L699 and L1427: the `:680` cite should be `:702`.
+  - Block 6 wiring is FALSE: L5001-5007, L5014-5022, L5048, L5065-5066, L5103. L7062 "Block 6 COMPLETE" is FALSE.
+  - L5030 `retrieve()` and L5368 "O(1)" are FALSE.
+  - L3575 and L3715 "already committed" are FALSE.
+  - L3469 "dual stamping" is FALSE.
+  - L6076, L6544, L6146 and L6614 "space-derived stamps" are FALSE.
+  - L6291-6292 and L6759-6760 "Keplerian index" are FALSE.
+  - L4687, L4690 and L4691 (file sizes, guided search) are FALSE.
+  - L5255 and L5430-5433 (token-stitching features) are FALSE.
+  - L4932, L4953 and L6854: RodinClient on Gemini 2.0 Flash is FALSE now.
+
+**Guard slips this folder.** None new. Two of my own statements were corrected before writing (rows #4 and #16).
