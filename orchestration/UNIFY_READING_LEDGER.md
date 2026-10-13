@@ -428,3 +428,148 @@ For the 10/11 stall, the cheapest next test is the Step 4 debug route plus per-t
 - §4.5 joints analysis.
 - FP list: "Semantic Paradox … Engine", "Holographic Isomorphism Engine", "20-45 Hz" (constant), "TRUE SOVEREIGN IMPLEMENTATION", "alerts_active", bank "solvency_verified".
 - The 10/11 stall section gains the shared-SQLite-connection lead.
+
+## Folder 6: temporal
+
+Read 2026-10-12 night (session c88f5000). Stamp before the folder: 2026-10-12 22:07:03 CDT | 2026-10-13T03:07:03Z | rot 195.5959°, lunar 0.6683, orbit 0.2183, ROT_180_ORB_20.
+
+**Guards at the folder start (MEASURED).**
+- Controlled Folder Access is still off: `EnableControlledFolderAccess` = 0. Defender logged four 5007 events at 16:58:09; they were feature-control and configuration-hash updates, not CFA.
+- The kernel answered `/clock` in 32 ms. The scheduled task reads Ready / 0xC000013A (unsupervised, as in F1 of `docs/KERNEL_AUTOLAUNCH_REVIEW.md`).
+- A Chrome tab (PID 33400) holds connections to :8000. The last 400 log lines show the 7-endpoint dashboard pattern (F13).
+- **SWDS confirmed a fourth time.** `runtime/swds_state.json` was written at **18:08:19** with state `SLOW_WAVE_DEEP_SLEEP`, sleep started at frozen-clock 02:00:54 (log L48303), matching the 18:07-18:09 prediction. The wake is due at about 23:07 (DERIVED).
+
+| path | lines | sha256-16 | last line read | proof | 12th Step notes | doc claims it touches |
+|:--|--:|:--|--:|:--|:--|:--|
+| `temporal/__init__.py` | 0 | `e3b0c44298fc1c14` | 0 | 0 bytes (SHA-256 of the empty string). | Package marker. | none |
+| `temporal/celestial_clock.py` | 505 | `4199779cf1f2d740` | 505 | `BASE_EPOCH = 1785052800.0` (L45) decodes to **2026-07-26T08:00:00Z**, not the "2026-07-15T12:00:00Z — Cosmic Birthdate" written beside it (L15, L45; that instant is 1784116800). With that epoch, the live `/clock` values at 22:13:05 CDT (rot 197.1043, lunar 0.6684, orbit 0.2183) reproduce exactly from `time.time()` (MEASURED, standard-library recomputation). | **Structure:** constants L43-53; three dataclasses L58-84; `HybridLogicalClock` L89-140; `EllipticalKeplerEngine` L145-199; `CelestialClockArchitecture` L204-326; `SpacetimeIndexer` L331-364; `DigitalNumericalClock` L369-404; `DualTemporalEngine` L409-477; `__main__` L482-505. **Time source:** every value is a function of the OS clock (`time.time()` L103, 109, 118, 231, 260, 296, 385, 390, 400; `datetime.now` L388). The OS clock reports source "Local CMOS Clock" (`w32tm /query /status`, non-elevated). **Not astronomical** (DERIVED, 22:13:05 CDT): rot 197.10° vs the real Earth Rotation Angle at Baker 338.46° (IERS 2010 eq. 5.15); lunar 0.668 vs a mean lunar phase of 0.059 (Meeus reference new moon 2000-01-06 18:14 UTC); orbit 0.218 vs the Sun's mean anomaly 0.773 (Meeus ch. 25). Each value is a phase counted from BASE_EPOCH. *rot* is a 24-hour dial, (UTC seconds of day ÷ 240 − 211.1673) mod 360, with 0° at 14:04:40 UTC; with the labelled 12:00Z epoch it would equal Baker's local mean solar hour angle exactly, and the coded 08:00Z epoch puts it 60° ahead (DERIVED; agent A's observation, verified by my arithmetic). *lunar* is days since 07-26 mod 29.53. *orbit* is the eccentric anomaly (E/2π) of days since 07-26, as if that were perihelion. `anchor_lat` (L217) and `SACRED_YEAR_SEC` (L51) are never used; the branch at L239-240 is dead (Python's `%` is never negative here). **Math:** Newton-Raphson Kepler is correct (reproduced to 4 d.p.; agent A: 1.8e-15 against bisection, and the Kepler step moves the output by at most e/2π = 0.00266). The true anomaly is computed (L181-188) and discarded (L198, L246). The sidereal year is used where the anomalistic year applies (L46, L160). **Constants:** `spiral_depth` 1.0 and `completed_orbits` 0 forever, because `apply_zenkai_recalibration` (L281-300) has no caller. Literals: `sync_isolation_verified` / `is_active` / `all_systems_true` (L442-444, L471), "SOVEREIGN_GROUNDED" (L325), `loop_closure_verified: True` (L362); `is_active` / `verify_true` (L421-428). **HLC (L89-140):** a 4-slot vector clock plus a max physical time; not Kulkarni's HLC (no logical counter, never reset). Its "strictly greater" test (L121-124) returns True for a concurrent message and False only for a replay, so a "causal fracture" means "no new information". The merge (L126-128) runs before the check (L130), so a "rejected" message still changes the clock, and there is no drift bound on `msg_utc` (L118). `receive_event` has no caller on any kernel path (log: 0 "CAUSAL FRACTURE"). **GET side effects:** `get_full_telemetry` calls `hlc.send_event()` (L456) and the route calls it again (`main.py:283`), so each `/clock/full` adds 2 (MEASURED 1225→1226, 1227→1228). **Hash:** `cosmic_checkpoint_hash` (L468) recomputes the coordinates at a later instant than `c_vec` (L453); it matched the returned coordinates on 1 of my 2 live calls (agent A's one call matched). **Fragility:** a missing tz database silently falls back to UTC while still labelled America/Chicago (L378-384); `print` on fracture (L133); shared vector mutated from threadpool routes without a lock (L108, L126-128). `uptime` counts from this object's construction at import (L385; `main.py:181`): the "uptime origin" (13:07:08 on 10/12) used for the SWDS predictions. **Wiring:** `main.py:17, 180-181`; routes `/` (`main.py:250`), `/clock` (`:273`), `/clock/full` (`:281-301`), `/clock/sync` (`:309-327`). The `clock` object built at `main.py:180` is never asked for a value at runtime: Heimdall checks `hasattr` only, Cheshire answers CLOCK_INTERFACE_UNRECOGNIZED, Phoenix ignores it (agent A; Cheshire also found in folder 5). Also imported by `runtime/antigravity_runner.py:22`, `runtime/swds_simulator.py:170` (fails: no `get_celestial_coordinates`, folder 1), `fortress/hunter_engine.py:814-818`, `tools/daily_planet.py:36`, four scripts and two tests; `sensory/cheshire_protocol.py:354` calls a clock object passed to it, duck-typed. The same epoch is hard-coded in the browser clocks `static/dashboard.html:797` and `static/celestial_clock_live.html:274`, and in `config/celestial_seed.json` (folder 7). **Ran:** log 7,965 × `/clock/full`, 85 × `/clock`, 13 × `/`, 0 × `/clock/sync`. | §5.7.1 (epoch; "Live: correct and consistent" is true only against its own formulas); §3.5 Pattern D; ADR-001. Docstring L21-24 and L209-214 "NO dependency on NTP … exclusively from orbital mechanics": **FALSE** (only input is the OS clock). L12 "verified identical across Python, Rust, JavaScript": the JavaScript clocks share the number (`static/dashboard.html:797`, `static/celestial_clock_live.html:274`, `CODE/dual_clock_widget.html:156`), but **no Rust copy exists** (no `.rs` match). The wrong decode "(2026-07-15T12:00:00Z)" is repeated in `1_2T:L3458, L3463`, `1_3:L54, L59`, this file (L15, L45, L485) and the live-clock comments (`static/celestial_clock_live.html:274`; root `celestial_clock_live.html:207`). |
+| `temporal/celestial_sentinel.py` | 15 | `47da38820059df70` | 15 | `verify_sentinel` returns five literals, including `"waking_consciousness": 1.0` (L9-15); there is no computation anywhere in the file. | CONSTANT stub (423 bytes). Commit `209f4ba` (2026-09-24 04:03) cut it from 132 lines to these 15 (−122/+5; MEASURED with `git show`). Imported only by `tests/test_systems_audit_and_protocols.py:287-289`, since commit `64abfdc` (2026-09-21; `git log -S`). No kernel import and no bytecode. `sensory/cheshire_protocol.py:44` says it absorbed the sentinel's role. | §5.7.3 says "referenced only by a scratch file": **wrong**. A test imports it, and no scratch file does (MEASURED: grep and `git log -S`). The Architect's "UNNECESSARY REMOVE" (`1_2T:L4724`). "4-hour heartbeat daemon" (`1_2T:L4724, L6950`) and `SYSTEMS_MAP.md:14` "LIVE": FALSE (agent A). |
+| `temporal/crypto_validator.py` | 404 | `d11915b606f682b3` | 404 | With no `session_key` and no `INTEGRA_SESSION_KEY`, the HMAC key falls back to a literal in the source (L63-67). The kernel builds its hunter with no key (`fortress/evolved_hunter_bridge.py:185-188`). None of the 11 env files that `config/env_loader.py:70-82` loads names the variable (PowerShell boolean check at 22:3x, positive controls passed), and it is defined at neither user nor machine level. *My first check, with ripgrep, skipped the git-ignored `.env` files and proved nothing.* So the kernel's tickets would be "signed" with a key that is published in the public repo (DERIVED). | **Real primitives:** SHA-256 over `json.dumps(sort_keys=True, default=str)` (L84-87); chain = SHA-256("state‖prev") (L104-105); HMAC-SHA256 (L112-116); constant-time comparisons (`hmac.compare_digest`, L170, 184-189, 235-251). **Volatile chain:** in memory only (L70); `get_chain_snapshot` / `load_chain_snapshot` (L394-404) have no caller, so the chain restarts at genesis on every boot. **No tamper detection on disk:** `verify_shard_file` / `verify_shard_directory` (L280-360) parse and hash shards but never compare them with the chain, so the docstring's "if any shard is modified, the chain breaks and Heimdall can detect" (L8-11) does not happen; nothing in Heimdall imports this module. `thermodynamic_valid` = \|ΔE\| < 1e-4 with ΔE always 0.0 from the hunter (L156; `hunter_engine.py:862`). `verify_checkpoint` grows `_verification_log` without bound (L200), against "no side effects" (L20-22). **Verified from agent B's map:** the checkpoint metadata (ccid, index, timestamp, ΔE, `thermodynamic_valid`; L147-157) and the ticket's `signed_at` (`hunter_engine.py:873`) are covered by no hash or HMAC; ticket verification trusts the `prev_chain_hash` the ticket itself carries (`hunter_engine.py:929-932`), with no replay protection; `commit_checkpoint` has no lock and is reached from a threadpool route, so concurrent signings could fork the chain (DERIVED); "Dual-Key" means one unkeyed digest plus one symmetric HMAC (`hunter_engine.py:865-872`); `get_telemetry` treats a missing `thermodynamic_valid` as valid (L378) while `verify_checkpoint` treats it as invalid (L190). **Wiring:** `fortress/hunter_engine.py:32-64` (with an inline duplicate stub, L42-64, carrying the same default literal at L44), `:118`, `:858-878`, `:925-936`; routes `POST /fortress/hunter/ticket` (`main.py:822-846`), `POST /fortress/hunter/verify` (`:853-856`), `GET /fortress/hunter/telemetry` (`:848-851`). **Ran:** 0 ticket or verify requests in the whole log (MEASURED); agent B's `GET /fortress/hunter/telemetry` at 22:22:39 showed the real class loaded, chain length 0, status GENESIS_STANDBY. Tests: `tests/test_fortress_hunter.py:18, 487-499`. | §1 "a signed-ticket chain" among what is "genuinely solid" (L69) and §5.5 (L701): exists and wired, never ran, and the signature proves nothing while the key is the public default. **ADR-011 never mentions this module or its default key** ("crypto_validator" appears nowhere in the blueprint): a gap. L110 "Proves the chain was produced by this session, not forged externally": **FALSE** in the deployed configuration. `1_2T:L4728` "crypto_validator.py (750 B)" is stale (agent B: the 24-line genesis stub of `722a545`). |
+| `temporal/hlc_binary_protocol.py` | 419 | `0e290a708c30ed75` | 419 | `STRUCT_FORMAT = ">HBBd4I4fBBH"` (L66) packs exactly 48 bytes (`struct.calcsize`). The 8-byte "checksum" (L153-156) is an unkeyed SHA-256 prefix, so it detects corruption, not forgery. A live `/clock/full` packet decoded independently: checksum OK, magic 0x494E, flags 0b1111 (MEASURED). | The format matches its own offset table (L17-40). **Flags are inputs**, defaulting to True (L167-170), and both kernel callers pass literal True (`main.py:293-296, 321-324`), so `causal_valid` / `loop_closed` / `dragon_active` / `starfire_locked` assert rather than measure. In the live packet only the UTC time, VEC[0], the three orbital floats, the sacred day and the checksum are computed; NODE_ID is always 0, VEC[1..3] and the fracture count are always 0, and SPIRAL is 1.0. `create_sync_payload` (L289-322) serialises and immediately deserialises its own packet. Nothing transmits or receives a packet, so the receiver-side invariant (L42-51) is implemented nowhere in the kernel. `verify_hlc_binary_protocol` (L325-369) uses fixed inputs and flags passed as True, with literals `protocol_verified` / `checksum_verified` / `is_active` / `all_systems_true` (L362-368); `is_hlc_binary_protocol_true` (L372-374) is therefore always True. `causal_fracture_count & 0xFF` wraps silently (L208); a vector entry outside 0..2³²−1 would raise `struct.error` and give an HTTP 500, because the routes have no try (agent B). **Wiring:** `main.py:18`; `/clock/full` (`:285-299`), `/clock/sync` (`:313-327`). **Ran:** `/clock/full` 7,965 times; `/clock/sync` 0 times in the log, and agent B's probe of it at about 22:20 timed out at 15 s. Tests: `tests/test_systems_audit_and_protocols.py:324-332`. | §5.7.3 "VERIFIED in code": accurate for serialisation; "validity flags are constants" confirmed. "MTCW packets carry HLC vectors" (`1_2T:L5210`) stays CONCEPT-ONLY. |
+| `temporal/token_stitcher.py` | 23 | `b84526b89d45fb81` | 23 | `stitch_packets` returns `abs(prior − incoming) < 1e-4` (L23), so "Verifies delta E = 0 across turn boundaries" (L22) is one float comparison. | **Orphan:** imported by no Python file (MEASURED, grep); `# To-D0.py:2069` already lists it as "EC6 (orphan)". Not to be confused with `memory/token_stitching.py` (`TokenStitchingEngine`, `main.py:34`; folder 11). | none (the MTCW continuity concept) |
+| `temporal/vector_clocks.py` | 69 | `486fc17fccb92df3` | 69 | `verify_causal_invariance` calls `send_event()` and reports `exit_vec[node] > initial_vec[node]` (L49-51), which every send makes true, plus literals `fidge_mattern_active` and `all_systems_true` (L61, L63). | **A second, divergent copy** of `HybridLogicalClock` (compare `celestial_clock.py:89-140`): no length guard (`msg_vector[i]` at L31 raises IndexError on a shorter vector), no fracture counter, no `total_nodes`; `verify_causal_invariance` returns the live internal list (L58; agent A). `receive_event` returns "the message has some newer component" (L29-36): "not stale", not Fidge-Mattern dominance (≥ in every slot and > in one). Imported only by the test (`tests/test_systems_audit_and_protocols.py:304-317`); no kernel import and no bytecode. | §5.7.3 "VERIFIED in code": the verification is a tautology. |
+| `temporal/__pycache__/` (5 files) | n/a | n/a | not read | cpython-313 for `__init__` (09-24 05:00:51), `celestial_clock`, `crypto_validator` and `hlc_binary_protocol` (10-07 13:47:02); cpython-314 `__init__` (09-28 10:18:56). | Derived bytecode. No bytecode for `celestial_sentinel`, `token_stitcher` or `vector_clocks`: nothing that ran in this tree imported them. | none |
+
+**Totals:** 7 source files, 1,435 lines, all read to the last line; 5 bytecode files listed.
+
+### Iteration 3: unify (temporal)
+
+**Agents.**
+- **A** mapped `celestial_clock.py`, `celestial_sentinel.py`, `vector_clocks.py` and `token_stitcher.py` (72 tool calls, about 20 min).
+- **B** mapped `hlc_binary_protocol.py` and `crypto_validator.py` (63 tool calls, about 20 min).
+- Both read their files to the last line, made no writes and sent only GETs (A 3, B 2).
+- Neither opened this ledger. B's first two tree-wide searches did not exclude it, and they returned no lines from it.
+
+**Instrument notes (new, MEASURED).**
+- **Ripgrep-based search skips git-ignored files.** That includes every `*.env` file, so a "no match" from it says nothing about env files. The key-name check above was redone with PowerShell `Select-String -Quiet` against named files, printing booleans only, with two positive controls.
+- **The kernel log's access lines are late and bursty.** uvicorn sends access lines to `sys.stdout` (`.venv/…/uvicorn/config.py:102-106`). Redirected to a file, stdout is block-buffered (Python `sys.stdout` docs; `PYTHONUNBUFFERED` is unset, `start_kernel.ps1:62-63`). The kernel's own `logging` lines go to stderr, which is line-buffered. Consequences:
+  - Access-line counts lag reality. Agent A counted 576 logged `/clock/full` calls against 619 implied by the vector (DERIVED explanation).
+  - Positions of access lines relative to stderr lines are only accurate to about one 8 KB buffer. This also bears on the 10/11 "connection-reset bursts" reading in the blueprint's kernel note.
+  - "The log went quiet" is not evidence of a stall.
+
+**Live events during the folder (MEASURED, client-side timings).**
+- **22:13-22:22: a slow window.**
+  - Mine: `/clock/full` 3.37 s, then 0.47 s.
+  - Agent A: `/clock` 7.0 s at about 22:14:48; a `/clock/full` with no answer in 25 s; a retry in 14.4 s, whose handler timestamp was about 14.5 s after the request was sent, so the wait came *before* the sync handler ran.
+  - Agent B: `/clock/sync` timed out at 15 s at about 22:20.
+  - By 22:22:39 B's GET answered in 0.18 s; at 22:29:53, `/clock` took 8 ms and `/rodin/telemetry` 4 ms.
+- **Cause: not established.** The window overlapped tree-wide scans by both agents and me (I/O-heavy). The kernel runs at below-normal CPU and low I/O priority (F3), and a dashboard tab was polling (F13). The shape (wait before the sync handler starts) matches the 10/11 threadpool-path stall in a milder, self-recovering form.
+- **Guard added for the remaining folders:** avoid unbounded tree-wide scans while measuring kernel latency, and say so whenever a latency figure was taken during one.
+
+| Finding | A | B | Me | Status |
+|:--|:-:|:-:|:-:|:--|
+| Every "celestial" value, and the checkpoint hash, is a pure function of the OS clock; live values reproduce exactly from the returned timestamp | yes | yes (packet inputs) | yes (plus `w32tm` source) | MEASURED |
+| `BASE_EPOCH` 1785052800 = 2026-07-26T08:00Z, not 07-15T12:00Z (936,000 s); the same mis-decode is in `1_3:L54, L59`, `1_2T:L3458, L3463` and the live-clock comments | yes | no | yes | MEASURED |
+| With the labelled epoch, rot would be Baker's local mean solar hour angle; the coded epoch adds +60° | yes | no | no | verified (my arithmetic). Evidence for D-20 |
+| Values are not astronomical: rot 197° vs ERA 338°, lunar 0.668 vs 0.059, orbit 0.218 vs 0.773 | partly (lunar, orbit) | no | yes (all three) | DERIVED (IERS, Meeus formulas) |
+| Kepler solver correct (1.8e-15 vs bisection); output moves at most e/2π = 0.00266; true anomaly discarded and not normalised | yes | no | partly | agent-MEASURED; bound verified |
+| `spiral_depth` 1.0 and `completed_orbits` 0 constant; `anchor_lat`, `SACRED_YEAR_SEC` unused; dead branch L239-240 | yes | partly (spiral) | partly | verified (read) |
+| "HLC" = vector clock + max physical time; counter never reset; no compare function; "strictly greater" = "has a newer component" (concurrent → True, replay → False) | yes | yes (rule-by-rule) | yes | verified against the definitions |
+| A "rejected" message still mutates the clock (merge L126-128 runs before the check L130); no drift bound on `msg_utc` (L118) | no | yes | partly | verified (read) |
+| `receive_event` has no kernel caller; live vector [n, 0, 0, 0]; 0 "CAUSAL FRACTURE" | yes | yes | yes | MEASURED |
+| Each `/clock/full` advances the vector by 2 (L456 + `main.py:283`) | yes | yes | yes (1225→1228 live) | MEASURED |
+| Checkpoint hash can differ from the returned coordinates (several time reads per response) | yes (matched once) | no | yes (1 mismatch in 2) | MEASURED |
+| Log `/clock/full` count lags the vector (576 vs 619) | yes (unexplained) | no | explained (buffered stdout) | DERIVED; instrument note |
+| `main.py:180` `clock` is never asked for a value (Heimdall `hasattr`; Cheshire CLOCK_INTERFACE_UNRECOGNIZED; Phoenix ignores it) | yes | no | partly (Cheshire, folder 5) | agent-read; consistent with folder 5 |
+| `core/celestial_middleware.py:198-219` fetches `/clock/full` but reads none of its keys; labels UTC as "CDT"; its 2 s timeout is shorter than the measured latencies | yes | no | no | agent-read; **verify in folder 8** |
+| `hunter_engine.py:821-822` reads keys that do not exist → always the fixed UTC−5 fallback | yes | no | yes | verified (read) |
+| `swds_simulator.py:172` calls a method that does not exist → 282.85° in every report | yes | no | yes (folder 1) | MEASURED (folder 1) |
+| Sentinel: a constant stub since `209f4ba`; only a test imports it; "only a scratch file", "4-hour heartbeat daemon" and "LIVE" are wrong | yes | no | yes (`git log -S`, `git show`) | MEASURED |
+| `vector_clocks.py`: a divergent duplicate; tautological check; returns the live list | yes | no | partly | verified (read) |
+| `token_stitcher.py` is an orphan; the kernel uses `memory/token_stitching.py` | yes | no | yes | MEASURED (grep) |
+| Wire format 48 + 8 = 56 B, offsets match; flags 0b1111 by literal; NODE 0; VEC[1..3] and fracture count always 0 | yes (live) | yes (field table) | yes (live decode) | MEASURED |
+| The checksum is unkeyed: corruption detection only; silent masking; an out-of-range vector gives HTTP 500 | no | yes | partly | verified (read) |
+| `/clock/sync` has never been seen answering (0 log lines; B's probe timed out) | no | yes | yes (log count) | MEASURED |
+| Crypto primitives are real, with constant-time comparisons | no | yes | yes | MEASURED (read) |
+| **The ticket HMAC key is the public default** in the deployed kernel | no | "UNKNOWN" | yes | MEASURED (booleans, controls passed) → DERIVED |
+| Chain in memory only; snapshot, verify and shard functions have no callers; live chain length 0; 0 ticket or verify POSTs ever | no | yes (live 22:22:39) | yes (log) | MEASURED |
+| Metadata and `signed_at` unsigned; ticket verify trusts the carried prev hash; no replay protection; no lock (fork possible) | no | yes | no | verified (read); fork DERIVED |
+| Escaping exceptions: `compare_digest` TypeError on non-ASCII or None; `verify_shard_file` misses UnicodeDecodeError; non-canonical hashing (`sort_keys` with mixed key types, `default=str` reprs) | no | yes | partly | agent-MEASURED (stdlib behaviour) |
+| ADR-011 never mentions `crypto_validator` or its default key | no | yes | yes (grep) | MEASURED |
+| Doc copies byte-identical (Suite 1_2T ×3, Suite 1_3 ×2, blueprint ×2) | yes | yes | yes (hashes, git blobs) | MEASURED; **already known** (save state L56) |
+| The 22:13-22:22 slow window | yes | yes | yes | MEASURED client-side; cause not established |
+
+**Knowledge.** `temporal/` holds three kinds of code, plus leftovers:
+- **The display clock** (`DualTemporalEngine`). Civil time plus a 4-D "celestial" vector, both pure functions of the OS clock; every live probe stamp comes from here.
+- **Causality machinery** (the vector clock and the 56-byte sync packet). With one node and no receiver, the vector is a counter of `/clock/full` and `/clock/sync` requests. The packet is serialised only to be decoded again in the same call.
+- **Integrity code** (`crypto_validator`). Real SHA-256, HMAC-SHA256 and constant-time comparisons, used only by the Fortress hunter's ticket signing. It has never run, its trust root is a default key published in the public repo, and its chain lives in memory for one boot.
+- **Leftovers:** a constant stub (`celestial_sentinel`, marked for removal by the Architect), an orphan (`token_stitcher`) and a divergent duplicate (`vector_clocks`), kept alive only by tests.
+
+**Understanding.** This folder is where Pattern D ("two clocks") starts, and it shows Pattern A (telemetry without measurement) in its purest form.
+- **The "celestial" vector** is the OS clock re-expressed as three phases from a fixed epoch: a 24-hour dial, days modulo 29.53, and days modulo a year. It does not know where the Earth or the Moon is.
+- **The epoch itself is mis-decoded** in the playbook and in the code comments. With the labelled date, the rotation value would be Baker's local mean solar hour angle exactly. That suggests the date was the design, and the number came from a conversion error (DERIVED; the Architect decides, D-20).
+- **None of this moves SWDS.** The scheduler reads `core/celestial_middleware.celestial_time()` (frozen checkpoint, ADR-001), not this module. It does mean that every stamp's "sovereign, NTP-free celestial time" is a relabelled OS clock with an arbitrary origin.
+- **No test of the flags can fail.** The flags and verifications (`sync_isolation_verified`, the four packet flags, `protocol_verified`, `checksum_verified`, `fidge_mattern_active`, `all_systems_true`) are literals or tautologies.
+
+**Wisdom** (value against cost, Itachi's pruning). The cheapest truthful fixes, in order:
+1. **Decide the epoch** (D-20) and fix either the comment or the number. It is one constant, but it moves every sacred-calendar day, lunar ratio and orbit value, in Python and in both browser clocks.
+2. **Label the vector honestly** as "phase since the Cosmic Birthdate". If astronomy is wanted (D-21), add a few standard-library lines: IERS ERA, a Meeus lunar phase, the solar mean anomaly.
+3. **Make the GET routes side-effect free** (no `send_event` in `/clock/full` and `/clock/sync`), and hash the coordinates actually returned.
+4. **Before ticket signing means anything:**
+   - a key from a protected secret, with no default;
+   - signed metadata;
+   - a lock;
+   - a persisted chain, or one documented as per-boot (ADR-011).
+5. **Retire** the stub, the orphan and the duplicate after updating the tests.
+
+ADR-001 stands unchanged: it already makes `time.time()` the one civil clock, and this module uses it.
+
+**Architect decisions (new, for the Step 3 definitions register):**
+- **D-20.** The Cosmic Birthdate. Is it the number `1785052800` (2026-07-26 08:00:00 UTC = 03:00 CDT) or the date "2026-07-15T12:00:00Z" (`1784116800`)? They differ by 10 days 20 hours.
+  - **For the date:** with it, `earth_rotation_deg` equals Baker's local mean solar hour angle exactly (DERIVED).
+  - **For the number:** every Python and JavaScript copy has used it since 9/2x, and every stamp so far carries it.
+- **D-21.** Should "earth_rotation_deg", "lunar_cycle_ratio" and "orbital_trajectory_pos" be astronomical, or stay symbolic phases of the Birthdate?
+
+**New gaps for Step 4:**
+- **T-G1.** The epoch: comment vs value (after D-20).
+- **T-G2.** Astronomical values or honest labels (after D-21).
+- **T-G3.** GETs that mutate the vector clock (`celestial_clock.py:456`; `main.py:283, 310`).
+- **T-G4.** Compute the coordinates once per response, so the hash matches them (`celestial_clock.py:453, 468`; `main.py:282`).
+- **T-G5.** HMAC key from a secret, no default, refuse to sign without one (`crypto_validator.py:63-67`; `hunter_engine.py:42-44`). ADR-011.
+- **T-G6.** Sign the metadata and `signed_at`; verify the prev hash against the chain; add a lock and persistence (`crypto_validator.py:70, 141-158, 394-404`; `hunter_engine.py:873, 929-932`).
+- **T-G7.** Remove the literal flags and "verified" fields (`celestial_clock.py:325, 362, 442-444, 471`; `hlc_binary_protocol.py:362-368`; `main.py:293-296, 321-324`; `vector_clocks.py:61-63`; `celestial_sentinel.py:9-15`).
+- **T-G8.** One vector-clock class with a length guard and a real dominance test; retire `celestial_sentinel.py`, `token_stitcher.py` and `vector_clocks.py`.
+- **T-G9.** `fortress/hunter_engine.py:806-837`: keys that do not exist and a fixed UTC−5 labelled "CDT" (wrong in winter); a new engine per ticket. Fortress is outside the 14 folders; this is a consumer of the temporal API.
+- **T-G10.** Log the tz-database fallback (`celestial_clock.py:378-384`).
+- **T-G11.** Set `PYTHONUNBUFFERED=1` (`start_kernel.ps1:62-63`) so that access-log timing is usable. Overlaps the review's F9.
+
+**For Step 3** (blueprint and unified document):
+- **§5.7.1:**
+  - the epoch decode and its repetition in the playbook;
+  - the astronomical comparison;
+  - "Live: correct and consistent" becomes "consistent with its own formulas";
+  - the +60° offset;
+  - `spiral_depth` and `completed_orbits` are CONSTANT.
+- **§5.7.3:**
+  - the sentinel: a test imports it since `64abfdc`; a stub since `209f4ba`;
+  - the vector clock never receives and counts GETs; its dominance test is not dominance;
+  - `vector_clocks.py` is a duplicate; `token_stitcher.py` is an orphan.
+- **§1 "genuinely solid … signed-ticket chain", §5.5 and ADR-011:** the public default key; a chain per boot; never ran; unsigned metadata.
+- **The 10/11 kernel note:** the caveat that access-log positions lag (buffered stdout).
+- **FP list:**
+  - "uncoupled from civil NTP time" / "NO dependency on NTP";
+  - "SOVEREIGN_GROUNDED", "loop_closure_verified", "sync_isolation_verified";
+  - the four packet flags;
+  - "protocol_verified" / "checksum_verified", "fidge_mattern_active";
+  - "Proves the chain was produced by this session, not forged externally";
+  - "Celestial Sentinel … LIVE".
