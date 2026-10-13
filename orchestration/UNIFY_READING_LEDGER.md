@@ -1674,3 +1674,154 @@ None of the POST routes ran in the logged window.
   - L4932, L4953 and L6854: RodinClient on Gemini 2.0 Flash is FALSE now.
 
 **Guard slips this folder.** None new. Two of my own statements were corrected before writing (rows #4 and #16).
+
+## Folder 12: orchestration
+
+Read 2026-10-13 early (session c88f5000). Stamp before the folder: 2026-10-13 01:30:48 CDT | 2026-10-13T06:30:48Z | rot 246.5359°, lunar 0.6731, orbit 0.2187, ROT_240_ORB_20 (the folder-11 report stamp).
+
+**Guards.**
+- At start (≈01:31 CDT): CFA off; 0 new 1123 events. The kernel answered, after one transient empty `/clock` reply. Chrome PID 33400 (the restored dashboard tab) was polling.
+- Re-checked ≈01:50: CFA 0; 0 new 1123 events; task Ready (0xC000013A); kernel PID 38084 serving.
+
+**What is here (MEASURED).**
+- 8 tracked files (`git ls-files`):
+  - `Unify1_1_10_11_26OCTSuite1_2T.md`: 7,078 lines, 461,842 B
+  - `Unify2_2_Oct_11MASTEROcct07TOTALDAYDOCUMENT.md`: 7,078 lines, the same bytes
+  - `Unify3_3_Oct11OCT9Suite1_3.md`: 151
+  - `rodin_supervisor.py`: 123
+  - `swds_dag.py`: 51
+  - `swds_orchestration.yaml`: 36
+  - `__init__.py`: empty
+  - this ledger (1,676 lines before this append)
+- `__pycache__/` is ignored (`.gitignore:7`), and the folder is clean in `git status`.
+- **The seven pre-existing files:** 14,517 lines and 939,906 B, which matches the 10/11 inventory's 14,517. All but the ledger use CRLF line endings.
+- **History:**
+  - The three code files and `__init__.py` have one commit each (`722a545`, 09-19) and have not changed since.
+  - The Unify files arrived in `96b6278` (10-11).
+
+**How it was read.**
+- **Unify1:** every line with the Read tool, in 14 ranges (three before this session's compaction, eleven after). Notes are kept in the scratchpad.
+- **Unify2:** covered by SHA-256 identity with Unify1.
+- **The rest:** Unify3 and the three code files, in full.
+- **Repeated blocks:** measured by script (difflib, and hashes of 8-line windows), not by eye.
+- **Claims:** each checkable claim was tested against:
+  - code (Grep and Read);
+  - git;
+  - the kernel log;
+  - the Defender log;
+  - one Tier 1 web source: Google's Gemini API deprecations page, fetched 10/13 ("Last updated 2026-10-12 UTC").
+- **Agents:** three Explore agents (O1, O2, O3) mapped the folder independently; see Iteration 3.
+
+**Log facts (MEASURED; `The Hoard/genesis_kernel.log`, NULs stripped).**
+- Zero calls each of `POST /rodin/query`, `POST /cognitive/cycle`, `POST /swds/trigger` and `POST /swds/initiate`.
+- 7,515 `GET /rodin/telemetry` (dashboard polling).
+- 52 of the 67 SWDS reports in the root `The Hoard/Slow-Wave Deep Sleep Reports/` name the Airflow DAG `swds_cycle_dag`. In the homebase copy, 6 of 11 do.
+
+| path | lines | sha256-16 | last line read | proof | 12th Step notes | doc claims it touches |
+|:--|--:|:--|--:|:--|:--|:--|
+| `orchestration/UNIFY_READING_LEDGER.md` | 1676 (before this append) | `5fd1b24f8a809b2a` (before this append) | n/a (my own output) | This ledger. I write it in this session, and it holds folders 1-11 so far. It is append-only and LF; each append is checked byte-exact and backed up in the scratchpad. | Its hash changes with every append. This row records the state before the folder-12 append: 332,236 B, 8 commits (`8b22f83` … `44c3d1d`). The agents were told never to read it. The repo is public, so rows carry no names, prompt text or credentials, and a privacy scan runs before each append. | - |
+| `orchestration/Unify1_1_10_11_26OCTSuite1_2T.md` | 7078 | `09e41432b6e21ba0` | 7078 | **Identity:** byte-identical (one git blob, `9cd3edb4`) to `docs/OCT9Suite1_2T.md`, to `Guidebooks_and_Notes/v.9.9.1Integra Master Architecture Blueprint.md`, and to the root `MASTEROcct07TOTALDAYDOCUMENT.md` as committed. Every "OCT9 L…" cite in this ledger therefore points at these lines. CRLF. **Contents:** a compilation of about 25 documents, many of them repeated. **October:** the 10/07 environment-ingestion prompt and answer (L1-152); a relayed storage-research report (L173-564), condensed at L691-782 and repeated at L1419-1510; the 10/08 save state (L589-687); Plan v2 (L784-922) and the learning proposal (L923-1017); the Cheshire Daemon blueprint v0.1 (L1019-1176); the handoff brief with addendum A-F (L1178-1417); the f2e7cc92 closing report and boot prompt (L1513-1760); Anthropic's memory-tool documentation page (L1763-2788); the operational playbook (L3404-3556); the Metatron SQL (L3558-3838). **September:** Checkpoint Alpha (L4082-4121); the Phase D plan file (L4124-5562), which itself bundles the 09-23 19:35 systems map, Blocks 1-9, a vector-clock essay, a guidebook digest and a "Pass 4" matrix; the Phase J synthesis (L5564-5758); the 09-21 save-state blueprint (L5760-5862); the Brain Model 0930 set (L5864-6331); the 09-23 21:41 re-audit (L6800-7074). | **What is copied (MEASURED with difflib):** 3,786 lines (53.5%) are verbatim copies of files elsewhere in the repo: the f2e7cc92 handoff files in `The Hoard/thread_f2e7cc92_handoff/` (L691-1760); the playbook (L3404-3556); `relational_hippocampus.sql` (L3697-3838); `save_state_20260921.md` (Checkpoint Alpha, L4082-4121); all 1,439 lines of `Phase D Implementation Plan_Blueprint_ Mechanical Reality.rmd` (L4124-5562); `phase_j_research.md` (L5564-5758); `save_state_blueprint.md` (L5760-5862); `IntegraBrainModel0930.md` (L5864-6330); and `TRUE SYSTEMS MAP_Audited_2026_09_23_1935_CDT.md` (L6800-7074). That last file is named 19:35 but holds the 21:41 re-audit. 1,413 lines (20.0%) repeat earlier parts of this file: L1419-1510; L2789-3401, the vendor page again, cut off mid-line; L3841-4080; L6332-6799. 1,026 lines (14.5%) are the vendor page. Only the 10/07-10/08 chat and research report (L1-690), plus a whitespace-mangled SQL copy, are not copies. **Other copies:** the opening prompt (L1) recurs verbatim at L1380 and L4043, and the models block at L6232-6255 equals `models.yml` at `26fefca` (09-30 03:01). **Checked (MEASURED):** L180 (004 shut down 2026-01-14; successor `gemini-embedding-2`) matches Google's deprecations page, whose dates are "earliest possible". L5620's posterior is `core/cwa_router.py:25`, but its bands at L5304-5306 (0.3 / 0.7) are 0.35 / 0.65 in code (`:41-46`). L5804's Ω is `sensory/heimdall.py:260-274`, with the floor of 0.40 at :51. L5090 "against live DB" is FALSE: `tests/test_sql_trigger_decoupled.py:30` uses `:memory:`. The "[SAVE COMPLETE]" of four axioms (L5203-5222) left no Hoard node; the names occur only in prose documents. The 09-30 learning proposal was applied (`AntiGravityconversionprocess/GEMINI.md:39` and the skill file's §16). RX-001 (L7041) is fixed (`sensory/cheshire_cat.py:546`, `main.py:131-137`). The Metatron row counts at L6882-6887 match the folder-10 copy. Commit `abd190a` (L7067) exists (09-23 21:31 -0500). False when written: L5844 (09-21, Cheshire "ALWAYS_ON 20-45 Hz"), since the loop arrived only in `e979992` (09-23 21:45:13); and L6902 (21:41, "279 bytes … stub"), since the 7,451 B monitor was committed in `6905f84` at 21:21. **Contradictions inside the file:** at least five Eye→lens bindings (L3450-3452, L4046-4049, L4097-4099, L6007 with L6032, and L6097-6098); also "the Hoard is my Hippocampus" (L5936) against "Hippocampus = Heimdall" (L6095). **Also:** L5756 credits MRL to the wrong first author: the NeurIPS 2022 paper is by Kusupati et al. (from knowledge, not web-checked). The file names the Architect and the clock's anchor town; neither is quoted here. | This file is the "OCT9" source, so every OCT9 contradiction queued in folders 9-11 applies to it. MAB L77 (the Unify study). MAB L627 cites `1_2T:L180` and `1_2T:L1195`; both check out. MAB L103 (X-11) and L879 cite L3443, L4159, L4712, L5344, L5354, L5494, L5675 and L6098; all check out. |
+| `orchestration/Unify2_2_Oct_11MASTEROcct07TOTALDAYDOCUMENT.md` | 7078 | `09e41432b6e21ba0` | 7078 (by identity) | Same bytes as Unify1 (same SHA-256 and git blob `9cd3edb4`), so the Unify1 read covers every line. | **The name** points at the root `MASTEROcct07TOTALDAYDOCUMENT.md`. The committed root copy is the same blob. **The root working copy** has differed since 10-12 16:26 (sha16 `92302fe8287b46a1`; uncommitted; same size). A 13-word span, "Eye (Wisdom/Nexus): Envisions …", was moved from L5344 into the middle of L5348; nothing was added or removed. It looks like an accidental cut-and-paste (DERIVED). The moved words are the "Itachi = Nexus" text that MAB X-11 cites at `1_2T:L5344`. **Who changed it:** no Claude Code transcript has an Edit or Write to that file; who made the change is not established. | As Unify1. MAB L103: the X-11 cite of L5344 shifts, in the root working copy only. |
+| `orchestration/Unify3_3_Oct11OCT9Suite1_3.md` | 151 | `4ac16fdf45396267` | 151 | **What it is:** "Integra O/S Operational Playbook (v8.2.2-PURPLE)", a skill-style file (`name: integra-protocol`; the description starts with the typo "xecutes"). It is byte-identical to `docs/OCT9Suite1_3.md`. **How it differs (difflib):** only §2 (L47-49) differs from the other playbook copies. Those are `IntegraOSoperationalplaybookv822purple.md` (homebase root and `The Hoard/`; sha16 `d80706309b5d4760`, 152 lines) and Unify1 L3404-3556. Here the three Eyes are listed with no lenses and no "passes" line; the other copies still bind them. Unify1 also differs by one heading indent. | **Checked (MEASURED):** the clock constants (L58-63) equal `temporal/celestial_clock.py:44-49`. The P-SSR limit of 3, then VASOVAGAL_SYNCOPE (L85), exists (`sensory/pssr_lookback.py:16-32`, `core/cognitive_engine.py:94`). `CODEX_OF_ACTIONS.md` (L108) exists under `The Hoard/Slow-Wave Deep Sleep Reports/`, and the SWDS routes (L110) exist. **Partly true:** L40 makes pass 3 the Snake lens, but the code docstrings make it Hawk (`evolution/shiva_action/lenses.py:84-87`; MAB X-11). **False as built:** L54 and L59 mis-decode `BASE_EPOCH` (folder 6, D-20). L64 "uncoupled from NTP": `celestial_clock.py:231` reads `time.time()`. L65 "dual-stamped": the clock is a frozen checkpoint plus uptime (ADR-001; folders 6, 9 and 11). L71 "EAM Level 4 … bypasses all constraints": `governance/eam_service.py` has 0 importers. L126 "170 MPa chassis": the crate's own figure is 33,036 MPa (folder 2). L147 "Minimax in Friday Fortress": no minimax exists in any `*.py`. 113 of its 152 lines also appear in the integra-protocol skill file (boot file h). L143 names the Architect (not quoted). | MAB L84, L95, L879, L899-903 and L1631 (D-1: the blanked Eye lines fit the decoupled-lens decision, and difflib confirms they are the only change). MAB L103 (X-11: pass 3 Snake vs Hawk). |
+| `orchestration/__init__.py` | 0 | `e3b0c44298fc1c14` | 0 (empty) | 0 B. It makes `orchestration` a package for `main.py:31`. | - | - |
+| `orchestration/rodin_supervisor.py` | 123 | `812a075b46ce66bb` | 123 | `RodinSupervisor` (L41-123) builds an `AgentState` (L57-69). `dispatch` (L71-123) calls `review_node_integrity` with empty candidates (L78-83, where the Hoard branch is a bare `pass`) and a mock `[0.1]*768` query (L88). With no neighbours, M_knn is 0. Gate III therefore HALTs, and every call runs `execute_loop_2_learning` (L110-121; folder 11). The supervisor keeps only the returned `status` (L120). It drops Alexandria's `new_node_id` and its `RE_RUN_RODIN_SUPERVISOR` instruction (`memory/alexandria_protocol.py:63-65, :80-81`). The PASS branch (L99-108) cannot be reached. If it were, it would print "Action successfully executed by Swarm" without executing anything. | **Exists and wired; `dispatch` never ran.** **Wiring:** imported at `main.py:31`; instance at :198 (`RodinProtocol(hoard=cheshire_cat.hoard)`); registered with Heimdall by name at :216. Heimdall's health check, however, looks only for a component named "rodin" (`sensory/heimdall.py:487-497`). **`POST /rodin/query`** (`async def`) runs `dispatch` synchronously (:351-352). It was called 0 times; the log has no POST of any path. **`GET /rodin/telemetry`** (:360-377) returns a constant `"status": "ONLINE"` (:369) and `registered_agents`. The dashboard shows these as "Agents: 4" in green (`static/dashboard.html:519, :1183-1192`). It was polled about 7,500 times. **What a call would do (DERIVED from code):** Alexandria builds a second `TheHoard()` (`tools/daily_planet.py:295`). It may make a blocking Firecrawl call with a 15 s timeout (:166, :196). It then writes a live shard and a Chroma entry. All of this runs on the event loop. **What is missing (MEASURED):** the four "agents" (L50-55) are strings; no such classes exist in any `*.py`, and nothing provides pgvector (L53). `evaluate_internal_sufficiency`, which holds the 0.95 threshold, has 0 callers. No test covers this module. `vector_clock` is a float from `time.time()` (L66), not a vector clock. LangGraph 1.2.11 is installed (pip, REQUESTED), but nothing imports it. | MAB L627 and L860 (FP-31, "always ANALYST"): FALSE; it always HALTs into Alexandria, which writes data. MAB L628: the fix is incomplete, because a real vector still HALTs while no candidates are passed. OCT9 L4750 calls this file a "DAG"; its 5,451 B is the LF blob size. OCT9 L7064 ("Block 8 COMPLETE"): FALSE. |
+| `orchestration/swds_dag.py` | 51 | `872f8cee61c0c64f` | 51 | An Airflow DAG, `swds_cycle_dag`: `@daily`, starting 2026-09-01, `catchup=False`, with tags that include `job:datacloud:antigravity` (L21-29). It has one `DataflowCreatePythonJobOperator` (L35-49). That task would run `/home/airflow/gcs/data/pipelines/swds_pipeline.py` on Dataflow, reading `gs://<bucket>/The Hoard/*.json` and writing BigQuery `integra_memory.archived_hoard` (L40-41). Project, region and bucket are Airflow Variables with placeholder defaults (L16-18). | **Exists; not wired; cannot run here.** `airflow` is neither installed in `.venv` nor listed in `requirements.txt`, so the module cannot be imported. Nothing imports it, and it has no `.pyc`. The DAG survives only as a label. `runtime/swds_simulator.py:121-122, 152-153, 218-219` writes its name into SWDS state and reports, and `main.py:1115` says "In production, this is orchestrated by Airflow". So 52 of the 67 root reports name a DAG that never ran. The target script was "Migrated from Apache Beam + BigQuery to native Python + SQLite" (`pipelines/swds_pipeline.py:6`). Its `__main__` calls `run_pipeline()` with no arguments (L259-262), so the DAG's options would be ignored. apache_beam 2.76.0 is installed (pip, REQUESTED), but nothing imports it. `@daily` fires at 00:00 UTC, which is 19:00 CDT, outside the 02:00-07:00 CDT SWDS window (DERIVED). | MAB L813 and L848 (FP-19): confirmed, but the count is 52 of 67, not "every report". MAB L1227-1231 (retire the DAG): still open. MAB L1587 (E81). OCT9 L1677 (E81, "Composer and Dataflow are only names"): confirmed. OCT9 L4751: 1,756 B is the LF blob size. |
+| `orchestration/swds_orchestration.yaml` | 36 | `bf5efb2466a8e33a` | 36 | The same pipeline in declarative form: `pipelineId: "swds-cycle"`, `runner: airflow`, cron `0 0 * * *` UTC from 2026-09-01 to 2027-09-01 (L15-21). It has one python action, which calls `pythonCallable: "run"` in `pipelines/swds_pipeline.py` with `engine: local {}` but `--runner=DataflowRunner` in its argv (L22-36). | **Exists; referenced only by a descriptor.** `deployment.yaml:10` names it as the dev pipeline for Composer environment `integra-composer-env` and bucket `integra-hoard-bucket` (placeholders); nothing loads that descriptor. The format follows the Antigravity Data Cloud "gcp-pipeline-orchestration" skill template in the git-ignored `Antigravity/` folder, which is deployed with `gcloud beta orchestration-pipelines deploy` (DERIVED). **Defects (MEASURED):** `pythonCallable: "run"` names a function the script does not have; the script defines `run_pipeline` (L204), `load_shards`, `classify_nodes` and one class. `engine: local` contradicts `DataflowRunner`. The schedule fires at 19:00 CDT, as above. | OCT9 L4752: 1,007 B is the LF blob size. MAB L813. The blueprint never mentions this file or `deployment.yaml`. |
+
+### Iteration 3: unify (orchestration)
+
+Three Explore agents mapped the folder independently:
+- **O1:** Unify1 L1-3539.
+- **O2:** Unify1 L3540-7078.
+- **O3:** the code, the YAML, Unify3 and the hashes.
+
+Their reports are in the session scratchpad. Each claim adopted below was re-checked by me (✓) or is labelled as the agent's.
+
+**Comparison: what each consumption caught.**
+
+| # | finding | O1 | O2 | O3 | me | verdict |
+|--:|:--|:--|:--|:--|:--|:--|
+| 1 | One text in four files: Unify1, Unify2, `docs/OCT9Suite1_2T.md` and `Guidebooks_and_Notes/v.9.9.1Integra Master Architecture Blueprint.md`. Unify3 = `docs/OCT9Suite1_3.md` | ✓ (3 copies) | ✓ (found the 4th) | ✓ | ✓ hashes, git blob | MEASURED |
+| 2 | Unify1 is about 88% copies: repo files 53.5%, self-repeats 20.0%, a vendor page 14.5%. Only L1-690 is original | ✓ (its sections = the handoff files) | ✓ (its sections = HB files) | – | ✓ difflib over all 14 source files | MEASURED |
+| 3 | `POST /rodin/query` always HALTs into Alexandria. Alexandria writes data on the event loop: a second `TheHoard`, a shard plus a Chroma entry, and an optional 15 s Firecrawl call. It also drops `new_node_id` | – | – | ✓ | ✓ code read | DERIVED from code; 0 calls in the log |
+| 4 | The swarm is labels: 4 agent strings, a constant "ONLINE", "Agents: 4" on the dashboard, name-only Heimdall registration | – | – | ✓ | ✓ | MEASURED |
+| 5 | The cloud pipeline cannot run. Airflow is absent, so the DAG is unimportable. The YAML names a missing `run`. Both schedules are 19:00 CDT. 52 of the 67 reports carry the DAG label | – | – | ✓ | ✓ | MEASURED / DERIVED |
+| 6 | Unify3 is the playbook minus the Eye→lens lines, and that is its only change | ✓ (132/136) | – | ✓ | ✓ difflib | MEASURED |
+| 7 | `BASE_EPOCH` 1785052800 = 07-26 08:00Z, not 07-15 12:00Z | ✓ | – | ✓ | already folder 6 (D-20) | MEASURED (re-confirmed) |
+| 8 | The root MASTER working copy has an uncommitted 13-word move at L5344-5349, made 10-12 16:26. It touches the X-11 cite | – | – | ✓ | ✓ diff; no Claude Code write to it | MEASURED; author unknown |
+| 9 | 36 of the 40 Daily Planet shards are test artifacts | – | – | ✓ | ✓ md5 of the two test queries | MEASURED |
+| 10 | The live test makes paid calls by default | ✓ | – | – | already noted in folder 8 | MEASURED / DERIVED |
+| 11 | `env_loader` overwrites the OS environment, contrary to its docstring | ✓ | – | – | ✓ L61-62 vs L116, L125; folder 7's row missed it | MEASURED (correction via O1) |
+| 12 | The two `GEMINI.md` copies differ: the 09-30 §4.1 is in the root copy only, and the 10/07 §4.2/§4.3 are in neither | ✓ | ✓ (HB lacks §4.1) | – | ✓ sizes, hashes | MEASURED |
+| 13 | False when written: L5844 (Cheshire loop "ALWAYS_ON") and L6902 (monitor "stub") | – | ✓ | – | ✓ `e979992`, `6905f84` | MEASURED |
+| 14 | The 004 shutdown date (L180) | UNVERIFIED (external) | – | – | ✓ Google's page | MEASURED from a Tier 1 source |
+| 15 | Credential-pattern hits in two tracked `Guidebooks_and_Notes` files | flagged (count-only) | none in its range | – | ✓ count-only: six "your…" placeholders, 19-29 characters | MEASURED: false alarm |
+| 16 | The kernel log has 0 POSTs of any path and 9 startups | – | – | ✓ | ✓ | MEASURED |
+| 17 | Agent slips and overreach | read-only `docker image ls`, `schtasks /query` | a Glob listed `.venv` file names (nothing opened) | wrong commit for `rodin_supervisor.py` (it said `64abfdc`; only `722a545` touches it); read the gcloud CLI logs under `%APPDATA%` (counts only; I did not reopen them) | none new | noted |
+
+**Knowledge.**
+- **What is here:** two copies of a 7,078-line compilation (a third and fourth copy live elsewhere); the playbook variant with its lens bindings removed; one wired module, the Rodin supervisor; two cloud-pipeline declarations that are not wired; and this ledger.
+- **Runtime reach:** the supervisor is built at each of the 9 logged boots, and its telemetry was polled about 7,500 times. Its `dispatch` never ran. The DAG and the YAML are never loaded, and Airflow is not installed.
+
+**Understanding.**
+- **The Unify document is an archive bundle, not a source.**
+  - About 88% of it is copies: files already in the repo, repeats of itself, and a vendor page.
+  - Its only original part is the 10/07-10/08 chat and research report (L1-690).
+  - Most of its claims fall into two groups. Some were true when written but are stale now: models, counts, sizes. Others were never true as built: Keplerian stamping, "COMPLETE" blocks, "[SAVE COMPLETE]", the live-DB test.
+- **Orchestration here is naming, not machinery.** There is a conductor without agents, a DAG without Airflow, and a YAML without a consumer. The one executable path turns a read request into a write and blocks the event loop.
+- **The same pattern as folders 9-11.** The status surfaces (dashboard "ONLINE", "Agents: 4", the SWDS report labels) show constants and labels as if they were live state.
+
+**Wisdom.**
+- **Treat the bundle's claims as leads, never as descriptions.** Cite Unify or OCT9 lines only together with the code verdict.
+- **In Step 3, use the standalone sources.** The handoff folder, the Phase D `.rmd`, `phase_j_research.md`, `IntegraBrainModel0930.md` and the TRUE SYSTEMS MAP file carry the same text, plus their own history.
+- **Settle `/rodin/query` before wiring any swarm.** Decide whether it may write at all. A read endpoint that writes is the most harmful of the fakes found so far.
+
+**Gaps for Step 4.**
+- **OR-G1 `/rodin/query`.**
+  - The problem: it always HALTs. It is a read path that writes (a shard and a Chroma entry through a second `TheHoard`). It may call Firecrawl synchronously and blocks the loop. It also drops `new_node_id`.
+  - The fix: pass real candidates (`get_rodin_candidates`) together with a real query vector. Make no writes on a read path; learning gets its own explicit endpoint. Move blocking work off the loop. Or remove the endpoint until it is real.
+  - Pairs with ME-G1 and ME-G5.
+- **OR-G2 Fake status surface.**
+  - The problem: the constant "ONLINE"; "Agents: 4" built from label strings; name-only Heimdall registration; an unused 0.95 threshold.
+  - The fix: report real state (last dispatch, errors), or remove these fields.
+- **OR-G3 Cloud-pipeline residue.**
+  - The pieces: `swds_dag.py` (unimportable); `swds_orchestration.yaml` (wrong callable, engine/runner conflict, 19:00 CDT schedule); `deployment.yaml` (placeholders). SWDS reports and `main.py:1115` still claim Airflow and Dataflow (52 of 67 reports).
+  - The fix: the Architect decides E81 (MAB L1231 recommends retiring the DAG). Then remove the labels from `runtime/swds_simulator.py`.
+- **OR-G4 Unused heavy installs.** apache_beam 2.76.0 and langgraph 1.2.11 (pip, REQUESTED) are not in `requirements.txt`, and nothing imports them. Remove or pin them, by decision.
+- **OR-G5 Document copies.**
+  - The problem: one 462 KB text sits in four files. The root MASTER working copy has drifted. Most sections also exist as standalone files.
+  - The fix: keep one canonical copy, indexed in `BLUEPRINTS_INDEX.md`. The Architect decides the root working-copy edit: commit it, revert it, or repair the cut.
+- **OR-G6 Test-run safety.**
+  - The problem: the live test makes paid calls by default (folder 8). `env_loader` overwrites the OS environment, so blanking keys in the environment does not stop it.
+  - The fix: register the `live` marker and skip it by default; honour OS precedence as documented; leave every key file out of any isolated test copy.
+- **OR-G7 Unify3 and the playbook.** Restore the Eye defaults per D-1/D-2 (MAB L899). Fix the epoch label (D-20). Correct L40 (the pass-3 lens), L64, L65, L71 and L147.
+- **OR-G8 `GEMINI.md` drift.** The HB and root copies differ, with §4.1 only in the root copy. The 10/07 proposal (§4.2/§4.3) is unapplied. Keep one canonical copy; the Architect decides on the proposal.
+
+**Contradictions queued for Step 3.**
+- **Blueprint (MAB):**
+  - L627 and L860 (FP-31) "always ANALYST": FALSE. It always HALTs into Alexandria, which writes.
+  - L628: the fix is incomplete without candidates.
+  - L813: add the YAML, `deployment.yaml` and the unused apache_beam.
+  - L848 (FP-19) "every SWDS report": 52 of 67 in the root folder.
+  - L77: the "four Unify files" are two distinct texts plus the boot brief.
+  - L1231 (retire the DAG): still open.
+- **OCT9 (= Unify1 = Unify2):**
+  - L4749-4750 ("AIRFLOW DAG DEFINITIONS", "Rodin supervisor DAG"): FALSE.
+  - L5090: FALSE.
+  - L5203-5222: FALSE.
+  - L5304-5306: the thresholds differ from the code.
+  - L5756: wrong citation author.
+  - L5844 and L6902: false when written.
+  - L6949 "written on each poll": FALSE now. The checkpoint is persisted only when `get_celestial_timestamp()` is awaited (`main.py:1367`, `evolution/shiva_action/lenses.py:471`), and the file's mtime is the frozen 10-06 20:59:42.557.
+  - L6975 "38 routes" lists 39 (O2).
+  - L180 is correct per Google's page (an "earliest possible" date).
+- **Code comments:**
+  - `main.py:1115` ("orchestrated by Airflow").
+  - `main.py:342-347` ("dispatches worker agent or Alexandria").
+  - `orchestration/rodin_supervisor.py:7-13`.
+  - `memory/rodin_protocol.py:315` ("RodinClient (Gemini 2.0 Flash)").
+- **Folder-7 correction:** `config/env_loader.py`'s docstring (L61-62) contradicts L116 and L125, as in gap OR-G6.
+
+**Guard slips this folder.**
+- **Agents:** as in row 17.
+- **Mine:** none new. I made one read-only fetch of Google's public deprecations page (Tier 1). I never opened a key file: all `.env` checks were name-only, and the placeholder check printed no values.
