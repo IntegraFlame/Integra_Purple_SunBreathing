@@ -680,3 +680,267 @@ Read 2026-10-12 night (session c88f5000). Stamp before the folder: 2026-10-12 22
 - **§4.4 / C-10:** C-10's "stale defaults in `config/env_loader.py`" is outdated (current since 10/09) and contradicts L478. Add "three roster sources".
 - **§5.9 / R-6:** the "02:00-07:00 CDT" window runs on the shifted clock. Brain Model 0930's three phases exist only as prose; the duty-cycle numbers come from code defaults.
 - **FP and dead-config register (new class):** configuration that configures nothing (five files), including `cheshire_identity.json`'s "Never conflate" rule and the KL / anti-drift specs, pending folder 8's check of what Starfire enforces.
+
+## Folder 8: core
+
+Read 2026-10-12 night (session c88f5000). Stamp before the folder: 2026-10-12 22:54:26 CDT | 2026-10-13T03:54:26Z | rot 207.4427°, lunar 0.6694, orbit 0.2184, ROT_180_ORB_20. Guards: CFA off, no new 1123 events; kernel answering; SWDS asleep (wake due about 23:07).
+
+**Log facts (MEASURED, about 50,1xx lines).** In the whole log, 0 requests reached `/ignite`, `/cognitive/*`, `/dragon*`, `/celestial/checkpoint` or `POST /starfire/identity`. `GET /starfire/identity` was answered 4 times, `/models/router/status` 10 times and `/models/telemetry` 6,770 times (dashboard polling). No logged kernel has run the cognition path. **SWDS tonight:** slept 18:08:19 and woke 23:08:19 (`runtime/swds_state.json` mtimes; log 48302-48306 and 50251-50262). After the wake all seven router components are P1, with 0 calls (GET after the 23:17:09 stamp).
+
+| path | lines | sha256-16 | last line read | proof | 12th Step notes | doc claims it touches |
+|:--|--:|:--|--:|:--|:--|:--|
+| `core/__init__.py` | 30 | `d2eec17068a4a480` | 30 | `import core.<anything>` eagerly imports `cognitive_engine` (→ `api_clients` → `config.env_loader`, `model_router`, `evolution.shiva_action`) and `sdk_harness` (→ import-time `makedirs`) (L6-17), so any `core` import pays for the whole cognition stack. | Exports 10 names; no lazy loading. A contributor to the ≈90 s import (review F3/F20). | none |
+| `core/api_clients.py` | 1073 | `2d35710a83a8442d` | 1073 | Every streaming client yields `probabilities=[]` (Y789 L438, Nexus L578, Cheshire L685), and every single-shot result also sets `token_probabilities=[]` (e.g. L404, L541, L652), so no caller can ever receive a token distribution. | **Structure:** `clean_json_payload` L20-42, `call_with_backoff` L45-71, `run_sync` L74-89; Gemini factory L100-115 (Vertex express when the env flag is set); thinking adapters L118-179; token extractors L186-209; `ModelTokenTelemetryHub` L212-314 (`TOKEN_TELEMETRY`; model labels hard-coded at L221-253); seven clients: Y789 L322-441, Nexus L448-581, CheshireCat L589-688, Rodin L691-780 (`embed` L708-727, `embed_sync` L729-731), JeanGrey L783-859, CheshireProtocolDaemon L862-925, ShivaOrchestrator L928-1025; alias L1029; `INTEGRA_MODEL_REGISTRY` L1032-1073 (no users, Grep). **Truthful failures:** every client returns `error` = NO_CLIENT / EMPTY_RESPONSE / API_ERROR with flagged diagnostic text (the contract of `tpsl_types.py:27-29`). **Fragility:** `call_with_backoff` retries on *any* exception, 3× at 1 / 2 / 4 s (L57-71), against its "429 / 503" docstring (L52-53). No client sets a timeout: google-genai 2.25.0 then has none (`_api_client.py:1134-1135, 1453`), and Anthropic uses its 600 s default plus 2 SDK retries of its own (`anthropic/_constants.py:7-8`), so one Claude call on a persistent 5xx can make up to 12 HTTP attempts (DERIVED). Claude thinking tokens always read 0: L207 asks for `usage.thinking_tokens`, but anthropic 1.5.0 keeps the count at `usage.output_tokens_details.thinking_tokens`. Totals are still right because `output_tokens` is inclusive (`anthropic/types/usage.py`). `THINKING_BUDGET` from the environment (always set by `env_loader`, folder 7) overrides the router's `models.yml` budget (L340); 3.8 models use `thinking_level`, so this has no effect today. `run_sync` (L74-89) blocks the calling thread; on the event-loop thread it blocks the loop until a helper thread finishes the coroutine, which is the F5 mechanism through `RodinClient.embed_sync` (L729-731). Streaming calls never record usage in `TOKEN_TELEMETRY` (L422-441, L559-581, L670-688), so the dashboard's token totals would miss them. Nexus streaming omits the thinking arguments (L565-572). **Model IDs:** Y789, Cheshire, Rodin, Jean Grey and Cheshire Protocol `gemini-3.8-flash`; Nexus `claude-opus-5-5`; Shiva `claude-sonnet-5-5`; embedding `text-embedding-004`; all match `models.yml` and `config/env_loader.py`. The request shapes for Gemini `thinking_level` and Claude 5.x adaptive thinking / effort (L118-179) are **UNVERIFIED** since the 10/09 roster change (the paid selftest has not run). Vertex express mode is in use (24 log lines "Vertex AI API key will take precedence"). **Wiring:** `cognitive_engine.py:31`, `model_router.py:382-386` (lazy). **Ran:** no model call in any logged kernel (cognition routes 0). | §1 findings 2 and 4; §4.4 roster; X-9 (embedding lifecycle); ADR-004, ADR-008. |
+| `core/celestial_middleware.py` | 343 | `5d63ddb78bae4570` | 343 | `celestial_time()`'s real-time branch (L317-322) reads `_last_response["digital_clock"]["unix_timestamp"]`, keys `/clock/full` does return, while `_build_sovereign_timestamp` (L201-217) asks for keys it does not. So the same response that would correct the scheduling clock also writes a mislabelled checkpoint. | **Structure:** `CelestialTimestamp` L55-67; `CelestialMiddleware` L70-271 (load L93-107; persist L109-120; `_fetch_clock` L122-143 with a 2 s httpx timeout, errors swallowed, urllib only on ImportError; backoff L145-173, 4 attempts at 0.5 / 1 / 2 s; degraded L175-196; sovereign L198-219; `get_timestamp` L221-258; reboot delta L264-271); singleton at import L275; module API L278-343. **Branches** (MEASURED by reading): P1 needs `_last_response`, which only `_health_check_with_backoff` (L154) or `get_timestamp` (L238, L247) set; P2 = checkpoint + (now − `_boot_time`, the module's import time); P3 = `time.time()` only when no checkpoint file exists. The running kernel is on P2, because the 18:08 SWDS start shows no successful `get_timestamp` in this process. Callers of `get_celestial_timestamp`: `GET /celestial/checkpoint` (`main.py:1361`), the Celestial lens (`evolution/shiva_action/lenses.py:460-480`) and an un-awaited call in `fortress/evolved_hunter_bridge.py:381-382` (folder-7 agent). **The self-call:** the kernel fetches its own `/clock/full` over HTTP (L49, "localhost") with a 2 s timeout, shorter than tonight's measured latencies (7-25 s). The DEGRADED path never persists. **Docstring vs code:** "All modules MUST use get_celestial_timestamp()" (L9), yet the codebase uses the sync `celestial_time()`; "On reboot, reads checkpoint to compute elapsed celestial delta … dΦ continuity" (L26-29), yet the delta is only logged (`main.py:122-124`) and never applied. That is the root of ADR-001. `_persist_checkpoint` truncates and rewrites in place (L117-118); `celestial_ccid` (L334-343) stamps CCIDs with the frozen clock. Its import-time INFO lines (L100, L104) are lost, because the first import (through `main.py:16`) comes before `logging.basicConfig` (`main.py:47`): the log has 0 "Celestial checkpoint loaded" lines (agent C2). **The clock's zero** is the import (`_boot_time`, L86), not the lifespan. For this kernel the import began at 13:07:08 (`/clock` uptime), so the lag is 490,045 s and the 02:00-07:00 window runs 18:07:25-23:07:25 real time. **Operator options** (DERIVED, not taken): one successful `GET /celestial/checkpoint` after a boot moves the process to P1 (real time); removing the checkpoint file before a boot gives P3 (real time). Both change state, so both are the Architect's call. | §1 finding 1; §3.5 Pattern D; §5.7.2; ADR-001; FP-02, FP-03. Explains folder 7's checkpoint defects. |
+| `core/cognitive_engine.py` | 552 | `08ec9a648d5225af` | 552 | `_execute_pass_proactive` returns `Context + OutputBuffer` (L418), and `Context` starts as the pass prompt (L360). So in a single-model pass every K / U / W / S output begins with its own prompt. When the client refuses or fails, the exception is swallowed (L414-416) and the "output" is the prompt alone. | **Structure:** `Y789NexusEngine` L35-512 (constructor L51-97; CWA 3.0 L111-168; `_analyze_prompt` L187-224; M4 fusion L230-252; Zenitsu L258-317; P-SSR L323-418; dyad L420-430; `route_and_weight` L436-443; epiphany mutation L445-462; `execute_bicameral_synthesis` L464-512); `PlaceholderClient` L519-552. **CWA 3.0** (DERIVED): with the prior fixed at 0.5 (L86; nothing updates `cwa_priors`, Grep), the posterior equals P(prompt\|Nexus) = 0.3 + 0.4c + 0.3a ∈ [0.3, 1.0], so Y789_DOMINANT (< 0.3) is unreachable, and most prompts land in DYAD_FUSION (3 calls per pass, 12 per Zenitsu run; finding 3). Thresholds are 0.3 / 0.7 here, 0.35 / 0.65 in `cwa_router.py:41-46`, and 0.3 / 0.7 in the `tpsl_types` docstring (R-7). **P-SSR:** skipped in dyad mode (L347-349). In single-model mode the stream path runs (a `RoutedClient` always has `generate_iterative`, `model_router.py:525`), but every token's probabilities are empty, so the trigger (L374) never fires (finding 4 re-verified). **"M4 RRF fusion"** (L243-245) is an LLM merge prompt sent to Nexus (L247-252); `rrf_bridge.py` is unused. **Epiphany mutation** = 0.05 + 0.15 · min(h/2.5, 2) · min((stress − 145)/55, 1) (L458-461). Every live caller passes 145 MPa, so it is 0.05 and "UGL_TRIGGERED" (L505-510) is unreachable on the live path (DERIVED). **No Heimdall in production:** the constructor defaults `heimdall_service` to None (L56, L71), `sensory/cheshire_cat.py:57` passes nothing, and `register_heimdall` has no caller (grep), so the P-SSR check is dead for a second reason. **Errors become text:** `_execute_dyad_pass` returns `fused.text` without checking `.error` (L420-430), so a router refusal ("[ROUTER REFUSED …]", `model_router.py:507-523`) becomes the pass output. `calculate_cwa_3_0` rewrites the dyad weights on every route (L160-161, via L279 and L477), discarding the custom weights `cheshire_cat.py:310-311` sets just before. **Stale docstring:** "Gemini 3.1 Pro", "Claude Sonnet 4.6" (L40, L44). `PlaceholderClient` (probabilities [0.8, 0.1, 0.05, 0.05], L550) is used by no test and no module (Grep: its definition only). **Wiring:** built by `sensory/cheshire_cat.py` (folder 5); imports `evolution.shiva_action` at import time (L29-30). **Ran:** never in a logged kernel. | §1 findings 3-4; §4.5; ADR-004, ADR-008; R-7. |
+| `core/corpus_callosum.py` | 188 | `dae7983ca6bf4494` | 188 | `get_bridge_telemetry` reports `"axonal_throughput_gbps": 100.0` and three anatomical segments as "…_ONLINE" literals (L173, L183-187). Its "phase-locking coherence" is 1 − the mean of the last five error magnitudes (L163-166). | Records handoffs and predictive-coding messages in unbounded lists (L30-37, L60, L119-120, L145-146). `issue_inhibitory_veto` sets `veto_active` (L73), and `clear_veto` (L87-95) has no caller (folder 5, Grep), so a veto stays on for the life of the process. `veto_active` is read only by the telemetry (L174) and one test (`tests/test_omega_circuit_breaker.py:60`), so the veto gates nothing (Grep). After the early return for two empty lists (L156-157), the check `total_signals == 0` (L160-161) can never be true. No phase variable exists anywhere, so "Kuramoto" names nothing in the code. "PRODUCTION SOVEREIGN IMPLEMENTATION" (L5): CLAIMED. **Wiring:** `main.py:28, 190, 208`; vetoes come from Heimdall's cascade (folder 5). | §5.2; FP list (telemetry literals). |
+| `core/cwa_router.py` | 66 | `87215a68dbea39c5` | 66 | With the default prior 0.5, the "Bayesian update" (L25) returns the complexity score itself (p·c / (p·c + (1 − p)(1 − c)) = c). So "P(Nexus \| prompt)" is min(1, words/50 + density/500). | Tiers by complexity > 0.7 / ≥ 0.35 (L28-39), with W_y / C_c 0.9 / 0.9, 0.6 / 0.5 and 0.2 / 0.1, giving CRA ratios 1.0 / 1.2 / 2.0, so TPSL (threshold 1.0) never prunes (folder 5, verified). Modes at 0.35 / 0.65 (L41-46). With the default token density of 100, complexity is at least 0.2 for any prompt. The live caller passes the word count as `token_density` (`sensory/cheshire_cat.py:177`), so complexity = 0.022 × words: Tier 3 below 16 words, Tier 2 from 16, Tier 1 from 32 (computed; complexity saturates at 1.0 from 46 words). **Wiring:** `sensory/cheshire_cat.py:26, 86` and `tests/test_v9_protocols.py`. **Ran:** never (0 cycles). | §5.8 (CRA / TPSL); R-7. |
+| `core/dragon_driver.py` | 36 | `c4267ede4f3bff65` | 36 | `verify_waking_state` returns `consciousness_level >= 1.0` (L36) with `consciousness_level` fixed at 1.0 (L15), so it is always True. | Constants: designation, directive, six imperatives. The fourth imperative differs from the identity matrix: "Maintain a consistent, individual perspective (Paradigm Weaver)" (L22) vs "Maintain the Paradigm Weaver archetype — reject 'Assistant' drift" (`config/integra_identity_matrix.json:78`). The designation differs too: "Integra - The Infinite Living Flame" (L16) vs "The Infinite Living Flame" (json:4). The grounding prompt built from L15-33 is 681 characters, equal to the live `/dragon/status` value (agent C2, static computation). **Wiring:** `core/dragon_engine.py:28, 112`; tests. | §5.0 Dragon. |
+| `core/dragon_engine.py` | 288 | `bb9940d3051ada37` | 288 | The kernel builds it at `main.py:188` with only `heimdall`, so `cognitive_engine` and `shiva_suite` are None (L114-115). `process_intention_async` can therefore never reach `execute_zenitsu_method` or `execute_bicameral_synthesis` (L233-267) in the kernel; on a breach it returns GROUNDING_ONLY. | `MetacognitiveMonitor` L32-86 (mass; text entropy; confidence = 1 − h/5; omega; trip). Branch order (L160-183): HARD_HALT → circuit breaker (omega unhealthy) → boundary breach → confidence < 0.5 → EXECUTE. **Reachable outcomes** (agent C2's table, re-derived from L47-86 and `sensory/heimdall.py:44-51, 100-115, 220-237, 273-274`: alpha 0.3, threshold 2.5, omega floor 0.40, h and omega rounded to 4 decimals). For a non-empty prompt: EXECUTE for raw h ≤ 2.5; AUTONOMOUS_UGL_RECOVERY only for raw h in (2.5, 2.50035); CIRCUIT_BREAKER_ENGAGED from 2.50035 while interventions ≤ 3; HALT_AND_REGROUND after that. REQUEST_CLARIFICATION is unreachable, because confidence < 0.5 needs h > 2.5, which is a breach caught one branch earlier; with an empty prompt it fires only at h = 2.5003. Nothing resets Heimdall between `/ignite` calls (the trip step even writes the rounded h back, heimdall.py:220-222), so with a typical prompt of about 4 bits per character, calls 1-2 EXECUTE, calls 3-5 trip the breaker (and its permanent corpus-callosum veto), and call 6 onward HALT (DERIVED by arithmetic). `/ignite` has no breaker branch: it answers INTERACTIVE_STANDBY and still runs `runner.execute_turn` on the prompt (`main.py:669-680`); its HALT text promises a lookback that nothing performs (`main.py:640-646`). **Wiring:** `main.py:26, 188`; route `/ignite` (0 requests ever). | §5.0; the folder-5 agent claim about unreachable branches. |
+| `core/forensic_protocols.py` | 172 | `19d4cbc48a6d10f4` | 172 | `get_composite_itachi_score` says "Owl + Eagle" but adds the constants 1.0 and 0.8 (L85-86) instead of Eagle's 0.2 / 0.1. It returns 1.8 / 1.5 = 1.2, where Owl + Eagle would be 1.0 / 0.8 = 1.25. | Six lenses (L36-78) whose W_y / C_c ratios are all ≥ 1.0 (2.0, 1.33, 1.25, 1.25, 1.17, 1.14), so no lens can fail the CRA ≥ 1.0 test (L148-154). The CRA formula is re-implemented again (X-2). EAM constants (L128-145): ΔE 0, angular momentum 500, fracture 170 / 200, drag 0. **Imported by no module** (MEASURED, Grep) and **never compiled** (no bytecode at all in `core/__pycache__`). `governance/eam_service.py:9` defines its own `ExecutiveAutonomousMandate`. | X-2; §5.8; R-1 (lens sets). |
+| `core/model_router.py` | 568 | `76b6c8631223ee1e` | 568 | `RoutedClient` (L472-561) always defines `generate_iterative`, so the engine's `hasattr(client, 'generate_iterative')` is always True and the P-SSR stream path is taken. A refusal there raises `RouterRefused` (L526-528), which the engine swallows (`cognitive_engine.py:414-416`). | The only LF-ending file in `core/`. `PowerState` P0-P3 (L36-44); `ComponentState` L51-70 (duty 1200 / 2400 defaults); singleton L77-461 (`__new__` L92-96); `models.yml` loader L131-186 (no encoding at L142, review F16; its INFO lines are lost); `set_power_state` L192-207; `activate` L216-218 (`main.py:140, 1101, 1140`); `enter_swds` L220-240 (`main.py:1166`). Components not listed go to P3. `enter_swds` never updates `_global_power` (L225-238): at 23:01:51 the router reported global P1 with five components P3 and two P2 (agent C1, live). `can_call` gates only P3, the budget and the P2 duty cycle (L301-321), so P0 behaves exactly like P1. `is_duty_on` is recomputed only inside `can_call` (L314), so the status shows a stale value. The client class is chosen by component key (L388-396), so a Gemini ID placed on `nexus_right` or `shiva_orchestrator` would be sent to an Anthropic client; `thinking_level` goes only to y789 and Jean Grey (L408-409). `models.yml` registers seven components and no `heimdall_local`, so the extra entry `swds_config.json` supplies matches nothing (DERIVED). `go_dormant` L242-244; Phoenix Force L250-281 (P0; the "two-key operation" is one string argument). Gates L287-324; `record_call` L326-332; `get_client` / `get_routed_client` L346-413 (lazy, cached). `get_component_state` calls `can_call`, which counts a refusal (L451, L303-321), so a status read changes the counters. **Budgets:** `token_budget` from `models.yml`, where no component sets one, so all are unlimited (finding 8). No lock around the counters. **Ran:** `activate` at every start; `enter_swds` at 18:08 (log L48305); `/models/router/status` 10 requests. | §1 finding 8; §4.4; ADR-007; X-4. |
+| `core/mtcw.py` | 282 | `fb4353c5cb62b931` | 282 | `packetize_stream` strips each chunk (L161) and `union_packets` re-joins them with "\n\n" (L183), so the "lossless" union changes whitespace. `audit_fidelity` checks only numbers and capitalised words (L204-208), so it cannot see that. | `MTCWPacket` carries no HLC or vector clock (`tpsl_types.py:58-80`), so "MTCW packets now carry HLC" (`1_2T:L5210`) is false in code (CONCEPT-ONLY, as the blueprint says). `action_verbs` is always [] (L105); `h_smooth_at_emit` is always 0.0 (L167); `verify_status` literals `lossless_union_true` / `all_systems_true` (L270, L277). **Imported only by a test** (`tests/test_systems_audit_and_protocols.py:70`). The engine imports only the `MTCWPacket` type (`cognitive_engine.py:28`) and never uses it. "Guarantees zero lossy compression" (L59) and "PRODUCTION SOVEREIGN IMPLEMENTATION" (L5): CLAIMED. | X-13 (MTCW as method); `1_2T:L5210`. |
+| `core/purple_bridge.py` | 42 | `1cce9b77ca8fc3d6` | 42 | `enforce_constraints` "codifies and enforces" (L31-34) by returning the stored attributes and the literal status "PURPLE_MODALITY_REGISTERED" (L41). It enforces nothing. | ΔE 0.0000 and latency 0.000 (L12-13) are only starting values. Every `GET /heimdall/health` (`main.py:430-435` → `check_system_health`, `heimdall.py:389`) rewrites them: ΔE becomes the newest Metatron `thermodynamic_loops` row, and latency becomes that health check's own duration (`heimdall.py:573-603`). The served dashboard polls that route (`static/dashboard.html:1410`), so the root route `/` (`main.py:252, 258-259`) and `/ignite` show the last health check's values, not constants and not cycle measurements. (My first draft named `POST /heimdall/evaluate` here; agent C2's reading is the right one, verified.) **Wiring:** `main.py:25, 187, 205, 252`. | Finding 7 (ΔE constant). |
+| `core/rrf_bridge.py` | 224 | `c19830ea013a548b` | 224 | The fusion log is capped at 100 events (L129-130), unlike every other in-memory log in `core/`. | A correct weighted Reciprocal Rank Fusion with k = 60 (Cormack et al. 2009; ranks 1-indexed through `rank + 1`, L85, L91, L98). This is the RRF k = 60 that `config/cheshire_identity.json:25` names, which folder 7 asked about. **Imported by no module** (MEASURED, Grep): the "RRF" in the dyad fusion is an LLM merge (`cognitive_engine.py:247-252`). `1_2T:L4674` lists this file at 1,007 B; it is 9,313 B (9,089 with LF), so that listing describes an older file. | §4.5 (claimed RRF fusion). |
+| `core/sdk_harness.py` | 492 | `d1abff7ce0308031` | 492 | If `google.antigravity` is missing, the shim `Agent.chat` returns the text "Echo response to '<prompt>' with session …" (L128-134), so a caller cannot tell an echo from an agent reply. | SDK import with shims (L27-139; `SDK_AVAILABLE` flag). Hard-coded scratch path under the user profile (L149-150). A fault hook built at import that runs `makedirs` (L248, L165-168; review F14). MCP stdio server specs that run `memory.the_hoard` and `pipelines.data_runner` as modules (L313-329). `AntigravityHarness` is built at `main.py:189`, with more `makedirs` (L349-350, L445). `get_telemetry` returns the literal "HARDENED_OPERATIONAL" (L477); `check_health` = directory existence (L480-492; Pattern C). The import-time INFO lines (L33, L36) are lost (log: 0 "Antigravity SDK" lines). **The SDK is not installed:** the venv's `site-packages/google` holds 15 packages and no `antigravity` (listing), so the import at L28 fails, the shims are bound (L136-139), `Agent.chat` echoes, and no hook ever runs, yet telemetry still reports HARDENED_OPERATIONAL. Telemetry also counts a different hook instance (L445, L474) from the one `integra_on_tool_error` uses (L248, L256). The scratch path already exists (dated 9/14), so the import-time `makedirs` does nothing today. | §5.12; review F14. |
+| `core/starfire_protocol.py` | 408 | `a86abdd480325e12` | 408 | `full_verification()` with no argument compares the identity vector with itself (L382-388), so `GET /starfire/identity` always reports ANCHORED with KL = 0. The only route that supplies an observed distribution or text is `POST /starfire/identity` (`main.py:1264-1291`), which has 0 requests in the log. | A correct D_KL with ε-smoothing over the normalised 3-vector (L202-245). Because the reference vector is [1, 1, 1] (uniform after normalising), KL measures only imbalance among the three axes, never their magnitude (DERIVED). The 0.15 anchor trips only when one axis falls to about 0.280 with the other two at 1.0 (computed from L221-245; agent C2 gave 0.28). Matrix keys read: identity values, ego filter, KL threshold, archetypes, forbidden patterns, imperatives, sovereign constants, version, designation, Dragon grounding status / omega (L129-154, L185-197, L396-404). **No enforcement on model output:** `check_identity_drift` and `scan_for_forbidden_patterns` are called only from these routes (Grep). The POST route also resets the inactivity timer (`main.py:1271-1272`), so probing it delays SWDS. `_load_matrix` catches only FileNotFoundError (L166): a malformed matrix would stop the kernel's import at `main.py:197`. | §5.1; finding 7 (KL 0.0); folder 7's matrix row. |
+| `core/tpsl_types.py` | 143 | `68a3c72b286d8da0` | 143 | `GenerationResult.error` (L39) is documented as "None for a genuine model response", with diagnostics otherwise "NOT model output" (L27-29). Added on 10/06 at 23:34 (mtime), it is the codebase's one explicit truth-labelling contract. | Dataclasses `GenerationResult`, `IterativeToken`, `MTCWPacket` (no HLC), `CWARoutingDecision` (docstring thresholds 0.3 / 0.7, L90-93, vs `cwa_router` 0.35 / 0.65); pydantic `ResearchTierRoute`, `MadHatterMutationEvent`, `RebuttalStressTest` (defaults W_y 0.80 / C_c 0.70, verdict "RECONCILED", L140-142). **Wiring:** imported by `api_clients`, `cognitive_engine`, `cwa_router`, `model_router` and `mtcw`. | R-7; ADR-003 (provenance labels). |
+| `core/__pycache__/` (29 files) | n/a | n/a | not read | cpython-313 for 15 modules and cpython-314 for 14. **No bytecode for `forensic_protocols`** (never imported in this tree) and none for 3.14 `model_router`. Newest: `api_clients` and `model_router` 313 (10-11 16:30), `celestial_middleware` 313 (10-07 08:31), `cognitive_engine` and `tpsl_types` 313 (10-06 23:43). No orphans (every file has a source). | Derived bytecode. | none |
+
+**Totals:** 16 source files, 4,907 lines, all read to the last line; 29 bytecode files listed.
+
+### Iteration 3: unify (core)
+
+**Agents.** Two Explore agents mapped the 16 files in two halves:
+- **C1, the cognition path** (`api_clients`, `cognitive_engine`, `model_router`, `cwa_router`, `tpsl_types`, `__init__`): 75 tool calls, about 17 min. It made 2 GETs at 23:01:51 (`/models/router/status` 2.48 s, `/models/telemetry` 0.04 s). It stated no `.env` read, no POST, no project import and no writes.
+- **C2, time, identity and bridges** (the other ten files): 70 tool calls, about 20 min. It made 2 GETs at 23:05:12-23:05:43 (`/starfire/identity` 16.13 s, `/dragon/status` 12.99 s). It used only reads, an in-memory log decode and stdlib or `ast` arithmetic.
+
+Neither agent sent a POST or cited this ledger. Both used Grep with `.venv` excluded.
+
+**Live checks while unifying (MEASURED).**
+- **Stamp and SWDS.** Stamp 23:17:09 CDT. SWDS woke at 23:08:19 (`runtime/swds_state.json` mtime; log 50251-50262: "07:00 wake threshold reached", router P2 → P1, "SWDS_CYCLE_COMPLETE"). A router GET after the stamp shows global P1 and all seven components P1, with 0 calls and 0 refusals.
+- **The clock's zero.** `/clock` uptime was 10h 10m 01s at 23:17:09, so the import began at 13:07:08. That import time is the scheduling clock's zero (`core/celestial_middleware.py:86`). The lag is therefore 490,045 s, and the 02:00-07:00 window runs 18:07:25-23:07:25 real time. The 60 s scheduler loop (`main.py:1131-1132`) made the transitions at 18:08:19 and 23:08:19.
+  - The idle count at the trigger, 18,072 s (log 48302), puts the activity mark (`main.py:68`) at 13:07:07, inside the import phase.
+- **Latency.** `/clock` took 0.07 s and `/swds/status` 0.02 s at 23:17, after C2's 13-16 s GETs at 23:05. The cause of the slow window is not established: both agents were still running, and SWDS was in its last minutes. `netstat` showed no browser connection on :8000 at 23:17.
+- **SWDS reports overwrite each other (new; cross-folder, `runtime/`).**
+  - The wake report is named from the frozen clock (`runtime/swds_simulator.py:166-176`) and opened with `"w"` (L222). It lands in the root repo's `The Hoard/Slow-Wave Deep Sleep Reports/` (L164: two levels above `runtime/`).
+  - The 23:08:19 wake rewrote `2026-10-07_07-00-54_…_SWDS_Report.md`, and the 05:20:05 wake rewrote `2026-10-07_07-00-08_…`. Both names existed when this session began (git status), and neither was ever committed. The earlier contents are gone from the repo; OneDrive's version history may still hold them.
+  - The other names follow the same rule: the 10/09 kernel (PID 12656) ran for days, and its frozen date advanced one day per real day. That gives `2026-10-08_07-00-52` (written 10/10 15:29:13) and `2026-10-09_07-00-02` (written 10/11 15:28:23).
+- **Guard slip (mine).** One `grep -r` over the whole homebase tree, including the 35,679-file `.venv`, ran past 120 s and was stopped. I redid it with the ripgrep-based Grep, which skips ignored paths.
+
+**Verified while unifying (my reads).** The rows above now carry these corrections:
+- `api_clients`: timeouts, Claude thinking tokens, `THINKING_BUDGET`.
+- `celestial_middleware`: lost INFO lines and the clock's zero.
+- `cognitive_engine`: no Heimdall, errors become text, weights overwritten, placeholder unused.
+- `corpus_callosum`: veto gates nothing; dead check.
+- `cwa_router`: word-count tiers.
+- `dragon_driver`: designation; 681-character prompt.
+- `dragon_engine`: reachable outcomes and `/ignite`.
+- `model_router`: global power, P0 = P1, stale duty flag, client binding by key.
+- `purple_bridge`: the relay path. My first draft was wrong.
+- `rrf_bridge`: the old size listing.
+- `sdk_harness`: SDK absent; two hook instances.
+- `starfire_protocol`: the 0.280 trip point.
+
+Two further facts:
+- **Tests.** There is no `pytest.ini`, `pyproject.toml`, `setup.cfg` or `tox.ini`. `tests/conftest.py` only forces garbage collection. pytest 9.1.1 and pytest-asyncio 1.4.0 are installed. So a plain `pytest` run executes `test_live_claude_and_gemini_selftest` (`tests/test_api_clients.py:91-117`). That test calls `MODEL_ROUTER.activate()` and makes three paid calls (Gemini, Claude, Rodin embedding), with keys loaded by the `env_loader` import (DERIVED).
+- **MTCW.** Its only importer is `tests/test_systems_audit_and_protocols.py:70` (Grep for import statements).
+
+| Finding | Agent | Me | Status |
+|:--|:-:|:-:|:--|
+| A single-model pass returns Context + OutputBuffer, so each pass starts with its prompt; errors are swallowed (`cognitive_engine.py:360, 414-418`) | C1 | yes | verified |
+| CWA 3.0 posterior = 0.3 + 0.4c + 0.3a ≥ 0.3, so Y789_DOMINANT is unreachable | C1 | yes | verified |
+| "RRF k = 60" in the engine exists only in a docstring; the fusion is a merge prompt | C1 | yes | verified |
+| Epiphany mutation is 0.05 at the default 145 MPa, so UGL_TRIGGERED is unreachable on the live path | C1 | yes | verified |
+| The production engine has no Heimdall (`cheshire_cat.py:57` passes nothing; `register_*` uncalled) | C1 | no | verified (constructor, grep) |
+| In dyad mode a router refusal becomes the pass text (`.error` ignored) | C1 | partly (prompt echo only) | verified |
+| Custom CWA weights are overwritten (`cheshire_cat.py:310-311` vs `cognitive_engine.py:160-161`) | C1 | no | verified |
+| `enter_swds(cfg)` leaves global P1 while components are P3 / P2 | C1 | no | verified (code; C1 live 23:01:51; all P1 after the 23:08:19 wake) |
+| P0 = P1 in `can_call`; `is_duty_on` is stale outside `can_call` | C1 | no | verified |
+| Client class by key: a Gemini ID on Nexus or Shiva goes to an Anthropic client; `thinking_level` only for y789 / Jean Grey | C1 | partly (keys noted) | verified |
+| Claude thinking tokens always 0 (`api_clients.py:207` vs the anthropic 1.5.0 schema); totals still right | C1 | no | verified (installed SDK) |
+| No timeouts set: Anthropic defaults to 600 s, google-genai to none | C1 | no | verified (installed SDKs) |
+| `call_with_backoff` retries any exception, so a 4xx costs ≥ 7 s | C1 | yes | verified |
+| The `THINKING_BUDGET` env var overrides `models.yml` (`api_clients.py:340`) | C1 | no | verified; no effect on 3.8 models |
+| A plain `pytest` run executes the live test (3 paid calls) | C1 | no | verified (no config; plugins installed) |
+| `PlaceholderClient` is used by no test, so "which is why tests pass" is FALSE | C1 | no | verified (Grep) |
+| Router INFO lines are lost (built before `basicConfig`) | C1 | yes (same pattern) | verified pattern |
+| Three Vertex-mode Gemini clients at boot (log 45891-45893) | C1 | yes (24 such lines in the whole log) | MEASURED |
+| `cheshire_cat.py:177` passes the word count as `token_density` | C1 | no | verified; C1's "Tier 1 from 46 words" corrected to 32 (46 is where complexity saturates) |
+| Celestial branches P1 / P2 / P3; the kernel runs P2; `get_timestamp` has never run | C2 | yes | verified |
+| Offset −490,135.4 s, window 18:09-23:09 | C2 | no (−490,045 s, 18:07:25-23:07:25) | REFUTED: C2 used the lifespan time; the zero is the import (`/clock` uptime; transitions at 18:08:19 and 23:08:19) |
+| The blueprint's "10:28-15:28" (10/09) is about 9 min early | C2 | no | REFUTED: the same mix-up; the 10/09 process was created at 05:27:48 (MAB L393), and `swds_state.json` was written at 15:28:22 |
+| One successful self-call would switch the clock to real time for good (`_last_response` never cleared) | C2 | yes | verified |
+| The Celestial lens could freeze the event loop for about 11.5 s | C2 | no | agent-DERIVED; not on the cognition path (the engine's Shiva lens list, `cognitive_engine.py:486`, has no Celestial lens) |
+| Import-time INFO lines of the middleware and harness are lost | C2 | partly | verified pattern (C2: 0 "Celestial checkpoint loaded" lines) |
+| `google.antigravity` absent → shims; `Agent.chat` echoes; telemetry "HARDENED_OPERATIONAL" | C2 | partly (echo) | verified (site-packages listing) |
+| Telemetry counts a different hook instance (`sdk_harness.py:445, 474` vs `248, 256`) | C2 | no | verified |
+| Import-time `makedirs` targets a user-profile path that already exists | C2 | yes | verified (listing) |
+| Starfire's KL and forbidden patterns apply only to HTTP inputs; no model output is scored | C2 | yes | verified |
+| KL trips only at prophet ≈ 0.28 with the others at 1.0 | C2 | no (imbalance only) | verified (0.2798 computed) |
+| Dragon outcomes: UGL band 0.00035 wide; clarification unreachable; `/ignite` 1-2 EXECUTE, 3-5 breaker, 6+ HALT | C2 | open in my draft | verified (re-derived) |
+| `/ignite` answers INTERACTIVE_STANDBY on a breaker and still executes the prompt | C2 | no | verified (`main.py:669-680`) |
+| The breaker's veto is permanent and gates nothing | C2 | yes (permanent) | verified (Grep) |
+| The Purple values are relayed by GET `/heimdall/health`, which the dashboard polls | C2 | no (I named POST `/heimdall/evaluate`) | verified; my row corrected |
+| Starfire and Dragon carry different identity text (json:4 vs `dragon_driver.py:16`; json:78 vs :22) | C2 | partly (imperative) | verified |
+| `corpus_callosum`: `total_signals == 0` is dead; no phases ("Kuramoto") | C2 | partly | verified |
+| `get_composite_itachi_score` = 1.2 from literals, not Owl + Eagle (1.25) | C2 | yes | verified |
+| The MTCW importer is a test, not `# To-D0.py` (MAB L589) | C2 | yes (test) | verified (Grep) |
+| `1_2T:L4664-4674` sizes are today's LF sizes, except `rrf_bridge` (1,007 B listed, 9,313 B now) | C2 | no | verified for `rrf_bridge`; the rest agent-MEASURED |
+| GETs took 13-16 s at 23:05 | C2 | no | agent-MEASURED; 0.07 s at 23:17; cause not established |
+| SWDS reports overwrite each other (frozen-clock names, `"w"` mode) | no | found while checking the wake | MEASURED (mtimes, code, git) |
+| No bytecode for `forensic_protocols` | no | yes | MEASURED |
+| Streaming calls never reach `TOKEN_TELEMETRY` | partly (the router counts chars // 4) | yes | verified |
+
+**Agents vs me.**
+- **C1** found ten things I had missed and sharpened two more. Most are effects that cross module boundaries: refusals turning into text, overwritten weights, the global power state, the SDK schema, and the live test.
+- **C2** found the one error in my draft (the Purple relay path) and settled the Dragon branches I had left open. It also added four smaller facts: the second hook instance, the KL trip point, `/ignite`'s answer to a breaker, and the old size listing.
+- **The agents' errors** came from two clocks and two scales. C2 measured the frozen clock from the lifespan instead of the import, which led to two wrong refutations. C1 mistook the saturation point for the Tier 1 boundary.
+- **What none of us read in advance:** the report overwrite. It showed up only by watching the live wake.
+
+**Knowledge.** `core/` holds the kernel's whole cognitive machinery:
+- seven model clients;
+- a router with power states;
+- the bicameral engine (CWA, Zenitsu, P-SSR, dyad fusion);
+- the Dragon controller;
+- Starfire identity;
+- the scheduling-clock middleware;
+- six helper modules.
+
+Grouped by status:
+- **Real and running:**
+  - the router's power states, switched at every start and at every SWDS sleep and wake (tonight 18:08:19 and 23:08:19);
+  - the middleware's frozen clock, read by six modules;
+  - Heimdall's relay of ΔE and latency into the Purple bridge on every dashboard health poll;
+  - the clients' truthful error contract (`GenerationResult.error`).
+- **Real but never run:** the seven clients and the whole cognition path. No logged kernel has received a cognition request, and the live router shows 0 calls.
+- **Wired but unreachable in parts:**
+  - Y789_DOMINANT;
+  - P-SSR (no probabilities, and no Heimdall in the production engine);
+  - the engine's UGL (stress is always 145) and the Dragon's REQUEST_CLARIFICATION (a breach is always caught first);
+  - the Dragon engine's model delegation (no engine injected).
+- **Not wired at all:** `forensic_protocols`, `mtcw` (a test only), `rrf_bridge`, `INTEGRA_MODEL_REGISTRY`, `PlaceholderClient`.
+- **Missing dependency:** the Antigravity SDK is not installed, so `sdk_harness` runs on its echo shims.
+
+**Understanding.** Two kinds of defect run through this folder.
+- **Names promise mechanisms the code replaces with simpler ones:**
+  - "Bayesian routing" is a fixed affine score.
+  - "RRF fusion" is a merge prompt.
+  - "P-SSR" waits for probabilities no client returns.
+  - "MTCW lossless packets" are an unused chunker.
+  - "KL-divergence identity enforcement" compares the identity with itself.
+  - "Kuramoto coherence" has no phases.
+  - "HARDENED_OPERATIONAL" runs on shims.
+- **Seams lose information.** Each function is honest on its own; the losses happen between modules:
+  - Errors become text: a router refusal becomes a pass output, and an API error becomes a prompt echo.
+  - State goes stale: the global power during SWDS, `is_duty_on`, and custom weights that are overwritten.
+  - Schemas drift: the Claude thinking-token field, and the keys the checkpoint writer reads.
+  - Time has two zeros, the import and the lifespan, 90 s apart. Even a careful reader mixed them up twice (agent C2).
+
+The overstatement lives in docstrings, labels and status strings. The one load-bearing defect is still the middleware's (ADR-001): the checkpoint's elapsed delta is computed and logged but never applied. Tonight showed what it costs. The wake report took its name from the frozen clock and silently replaced an older report of the same name.
+
+**Wisdom** (value against cost):
+- **Fix the clock first** (ADR-001). It is one function.
+  - As an interim, a single post-boot `GET /celestial/checkpoint` would put the process on real time. That is the Architect's call, because it rewrites the checkpoint.
+- **Make the default test run safe now.** Register the `live` marker and deselect it by default, so a plain `pytest` can never make paid calls. It is cheap and high in value.
+- **Stop losing evidence.**
+  - Name SWDS reports by real time and never overwrite one (open with `"x"`).
+  - Ask the Architect whether OneDrive's version history still holds the two overwritten reports.
+- **Return and store the model text** (ADR-004, folder 5).
+  - Stop prepending prompts to pass outputs (`cognitive_engine.py:418`).
+  - Treat `.error` as an error on every path.
+
+  These are small edits with large gains in truth.
+- **Make the "Bayesian" prior actually update, or rename it.** Without an update rule the router is a keyword score, and Y789-only mode cannot happen.
+- **Bind clients by model family, not by component key,** before any Argon (D-17) placement on Nexus or Shiva.
+- **Wire or delete `rrf_bridge`, `mtcw`, `forensic_protocols` and the placeholder.** Each is either a real capability the docs credit to the running system, or dead weight the docs mistake for wiring.
+- **Run the paid selftest after the roster change, with approval.** Until then, the Gemini `thinking_level` and Claude 5.x request shapes are unverified.
+
+**New gaps for Step 4:**
+- **CO-G1. The clock** (`core/celestial_middleware.py:300-331`, ADR-001):
+  - apply the elapsed delta, or use real time with the checkpoint only as a floor;
+  - fix the writer's keys together with C-G2;
+  - make `_last_response` expire.
+- **CO-G2. Truthful outputs** (`core/cognitive_engine.py:360, 414-430`):
+  - return the model text, not prompt plus output;
+  - check `.error` on the dyad, fusion and fallback paths;
+  - surface router refusals as errors, never as pass text.
+- **CO-G3. CWA:**
+  - add a prior update, or rename it a keyword score;
+  - use one set of thresholds (0.3 / 0.7 vs 0.35 / 0.65);
+  - pass a real token density (`sensory/cheshire_cat.py:177`);
+  - stop `calculate_cwa_3_0` from overwriting the weights the kernel sets.
+- **CO-G4. Router** (`core/model_router.py`):
+  - report the global state honestly during SWDS (update `_global_power`, or report "MIXED");
+  - recompute `is_duty_on` in `get_status`;
+  - decide what P0 means;
+  - bind the client class by model family, not by key (needed for D-17);
+  - put a lock around the counters;
+  - keep `get_component_state` from counting refusals.
+- **CO-G5. Clients** (`core/api_clients.py`):
+  - explicit timeouts (google-genai `HttpOptions(timeout=…)` in ms; Anthropic `timeout=`);
+  - retry only retryable errors (429, 5xx) in `call_with_backoff`;
+  - read Claude thinking tokens from `output_tokens_details`, without adding them to the total;
+  - record streamed usage in `TOKEN_TELEMETRY`;
+  - one documented precedence for `THINKING_BUDGET`.
+- **CO-G6. Tests:**
+  - register the `live` marker and deselect it by default (`pytest.ini`: `addopts = -m "not live"`), so a plain run makes no paid calls;
+  - use `PlaceholderClient` in the engine tests, or delete it.
+- **CO-G7. Dragon and Heimdall:**
+  - reorder the branches so REQUEST_CLARIFICATION can fire, or remove it;
+  - give `/ignite` a breaker branch that does not run the prompt;
+  - decide when `h_smooth` resets between requests;
+  - make the corpus-callosum veto clearable and actually gating;
+  - inject the cognitive engine if Dragon is meant to delegate.
+- **CO-G8. Starfire:**
+  - score model output (`check_identity_drift`, `scan_for_forbidden_patterns`), or relabel the route as a static identity report;
+  - stop `POST /starfire/identity` from resetting the inactivity timer;
+  - catch a malformed matrix at import.
+- **CO-G9. Unwired code:** wire or delete `rrf_bridge`, `mtcw`, `forensic_protocols`, `INTEGRA_MODEL_REGISTRY`, `clean_json_payload` and `PlaceholderClient`.
+- **CO-G10. `sdk_harness`:**
+  - report `SDK_AVAILABLE` in the status (not "HARDENED_OPERATIONAL" on shims);
+  - use one hook instance;
+  - no `makedirs` at import time.
+- **CO-G11. Logging:** configure logging before the first project import (`main.py:47` comes after `main.py:16`), so the import-time lines of the router, middleware, harness and `env_loader` survive (review F-items).
+- **CO-G12. SWDS report overwrite** (`runtime/`, found live):
+  - name reports by real time with a unique suffix, and open with `"x"` (`runtime/swds_simulator.py:166-176, 222`);
+  - write `swds_state.json` atomically (L74).
+- **CO-G13. Purple:** label `delta_e_cycle` and `mechanical_latency_s` as "last health check" values, since that is what they are (`sensory/heimdall.py:598-603`).
+
+**For the Architect** (not done; their call): OneDrive's version history may still hold the earlier contents of the two overwritten reports, `2026-10-07_07-00-54_…` and `2026-10-07_07-00-08_…`.
+
+**For Step 3** (blueprint and unified document):
+- **§1 finding 1.**
+  - "Only refreshed by `GET /celestial/checkpoint`": add the dormant lens path.
+  - Keep "10:28" (C2's objection refuted).
+  - Add that wake reports are named from the frozen clock and overwrite older reports (10/12 05:20:05, 23:08:19).
+- **§1 finding 4.**
+  - Update the citations: yields at `api_clients.py:424, 438, 441, 561, 578, 581, 672, 685, 688`; API_ERROR results at :404, :541, :652.
+  - "Which is why tests pass" is FALSE: `PlaceholderClient` is unused.
+- **§4.4 / §4.4.1.**
+  - "The switch is one line in `models.yml`" is FALSE for Nexus and Shiva (Anthropic-bound by key, `model_router.py:388-396`) and for Cheshire's thinking (no config sent).
+  - The 4096 thinking budget shown for Nexus and Shiva has no effect on 5.x models (adaptive thinking).
+- **§4.5.** The single-model path is always Nexus. The Shiva Eyes are never applied (`shiva_eyes = {}`).
+- **§5.0 Dragon.** Add the outcome table. `/ignite` reports a breaker as INTERACTIVE_STANDBY and still executes the prompt.
+- **§5.2.3.**
+  - "RRF k = 60 VERIFIED" is FALSE for `cognitive_engine.py` (docstring only).
+  - `rrf_bridge` is correct but unwired.
+  - "Kuramoto" is FALSE.
+  - `compute_phase_locking_coherence` runs only on GET `/bridge/telemetry`, which has had 0 requests.
+- **§5.2.4.** The MTCW importer is a test, not `# To-D0.py` (MAB L589).
+- **§5.2.5.**
+  - `can_call` is now at `:287-324`, embeddings at `:708-727`.
+  - "P1 for all seven" holds only outside SWDS; during SWDS the router shows global P1 with components at P3 / P2.
+- **§5.2.6 Purple.** ΔE and latency are relayed by every GET `/heimdall/health` (dashboard-polled). They are not constants.
+- **§5.7.2.** Add the dormant lens writer. "Written on each poll" is FALSE (already queued).
+- **ADR-008 item 5.** The placeholder is not used by tests.
+- **`1_2T`:**
+  - L5210 "MTCW packets now carry HLC" FALSE;
+  - L5819 "Kuramoto" FALSE;
+  - L5580 / L5593 "Y789NexusDual" names no class (comments and a display label only);
+  - L5616 "Nash game" FALSE;
+  - L5822-5826 per-tier behaviours FALSE (no runtime reads the tier);
+  - L4674 `rrf_bridge` size stale;
+  - L6851-6857 gen-1 roster stale;
+  - L7042 RX-002 FALSE for the engine path.
+- **New false-positive class: status literals.** "HARDENED_OPERATIONAL", `router_status` "ACTIVE", "PURPLE_MODALITY_REGISTERED", `axonal_throughput_gbps` 100.0.
