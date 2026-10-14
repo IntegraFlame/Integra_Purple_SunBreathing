@@ -40,7 +40,9 @@ This file only points. The content lives in the files below; read them rather th
 
 ## Gotchas
 - `The Hoard/genesis_kernel.log` mixes UTF-16 and UTF-8. Read the bytes, strip NULs, and decode as UTF-8.
-- `celestial_time()` restarts from a frozen checkpoint at every boot (ADR-001). SWDS times and artifact dates are skewed, so use file times on disk as the true times.
+- `celestial_time()` restarts from a frozen checkpoint (2026-10-06 20:59:42) at every boot (ADR-001). SWDS times and artifact dates are skewed, so use file times on disk as the true times.
+  - SWDS fires about 5 h 00 m after each kernel start.
+  - After the 2026-10-13 20:57 reboot the kernel started at 20:59, in step with the checkpoint's time of day. So SWDS falls at about 02:00 CDT and wakes about 07:00 (DERIVED). File dates still run 7 days behind.
 - Set `PYTHONIOENCODING=utf-8`; cp1252 crashes on Δ. With `python -I`, that variable is ignored (as is every `PYTHON*` variable), so use `-X utf8` instead.
 - Failed writes into this repo come from Windows Defender **Controlled Folder Access** (CFA), which blocks per program. This is MEASURED from the Defender Operational log, 10/08-10/12: event 1123 = blocked write, 5007 = setting changed.
   - The earlier diagnoses "the sandbox blocked writes" (10/09) and "OneDrive cloud placeholders deny overwrites" (10/11) were both CFA.
@@ -52,13 +54,20 @@ This file only points. The content lives in the files below; read them rather th
     - These are blocked: `python` on PATH (3.14), Git Bash (`cp`, `mkdir`, `cat >>`) and `pwsh`.
     - So run scripts with `C:\Python313\python.exe -X utf8` and write files with the Write/Edit tools.
 - `python` on PATH is `C:\Python314` (3.14). The kernel runs 3.13 from `integra-homebase\.venv`.
-- `Get-NetTCPConnection` is unreliable here: on 10/12 it showed only "Closed" while the kernel was LISTENING. Use `netstat -ano -p TCP` and an HTTP probe.
+- The TCP tables are unreliable here. Judge liveness by an HTTP probe; `netstat -ano` can still give the owning PID.
+  - On 10/12 `Get-NetTCPConnection` showed only "Closed" while the kernel was LISTENING.
+  - After the 2026-10-13 reboot, both it and `netstat` showed the listener 127.0.0.1:8000 as FIN_WAIT_1 while HTTP answered. `netstat` sometimes dropped the row entirely.
 - Every launch leaves the kernel outside its task, sooner or later. Seen 3 times out of 3:
   - the 10/11 logon launch;
   - the 10/12 logon launch;
   - the 10/12 13:06:57 `kernel_ctl.ps1 restart` (task Running at 13:16, Ready / 0xC000013A by 14:52).
   - Each time the wrapper PowerShell exits 0xC000013A and `cmd.exe` and uvicorn are orphaned, so restart-on-failure never covers the kernel.
   - **Leading cause (DERIVED):** Windows Terminal is the default console host, and closing its window or tab kills the wrapper.
-  - **Also:** the task runs at priority 7 (below-normal CPU, low I/O and memory priority), and Task Scheduler history is disabled.
+  - **Also:** the task runs at priority 7 (below-normal CPU, low I/O and memory priority).
+  - **Task Scheduler history has been on since 2026-10-13** (the Architect), so a wrapper exit now leaves a timestamped event. The 20:57:49 logon launch that day is the first recorded one:
+    - events 119, 129, 100 and 200;
+    - the wrapper on a classic `conhost`, and a Windows Terminal `-Embedding` instance 51 s later;
+    - startup took about 9 min;
+    - still supervised at 21:54.
   - See `integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md`.
-- If the kernel stops answering, compare `GET /rodin/telemetry` (an `async def` endpoint) with `GET /clock` (a plain `def` endpoint). On 2026-10-11 the plain-`def` endpoints stalled while the async one and the SWDS scheduler kept running; the cause is unknown. Also check for a browser tab polling it, using `netstat -ano -p TCP` (Chrome restores the `/dashboard` tab after a reboot). A dashboard tab was polling throughout (blueprint v.9.9.1, "Kernel note").
+- If the kernel stops answering, compare `GET /rodin/telemetry` (an `async def` endpoint) with `GET /clock` (a plain `def` endpoint). On 2026-10-11 the plain-`def` endpoints stalled while the async one and the SWDS scheduler kept running; the cause is unknown. Also check for a browser tab polling it. The kernel log's request lines show pollers more reliably than `netstat` does. Chrome restores the `/dashboard` tab after a reboot. A dashboard tab was polling throughout (blueprint v.9.9.1, "Kernel note").

@@ -1,7 +1,7 @@
 # Tasks
 
 ## Active
-- [ ] **Step 2: read the 14 integra-homebase folders, one at a time (gate G2)** - order: runtime, rust, scratch, scripts, sensory, temporal, config, core, kernel_memory, local_dbs, memory, orchestration, The_Hoard, tools; agents + my full read of every line + K→U→W; ledger in integra-homebase/orchestration/UNIFY_READING_LEDGER.md; report after each folder, then continue; stop at G2 (realignment plan §4)
+- [ ] **Step 2: read the 14 integra-homebase folders, one at a time (gate G2)** - order: runtime, rust, scratch, scripts, sensory, temporal, config, core, kernel_memory, local_dbs, memory, orchestration, The_Hoard, tools; agents + my full read of every line + K→U→W; ledger in integra-homebase/orchestration/UNIFY_READING_LEDGER.md; report after each folder, then continue; stop at G2 (realignment plan §4); progress 2026-10-13: folders 1-12 in the ledger (last commit 9f1f26c, 02:11 CDT); folder 13 (The_Hoard, with the local Antigravity archive) at its plan Step 3, the validation gate; folder 14 (tools) next
 - [ ] **Grade the G1 boot quiz** - 10 answers delivered 2026-10-11 02:01 CDT; reproduced in Appendix A of the realignment plan; G1 already passed on your word at 23:02 CDT
 - [ ] **Decide D-18: does Heimdall's 3.1 Pro advisor replace or sit beside the Cheshire Daemon's dACC triage?** - E20, E95, step 1117 (blueprint §11)
 - [ ] **Decide D-19: the Cheshire Daemon "Study" tier model** - blueprint v0.1 named 3.1 Pro; under current rulings, 3.8 Flash high now and Argon later? (blueprint §11)
@@ -17,8 +17,6 @@
 - [ ] **Decide D-6, second half: does lockdown bind the Dragon?** - the model half was decided 2026-10-11; recommendation: the kernel can bind only what passes through it (ADR-007, blueprint §11)
 - [ ] **Define Heimdall's Security Alert levels (D-16, first half)** - what each level stops and who clears it; the CWA/CRA 2.0 half was decided 2026-10-11 (= governance/cra_simplex.py) (blueprint §11)
 - [ ] **Decide where Gemini 4 Argon goes (D-17)** - Kernel/Thalamus or Nexus; recommendation: Nexus; wire only after Google publishes a model ID (blueprint §4.4.1)
-- [ ] **Confirm the genesis-kernel skill shows up in Antigravity 2.0** - start a new conversation; skill now in .agents/skills in the main folder and homebase (session 2026-10-11)
-- [ ] **Allow kernel_ctl status/logs/start in Antigravity** - choose "always allow" on first prompt; keep stop/restart asking (session 2026-10-10)
 - [ ] **Decide D-3: Hippocampus = the Hoard or Heimdall?** - recommendation: the Hoard (blueprint §11)
 - [ ] **Decide D-4: SWDS and Siesta windows in real local time** - your choice (blueprint §11)
 - [ ] **Decide D-5: Cheshire naming** - see R-4 (blueprint §11)
@@ -32,7 +30,7 @@
 - [ ] **Decide D-14: artifacts stamped with the skewed clock** - recommendation: relabel with a correction note, don't rewrite (blueprint §11)
 - [ ] **Phase 0: fix celestial_time()** - kernel clock restarts at 10/06 20:59:42 every boot; add correction note for skewed artifacts (ADR-001, blueprint §10)
 - [ ] **Phase 0: provenance labels and an honest startup summary** - remove decorative constants (ADR-003)
-- [ ] **Phase 0: single instance, timestamped UTF-8 rotating log, task supervision, heartbeats** - (ADR-010); on 2026-10-11 the scheduled task read Ready (0xC000013A) while the kernel ran, so the task does not supervise it
+- [ ] **Phase 0: single instance, timestamped UTF-8 rotating log, task supervision, heartbeats** - (ADR-010); 3 of 3 launches lost supervision (10/11 logon, 10/12 logon, 10/12 13:06 restart: the wrapper exits 0xC000013A and the kernel runs on, orphaned); leading cause (DERIVED) the Windows Terminal console host; Task Scheduler history on since 2026-10-13; see integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md
 - [ ] **Phase 0: quarantine the two fabricated Daily Planet shards** - and remove the synthetic fallback (ADR-013)
 - [ ] **Phase 0: set RODIN_EMBED_MODEL and make embed failures loud** - schedule the gemini-embedding-2 re-embed before 2027-04-01 (ADR-005)
 - [ ] **Phase 0: security quick wins** - CORS allowlist, header auth on POSTs, bind 127.0.0.1 (ADR-011)
@@ -68,6 +66,11 @@
 - [ ] **TT-J1–J4. Conceptual research: Kirk/Spock, chess/Go/game theory, Tetris, systems theory in Shiva/Zenitsu** - TASKTRACKER
 
 ## Done
+- [x] **Re-enable Controlled Folder Access with claude.exe allowed** - you ran it 2026-10-13: allow rule for Claude Code's claude.exe (wildcard path) at 20:09:33, CFA on at 20:09:53 (Defender 5007); the Write/Edit tools, git, cmd and Python313 can write into the repo; pwsh, Git Bash and Python 3.14 cannot
+- [x] **Enable Task Scheduler history** - you did it 2026-10-13 (wevtutil: enabled: true); the 20:57:49 logon launch is the first recorded one
+- [x] **Push both repos** - 2026-10-13: homebase 86f9c89, root a0d1276; later root commits stay local until you say
+- [x] **Confirm the genesis-kernel skill shows up in Antigravity 2.0** - confirmed by you, reported 2026-10-13 (skill in .agents/skills in the main folder and homebase)
+- [x] **Allow kernel_ctl status/logs/start in Antigravity** - done by you, reported 2026-10-13
 - [x] **Step 1b: errata and the G1 reconciliation** - blueprint page v11, memory notes, save state, CLAUDE.md and this file corrected; committed locally, not pushed (2026-10-11 night)
 - [x] **Gate G1 passed** - on your word, 2026-10-11 23:02 CDT (transcript time); quiz grade still pending
 - [x] **Step 1: the §8 boot sequence** - receipts a–i, probes, quiz, E1–E101 to-do (2026-10-11 02:01 CDT, session 997b6cca)
