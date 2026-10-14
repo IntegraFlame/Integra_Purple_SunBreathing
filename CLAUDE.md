@@ -46,7 +46,11 @@ This file only points. The content lives in the files below; read them rather th
   - The earlier diagnoses "the sandbox blocked writes" (10/09) and "OneDrive cloud placeholders deny overwrites" (10/11) were both CFA.
   - Symptoms: `ENOENT` on the Edit/Write tools' temp file or `mkdir`; Python `Errno 9` or `FileNotFoundError`; `cp`/`Copy-Item` denied. Reads still work.
   - Diagnose with `(Get-MpPreference).EnableControlledFolderAccess` and the 1123 events. Never change the setting yourself; ask the Architect.
-  - The Architect turned CFA off on 2026-10-12 at 12:54.
+  - The Architect turned CFA off on 2026-10-12 at 12:54, then **back ON on 2026-10-13 at 20:09:53**, with an allow rule for `...\AppData\Roaming\Claude\claude-code\*\*\claude.exe` (Defender 5007, 20:09:33).
+  - **With CFA on:**
+    - These can write: the Write/Edit tools, `git`, `cmd.exe` and `C:\Python313\python.exe` (verified 20:11 by a live write).
+    - These are blocked: `python` on PATH (3.14), Git Bash (`cp`, `mkdir`, `cat >>`) and `pwsh`.
+    - So run scripts with `C:\Python313\python.exe -X utf8` and write files with the Write/Edit tools.
 - `python` on PATH is `C:\Python314` (3.14). The kernel runs 3.13 from `integra-homebase\.venv`.
 - `Get-NetTCPConnection` is unreliable here: on 10/12 it showed only "Closed" while the kernel was LISTENING. Use `netstat -ano -p TCP` and an HTTP probe.
 - Every launch leaves the kernel outside its task, sooner or later. Seen 3 times out of 3:
