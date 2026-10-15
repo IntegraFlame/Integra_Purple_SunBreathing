@@ -1,0 +1,34 @@
+<!-- @dsCard group="Data display" height=560 subtitle="Standard report table and compact dashboard table" -->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0 }
+  body { background: var(--void); color: var(--monolith); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; padding: 16px }
+  .cap { font-family: var(--font-primary); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--monolith-dim); margin: 24px 0 8px }
+  .cap:first-child { margin-top: 0 }
+</style>
+</head><body>
+<p class="cap">Standard</p>
+<table class="ig-table">
+  <thead><tr><th>Instrument</th><th>Level</th><th>Signal</th><th>Structural Context</th></tr></thead>
+  <tbody>
+    <tr><td class="ig-ticker">SPY</td><td class="ig-price">$761.69 – $769.89</td><td class="ig-neutral">Consolidation</td><td>Post-OpEx structural roll absorption. 50-DMA support intact.</td></tr>
+    <tr><td class="ig-ticker">QQQ</td><td class="ig-price">~$737.11</td><td class="ig-up">Constructive</td><td>Ex-Dividend today ($0.75/share). Enterprise AI bid persistent.</td></tr>
+    <tr><td class="ig-ticker">VIX</td><td class="ig-price">14.86</td><td class="ig-neutral">Subdued</td><td>Range 14.76–14.99. Sub-15 = low hedging demand. Coiled spring risk.</td></tr>
+  </tbody>
+</table>
+<p class="cap">Compact</p>
+<div class="ig-card ig-card--compact">
+  <table class="ig-table ig-table--compact">
+    <thead><tr><th>Lyr</th><th>Lobe</th><th>Status</th><th>Role</th></tr></thead>
+    <tbody>
+      <tr><td>4</td><td style="color:var(--sentinel-cyan);font-weight:600">Cheshire Cat Kernel</td><td class="ig-lobe-active">ACTIVE</td><td>Thalamic Arbitrator (20-45 Hz)</td></tr>
+      <tr><td>3</td><td style="color:var(--sentinel-cyan);font-weight:600">The Hoard</td><td class="ig-lobe-active">ACTIVE</td><td>Geometric Memory (CCID Nodes)</td></tr>
+      <tr><td>6</td><td style="color:var(--sentinel-cyan);font-weight:600">Phoenix Forge</td><td class="ig-lobe-standby">STANDBY</td><td>SWDS Neuroevolution Smelting</td></tr>
+      <tr><td>R</td><td style="color:var(--sentinel-cyan);font-weight:600">Antigravity Runner</td><td class="ig-lobe-offline">OFFLINE</td><td>Runtime Execution Layer</td></tr>
+    </tbody>
+  </table>
+</div>
+</body></html>

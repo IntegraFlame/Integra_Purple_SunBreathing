@@ -1,0 +1,106 @@
+{
+ "ccid": "CCID_1792052895",
+ "type": "SAVE_STATE",
+ "previous_save_state": "CCID_1791929018",
+ "sessions": {
+  "claude_code_2026_10_13_to_15": "cd44ecd4-caaa-446d-9b85-7b6a7d483f0e (this save state; several context compactions)",
+  "previous": "45f57b01-edf0-4da0-b004-9c8b2fdcca9a (CCID_1791929018)",
+  "transcripts_dir": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/"
+ },
+ "celestial_stamp": {
+  "unix_epoch": 1792052895.157,
+  "civil_time_utc": "2026-10-15T08:28:15Z",
+  "civil_cdt": "2026-10-15 03:28:15",
+  "earth_rotation_deg": 275.8959,
+  "lunar_cycle_ratio": 0.7436,
+  "orbital_trajectory_pos": 0.2244,
+  "grid_bucket": "ROT_270_ORB_20",
+  "source": "GET http://127.0.0.1:8000/clock (HTTP 200, 0.218 s) at 03:28:15 CDT; kernel uptime 30h 29m 00s"
+ },
+ "kernel": {
+  "liveness": "HTTP answering on 127.0.0.1:8000; netstat showed only FIN_WAIT_1/TIME_WAIT client rows, no LISTENING row (known TCP-table misreport)",
+  "probes_2026_10_15_03_17": {
+   "/clock": [200, "0.134 s"],
+   "/heimdall/health": [200, "0.136 s", "HEALTHY_OPTIMAL (probed once)"],
+   "/swds/status": [200, "0.059 s", "SLOW_WAVE_DEEP_SLEEP, PHASE_3 (sleep_initiated_at reads 2026-10-08T02:00:21: celestial_time skew, ADR-001)"],
+   "/cheshire/status": [200, "0.012 s", "OPERATIONAL, 30 Hz, 23 components"]
+  },
+  "scheduled_task": {
+   "name": "Integra Genesis Kernel",
+   "state": "Ready",
+   "last_run": "2026-10-13 20:57:49",
+   "last_result": "3221225786 (0xC000013A)",
+   "wrapper_ended": "2026-10-14 18:05:41 (Task Scheduler events 201 and 102; first timestamped loss)",
+   "meaning": "kernel answering but NOT supervised by the task; 4 of 4 launches have ended this way"
+  },
+  "cfa": "EnableControlledFolderAccess = 1 (on since 2026-10-13 20:09:53, claude.exe allowed); 1 Defender 1123 event in the last 12 h: pwsh.exe blocked writing into the archive's cycles_v4 folder at 2026-10-14 15:42:21 (my own attempt; known: pwsh cannot write under CFA)"
+ },
+ "repos_at_stamp": {
+  "root": "homebase-phase-e, even with origin before this save-state commit (last pushed 301110a, 2026-10-15 02:37:01)",
+  "integra_homebase": "phase-e-dragon-rodin-flight, even with origin (last commit 86f9c89, 2026-10-13 17:08)"
+ },
+ "usage_at_stop": {
+  "plan": "Pro",
+  "five_hour_window": "54% used at 03:18 CDT (resets 06:39 CDT)",
+  "weekly_all_models": "59% used (resets 2026-10-19 05:59 CDT)",
+  "cost_per_cycle": "about 1 weekly point and 7-10 points of the 5-hour window (4 readers ~250-290K agent tokens each, plus a synthesizer)"
+ },
+ "work_completed_since_CCID_1791929018": [
+  "2026-10-13 evening: CFA back on with claude.exe allowed (Architect); reboot 20:57; Task Scheduler history on; root commits c32c196 and 97ee7a6; homebase 86f9c89 (Step 0b review).",
+  "Folder 13 Step 3 gate: S6+S7 adjudicated, rules v3 FAILED by one severity-1 fact (a command-output middle); rules v4 built (all command outputs and Antigravity brain-file views read in full, behind a scrub guard; census residue 0, READ 37.6%, extracts 36.6 MB); retest S8+S9+S10 PASSED: 92 severity-1 facts, 0 lost, severity-2 recall 100%. Step 3 done 2026-10-14.",
+  "Folder 13 Step 4 set-up: tools/units.py (179 units <= 250 KB, oldest first; units minus markers equal the extracts byte for byte); long-line sidecars for 21 lines over 30 KB in 18 units; clean_proofs swaps personal-data proof lines.",
+  "Folder 13 Step 4 reading cycles 1-22 of 45 (units U001-U088), 2026-10-14 15:10 to 2026-10-15 03:25 CDT (first brief mtime to last guide write): 88 units read in full by 4 readers per cycle, every proof checked by script (83 OK, 5 ACCEPTED off-by-one or withheld-name proofs, 1 earlier CHECK superseded after a sidecar re-read); a synthesizer per cycle wrote cycle_NN.md and a compounding guide section (guide.md 77,396 B after cycle 22).",
+  "Archive secret hygiene (local): prefix-less keys that passed rules v4's scrub were redacted in place (cred_redact, cred_generic sweep); partial key previews redacted (partial_redact, run after every cycle); every report, cycle file and the guide scanned per cycle (0 credential hits in reports).",
+  "Repo security: the live Firecrawl key was found in a tracked root file pushed since 09-23; working copies redacted; the Architect revoked the key and installed a new one (verified different by hash); service-account key files ignored; commit 301110a pushed. This save state adds ignore rules for the recovery-code files and the Docker WSL disk images.",
+  "Full scan of remote-reachable history (1,658 blobs): 6 blobs with key patterns, all known (old Anthropic key in interconnectingcodefile2.md/.txt, revoked Firecrawl key in Firecrawl.md and the Forensic Worker md); nothing else.",
+  "Architect decisions recorded (memory + TASKS.md): Zenitsu 3.0 becomes an on-demand tool inside the Sun Breathing action, not the default synthesis path; Research Tiers 1/2/3 are missing (Daily Planet, Rogue X 2.0); renames Flame Kernel / Cheshire Cat / Dragon script; roster Y789 Left/Red = claude-opus-5-5, Nexus Right/Blue = gemini-4-argus (fallback gemini-3.8-flash), no Vertex; apply as a small router re-plug, not a redesign; Rodin keeps memory mapping, node delegation, neural-network routing and the working-memory cache.",
+  "10-15 cognitive framework reviewed (Zenitsu method + Shiva action) and consolidated: IntegraCognitiveFramework_REVIEW_10_15_26.md and IntegraCognitiveFramework_ALIGNED_DRAFT_10_15_26.md (root, committed in 301110a)."
+ ],
+ "code_findings_measured_since_CCID_1791929018": [
+  "core/cognitive_engine.py L480: execute_bicameral_synthesis always calls the 4-pass Zenitsu method (the Architect ruled it on-demand).",
+  "orchestration/rodin_supervisor.py L88: /rodin/query uses a fixed [0.1]*768 vector.",
+  "runtime/swds_simulator.py: '3 bridges forged' is len() of 3 random values; the report's dE and L_t are constants (L103-108, L155, L190).",
+  "memory/database/relational_hippocampus.sql: the v3 BEFORE INSERT abort fires before the AFTER INSERT logger, so catastrophic fractures go unlogged (L89-98, L119-124).",
+  "Heimdall open/close are called only by scripts/trigger_swds.py, not by main.py; cra_simplex is imported nowhere.",
+  "core/model_router.py L388-396 client_map is the only place roles meet SDK clients; models.yml, not .env, is the router's model source.",
+  "17 of 18 verify_true/is_active methods return True unconditionally (Phase 0 ADR-003 note in TASKS.md).",
+  "config/env_loader.py reads integra-homebase/*.env with .env last, does not strip inline comments, and skips a file that starts with a lone '{'."
+ ],
+ "work_pending": [
+  "NEXT (first): folder 13 Step 4, cycle 23: write briefs U089-U092 (cycle_tool.py briefs), launch 4 readers, verify, scan, synthesize, spot-check; continue through cycle 45 (U177-U179 is the last, short cycle). Usage check before every cycle.",
+  "Then Step 5 targeted reads (T1-T4, governance chain, and 'Zenitsu 3.0' across the units as input to the Zenitsu design task); Step 6 Hoard mirror; Step 7 folder-13 ledger append (content-free proof rows) and local commit; folder 14 (tools); Step 8 G2 deliverables; STOP at G2.",
+  "Push only on the Architect's word."
+ ],
+ "open_for_the_architect": [
+  "Confirm the old Anthropic key is revoked; decide on history cleanup (filter-repo + force-push, destructive).",
+  "integra-homebase/.env: an AI Studio Gemini key with USE_VERTEXAI false (no-Vertex ruling); rotate the archive-exposed Chroma key; fix the malformed PAT; the backup env file starts with a lone '{' and is never read anyway.",
+  "Three 40-hex values were printed into the transcript by my masking script on 10-14; rotate them if they are credentials.",
+  "Re-plug timing for the roster (now, or Step 4 after G3; takes effect on an approved kernel restart).",
+  "Sun Breathing form-map naming; Research-Tier cost binding (Tier 3 was Y789-dominant and Y789 is now Opus); confirm the Dragon Engine stays (my reading).",
+  "What was closed or interrupted at 2026-10-14 18:05:41, when the kernel's task wrapper died?",
+  "Earlier open items: G1 quiz grade; D-18, D-19, D-20."
+ ],
+ "plan": {
+  "file": "~/.claude/plans/extract-the-design-system-curried-dragon.md (original four-step plan)",
+  "realignment_file": "~/.claude/plans/1-productivity-start-text-integra-kind-cocke.md (section 'Plan (2026-10-13 midday): folder 13' governs folder 13)",
+  "current_step": "Step 2 (toward G2): folders 1-12 in the ledger; folder 13 at plan Step 4, reading cycles 22 of 45 done; resume at cycle 23"
+ },
+ "pointers": {
+  "handoff_report": "The Hoard/CCID_1792052895_SAVE_STATE_REPORT.md",
+  "boot_sequence": "The Hoard/CCID_1792052895_BOOT_SEQUENCE.md",
+  "resume_detail_local": "The Hoard/antigravity_conversations/_summaries/RESUME_HERE.md (git-ignored; the loop is its first section)",
+  "cycle_state_local": "The Hoard/antigravity_conversations/_summaries/cycles_v4/ (agents.tsv, cycles.tsv, briefs/, reports, cycle_NN.md) and _summaries/guide.md",
+  "ledger": "integra-homebase/orchestration/UNIFY_READING_LEDGER.md",
+  "root_claude_md": "CLAUDE.md",
+  "blueprint": "integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md",
+  "tasks": "productivity/TASKS.md",
+  "claude_memory_index": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/memory/MEMORY.md"
+ },
+ "never_do": [
+  "Never fabricate telemetry, stamps or times; stamp only from a successful GET /clock; log times only from /clock, file mtimes or git dates",
+  "Never read .env values or the github-recovery-codes files; never stage them, live logs, the Docker .vhdx files or the antigravity_conversations copy",
+  "Never run the test suite in the live repo; never restart the kernel or make paid model calls without the Architect's approval",
+  "Never put archive content (transcript text, names, credentials, prompt text) into the public repo; content-free proof rows only",
+  "Autonomous trading stays out of scope"
+ ]
+}

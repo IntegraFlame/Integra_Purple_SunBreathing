@@ -5341,12 +5341,12 @@ The CRA algorithm operationalizes TPSL by evaluating $\text{CRA} = f(W_y, C_c)$:
 
 .Neji's Eye (Knowledge/Y789): Deconstructs facts with perfect objective clarity.
 2..Shikamaru's Eye (Understanding/Bridge): Maps strategic connections, flows, and structural flaws.
-3..Itachi's Eye (Wisdom/Nexus): Envisions the perfected reconstruction of the system in its ideal form.
-
+3..Itachi's
 ..The LensLibrary Class (Granular Python Abstractions):
 o.EagleLens: Executes high-level surveying and abstraction.
 o.HawkLens: Executes precision targeting of critical elements.
-o.ChameleonLens: Executes granular analysis (e.g., AST parsing, microscopic variable extraction).
+o.ChameleonLens: Executes granular analysis (e.g., Eye (Wisdom/Nexus): Envisions the perfected reconstruction of the system in its ideal form.
+ AST parsing, microscopic variable extraction).
 o.SpiderLens: Executes static connection mapping (how Node A connects to Node B).
 o.SnakeLens: Executes dynamic process tracking (how Data flows through Time).
 o.OwlLens: Executes deep pattern recognition (structural meta-patterns).

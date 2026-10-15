@@ -1,0 +1,49 @@
+<!-- @dsCard group="Layout" height=520 subtitle="Report header, dashboard header with kernel pill, and the brand.css solid-rule header" -->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0 }
+  body { background: var(--void); color: var(--monolith); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; padding: 16px }
+  .cap { font-family: var(--font-primary); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--monolith-dim); margin: 0 0 8px }
+  .gap { height: 28px }
+  .right { text-align: right; display: flex; flex-direction: column; align-items: flex-end; gap: 4px }
+  .uptime { font-size: 0.65rem; color: var(--monolith-dim) }
+</style>
+</head><body>
+<p class="cap">Report</p>
+<header class="ig-report-header">
+  <div class="ig-brand">DAILY PLANET INTELLIGENCE</div>
+  <h1 class="ig-report-title">Pre-Day 1 Market &amp; Macro Telemetry</h1>
+  <div class="ig-report-meta">
+    <div><span class="ig-label">Report ID </span><span class="ig-value">DP_20260921_140732</span></div>
+    <div><span class="ig-label">Domain </span><span class="ig-value">Friday Fortress</span></div>
+    <div><span class="ig-label">Civil </span><span class="ig-value">2026-09-21 14:07 CDT</span></div>
+    <div><span class="ig-label">Celestial </span><span class="ig-value">[66.727°, 0.9451, 0.1595]</span></div>
+    <div><span class="ig-label">CRA Score </span><span class="ig-value" style="color:var(--green)">1.267 (Approved)</span></div>
+  </div>
+</header>
+<div class="gap"></div>
+<p class="cap">Dashboard (compact)</p>
+<header class="ig-report-header ig-report-header--compact">
+  <div>
+    <div class="ig-brand">INTEGRA O/S HEIMDALL 3.1</div>
+    <div class="ig-report-title">Sovereign System Dashboard</div>
+    <div class="ig-report-meta">
+      <span class="ig-live-dot"></span><span class="ig-value">OPERATIONAL</span>
+      &nbsp;·&nbsp; Baker, Louisiana [30.5888°N, -91.1673°W]
+      &nbsp;·&nbsp; v8.2.4 Purple Epiphany
+    </div>
+  </div>
+  <div class="right">
+    <div class="ig-kernel"><span class="ig-kernel-dot"></span><span>LIVE</span></div>
+    <div class="uptime">UPTIME: <span style="color:var(--green);font-weight:700">04h 12m 09s</span></div>
+  </div>
+</header>
+<div class="gap"></div>
+<p class="cap">Solid rule (brand.css)</p>
+<header class="ig-report-header ig-report-header--solid">
+  <div class="ig-report-title">Daily Planet Report</div>
+</header>
+</body></html>

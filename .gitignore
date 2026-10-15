@@ -34,6 +34,8 @@ Git_personal_access.env
 *integra-deployment-package*.json
 *service-account*.json
 *serviceaccount*.json
+# GitHub account recovery codes (added 2026-10-15: two copies sat untracked and unignored)
+github-recovery-codes*.txt
 
 # --- Local Databases (ChromaDB, SQLite) ---
 local_dbs/
@@ -73,3 +75,6 @@ rust/target/
 # --- Local-only archives (the GitHub repo is public; never push these) ---
 # Copies of the Antigravity conversations (from ~/.gemini/antigravity/brain), kept on this PC only.
 The Hoard/antigravity_conversations/
+# Docker Desktop WSL disk images (added 2026-10-15: 44 GB + 100 MB, untracked and unignored)
+kernel_memory/DockerDesktopWSL/
+*.vhdx

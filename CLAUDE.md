@@ -3,8 +3,8 @@
 This file only points. The content lives in the files below; read them rather than relying on this summary.
 
 ## Boot order (every new thread)
-1. The newest save state in `The Hoard/`: `CCID_<unix>_SAVE_STATE_REPORT.md` and its `CCID_<unix>.json`. As of 2026-10-13 that is `CCID_1791929018`. Read both in full. It comes with a step-by-step checklist, `The Hoard/CCID_1791929018_BOOT_SEQUENCE.md`; follow it.
-2. The plan files the save state names: `plan.file` in the JSON, then `plan.realignment_file` if present. Its section "Plan (2026-10-13 midday): folder 13" governs folder 13. Find the current step and gate there. During Step 2, the reading ledger `integra-homebase/orchestration/UNIFY_READING_LEDGER.md` shows which folders are done. For folder 13, the local, git-ignored `The Hoard/antigravity_conversations/_summaries/RESUME_HERE.md` gives the exact resume point.
+1. The newest save state in `The Hoard/`: `CCID_<unix>_SAVE_STATE_REPORT.md` and its `CCID_<unix>.json`. As of 2026-10-15 that is `CCID_1792052895`. Read both in full. It comes with a step-by-step checklist, `The Hoard/CCID_1792052895_BOOT_SEQUENCE.md`; follow it.
+2. The plan files the save state names: `plan.file` in the JSON, then `plan.realignment_file` if present. Its section "Plan (2026-10-13 midday): folder 13" governs folder 13. Find the current step and gate there. During Step 2, the reading ledger `integra-homebase/orchestration/UNIFY_READING_LEDGER.md` shows which folders are done. For folder 13, the local, git-ignored `The Hoard/antigravity_conversations/_summaries/RESUME_HERE.md` gives the exact resume point. As of 2026-10-15 that is plan Step 4, reading cycle 23 of 45.
 3. The Claude memory index: `C:\Users\Javon Jenkins\.claude\projects\C--Users-Javon-Jenkins-OneDrive-Desktop-Integra-Purple-SunBreathing\memory\MEMORY.md`.
 4. Live probes, then a stamp from `GET http://127.0.0.1:8000/clock`. Report what you read (receipts) and stop at the open gate.
 
@@ -57,10 +57,11 @@ This file only points. The content lives in the files below; read them rather th
 - The TCP tables are unreliable here. Judge liveness by an HTTP probe; `netstat -ano` can still give the owning PID.
   - On 10/12 `Get-NetTCPConnection` showed only "Closed" while the kernel was LISTENING.
   - After the 2026-10-13 reboot, both it and `netstat` showed the listener 127.0.0.1:8000 as FIN_WAIT_1 while HTTP answered. `netstat` sometimes dropped the row entirely.
-- Every launch leaves the kernel outside its task, sooner or later. Seen 3 times out of 3:
+- Every launch leaves the kernel outside its task, sooner or later. Seen 4 times out of 4:
   - the 10/11 logon launch;
   - the 10/12 logon launch;
-  - the 10/12 13:06:57 `kernel_ctl.ps1 restart` (task Running at 13:16, Ready / 0xC000013A by 14:52).
+  - the 10/12 13:06:57 `kernel_ctl.ps1 restart` (task Running at 13:16, Ready / 0xC000013A by 14:52);
+  - the 10/13 20:57:49 logon launch: the wrapper ended **2026-10-14 18:05:41** (Task Scheduler events 201 and 102; MEASURED 2026-10-15 03:18). The kernel kept answering, unsupervised.
   - Each time the wrapper PowerShell exits 0xC000013A and `cmd.exe` and uvicorn are orphaned, so restart-on-failure never covers the kernel.
   - **Leading cause (DERIVED):** Windows Terminal is the default console host, and closing its window or tab kills the wrapper.
   - **Also:** the task runs at priority 7 (below-normal CPU, low I/O and memory priority).
@@ -68,6 +69,6 @@ This file only points. The content lives in the files below; read them rather th
     - events 119, 129, 100 and 200;
     - the wrapper on a classic `conhost`, and a Windows Terminal `-Embedding` instance 51 s later;
     - startup took about 9 min;
-    - still supervised at 21:54.
+    - still supervised at 21:54; lost on 10/14 at 18:05:41 (above).
   - See `integra-homebase/docs/KERNEL_AUTOLAUNCH_REVIEW.md`.
 - If the kernel stops answering, compare `GET /rodin/telemetry` (an `async def` endpoint) with `GET /clock` (a plain `def` endpoint). On 2026-10-11 the plain-`def` endpoints stalled while the async one and the SWDS scheduler kept running; the cause is unknown. Also check for a browser tab polling it. The kernel log's request lines show pollers more reliably than `netstat` does. Chrome restores the `/dashboard` tab after a reboot. A dashboard tab was polling throughout (blueprint v.9.9.1, "Kernel note").

@@ -1,0 +1,293 @@
+/* Integra DS component styles. Loaded after tokens.css: every color, radius and glow is a token.
+   Classes carry the ig- prefix so they never collide with the type-style classes tokens.css compiles. */
+
+:root {
+  /* Gradients are not tokens (tokens.json has no gradient family); they are built from color tokens here. */
+  --subtitle-gradient: linear-gradient(90deg, var(--sentinel-cyan) 0%, var(--flame-core) 45%, var(--flame-primary) 70%, var(--flame-deep) 100%);
+  --brand-gradient: linear-gradient(90deg, var(--sentinel-cyan), var(--flame-core), var(--flame-primary), var(--flame-deep));
+  --footer-gradient: linear-gradient(90deg, var(--sentinel-cyan), var(--sentinel-mint), var(--flame-core), var(--flame-primary), var(--flame-deep));
+}
+
+/* ── Motion ─────────────────────────────────────────────── */
+@keyframes ig-glow-pulse {
+  0%, 100% { opacity: 0.6; transform: translateX(-50%) scale(1); }
+  50% { opacity: 1; transform: translateX(-50%) scale(1.15); }
+}
+@keyframes ig-live-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+@keyframes ig-orbital-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+@keyframes ig-title-pulse {
+  0%, 100% { text-shadow: 0 0 60px rgba(157, 0, 255, 0.12); }
+  50% { text-shadow: 0 0 80px rgba(157, 0, 255, 0.25), 0 0 120px rgba(0, 240, 255, 0.08); }
+}
+@keyframes ig-tagline-glow {
+  0% { filter: brightness(1) drop-shadow(0 0 4px rgba(255, 122, 0, 0.3)); }
+  100% { filter: brightness(1.15) drop-shadow(0 0 12px rgba(255, 122, 0, 0.6)); }
+}
+
+/* ── Gradient text ──────────────────────────────────────── */
+.ig-gradient-text {
+  background: var(--brand-gradient);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: var(--flame-primary);
+}
+
+/* ── Logotype ───────────────────────────────────────────── */
+.ig-logo {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  background: var(--void); padding: var(--space-7);
+  font-family: var(--font-primary); text-align: center;
+}
+.ig-wordmark {
+  font-family: var(--font-primary); font-weight: 700; line-height: 1; margin: 0;
+  font-size: clamp(3rem, 10vw, 7rem);
+  color: var(--monolith); text-shadow: var(--title-glow);
+  animation: ig-title-pulse 4s ease-in-out infinite;
+}
+.ig-tagline {
+  font-family: var(--font-primary); font-weight: 400; margin: 1.5rem 0 0;
+  font-size: clamp(0.7rem, 2vw, 1.2rem); letter-spacing: 0.3em; text-transform: uppercase;
+  background: var(--subtitle-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: var(--flame-primary);
+  animation: ig-tagline-glow 3s ease-in-out infinite alternate;
+}
+.ig-logo-divider {
+  width: 200px; height: 1px; margin: 2.5rem auto 0; opacity: 0.5;
+  background: linear-gradient(90deg, transparent 0%, var(--purple-neon) 50%, transparent 100%);
+}
+.ig-version {
+  font-family: var(--font-primary); font-size: 0.6rem; font-weight: 400; letter-spacing: 0.25em;
+  text-transform: uppercase; color: var(--purple-neon); margin-top: 2rem; opacity: 0.7;
+}
+.ig-telemetry {
+  font-family: var(--font-primary); font-size: 0.55rem; letter-spacing: 0.15em;
+  color: var(--sentinel-cyan); margin-top: 1.5rem; opacity: 0.6; text-align: center;
+}
+.ig-telemetry span { margin: 0 0.75rem; }
+.ig-telemetry .ig-val { color: var(--flame-core); margin: 0; }
+
+/* ── Report header ──────────────────────────────────────── */
+.ig-report-header { border-bottom: 1px solid var(--card-border); padding-bottom: var(--space-6); margin-bottom: var(--space-7); }
+.ig-report-header--compact {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-bottom: var(--space-3); margin-bottom: var(--space-4);
+}
+.ig-report-header--solid { border-bottom: 2px solid var(--purple-neon); padding-bottom: 0.5rem; margin-bottom: 0; }
+.ig-brand {
+  font-family: var(--font-primary); font-weight: 700; font-size: 1.1rem; letter-spacing: 0.08em;
+  background: var(--brand-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: var(--flame-primary);
+}
+.ig-report-header--compact .ig-brand { font-size: 0.9rem; }
+.ig-report-title {
+  font-family: var(--font-primary); font-weight: 700; font-size: 1.6rem; line-height: 1.3;
+  color: var(--monolith); margin: 0.5rem 0 0;
+}
+.ig-report-header--compact .ig-report-title { font-size: 1.1rem; line-height: 1.5; margin-top: 2px; }
+.ig-report-header--solid .ig-report-title { font-size: 1.25rem; line-height: 1.5; margin: 0; }
+.ig-report-meta {
+  display: flex; flex-wrap: wrap; gap: var(--space-6); margin-top: var(--space-4);
+  font-size: 0.7rem; letter-spacing: 0.05em; color: var(--monolith-dim);
+}
+.ig-report-header--compact .ig-report-meta { display: block; gap: 0; margin-top: 0; font-size: 0.65rem; letter-spacing: 0; }
+.ig-report-meta .ig-label { color: var(--sentinel-cyan); text-transform: uppercase; letter-spacing: 0.12em; }
+.ig-report-meta .ig-value { color: var(--monolith-dim); }
+.ig-report-header--compact .ig-report-meta .ig-value { color: var(--monolith); font-weight: 600; }
+
+/* ── Card ───────────────────────────────────────────────── */
+.ig-card {
+  background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-lg);
+  padding: var(--space-5); box-sizing: border-box; min-width: 0;
+}
+.ig-card--compact { border-radius: var(--radius-xl); padding: var(--space-3) var(--space-4); }
+.ig-card--celestial { border-color: var(--celestial-edge); }
+.ig-card-label {
+  font-family: var(--font-primary); font-size: 0.55rem; font-weight: 400; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--purple-neon); margin-bottom: var(--space-2);
+}
+.ig-card--compact .ig-card-label { font-size: 0.6rem; font-weight: 700; letter-spacing: 0.08em; }
+
+/* ── Metric tiles ───────────────────────────────────────── */
+.ig-metric {
+  background: var(--panel-inset); border: 1px solid var(--border-soft); border-radius: var(--radius-md);
+  padding: 0.4rem 0.2rem; text-align: center;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
+}
+.ig-metric-value {
+  font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; color: var(--flame-core);
+  white-space: nowrap; word-break: keep-all;
+}
+.ig-metric-value--sm { font-size: 0.85rem; }
+.ig-metric-label {
+  font-family: var(--font-primary); font-size: 0.45rem; text-transform: uppercase; letter-spacing: 0.02em;
+  color: var(--monolith-dim); margin-top: 2px; white-space: nowrap; word-break: keep-all;
+}
+.ig-gauge {
+  flex: 1; background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius-lg);
+  padding: var(--space-5); text-align: center;
+}
+.ig-gauge-value { font-family: var(--font-primary); font-weight: 700; font-size: 2rem; }
+.ig-gauge-label {
+  font-family: var(--font-primary); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--monolith-dim); margin-top: 0.4rem;
+}
+.ig-gauge-sub { font-size: 0.65rem; color: var(--monolith-dim); margin-top: 0.3rem; }
+.ig-lens {
+  background: var(--panel-inset); border: 1px solid var(--purple-dim); border-radius: var(--radius-sm);
+  padding: 0.3rem 0.4rem; text-align: center;
+}
+.ig-lens-count { font-family: var(--font-mono); font-weight: 700; font-size: 0.85rem; color: var(--purple-amethyst); }
+.ig-lens-name {
+  font-family: var(--font-primary); font-size: 0.45rem; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--monolith-dim);
+}
+.ig-lens-desc { font-size: 0.45rem; color: var(--monolith-faint); margin-top: 1px; }
+
+/* ── Status ─────────────────────────────────────────────── */
+.ig-live-dot {
+  display: inline-block; width: 8px; height: 8px; border-radius: var(--radius-round);
+  background: var(--green); box-shadow: var(--green-glow); margin-right: 4px; vertical-align: middle;
+  animation: ig-live-pulse 1.5s ease-in-out infinite;
+}
+.ig-kernel {
+  display: inline-flex; align-items: center; gap: 5px; padding: 4px 12px; border-radius: var(--radius-pill);
+  font-family: var(--font-primary); font-size: 0.6rem; font-weight: 700; letter-spacing: 0.06em;
+  background: var(--green-wash); border: 1px solid var(--green-ring); color: var(--green);
+}
+.ig-kernel-dot {
+  width: 8px; height: 8px; border-radius: var(--radius-round); background: var(--green);
+  box-shadow: var(--green-glow-lg); animation: ig-live-pulse 1.5s ease-in-out infinite;
+}
+.ig-live-dot--off { background: var(--red); box-shadow: var(--red-glow); animation: none; }
+.ig-kernel--off { background: var(--red-wash); border-color: var(--red-ring); color: var(--red); }
+.ig-kernel--off .ig-kernel-dot { background: var(--red); box-shadow: var(--red-glow); animation: none; }
+.ig-proto {
+  display: inline-block; padding: 1px 6px; border-radius: var(--radius-xs);
+  font-family: var(--font-primary); font-size: 0.5rem; font-weight: 700; letter-spacing: 0.04em;
+}
+.ig-proto--on { background: var(--green-tint); color: var(--green); border: 1px solid var(--green-edge); }
+.ig-proto--ready { background: var(--cyan-tint); color: var(--sentinel-cyan); border: 1px solid var(--cyan-edge); }
+.ig-proto--active {
+  background: var(--gold-tint); color: var(--flame-core); border: 1px solid var(--gold-edge);
+  animation: ig-live-pulse 2s ease-in-out infinite;
+}
+.ig-proto--standby { background: var(--slate-tint); color: var(--monolith-dim); border: 1px solid var(--slate-edge); }
+.ig-status-ok { color: var(--sentinel-cyan); text-shadow: var(--cyan-glow); }
+.ig-status-alert { color: var(--flame-deep); text-shadow: var(--flame-glow); }
+.ig-status-sovereign { color: var(--purple-neon); text-shadow: var(--purple-glow); }
+
+/* ── Data table ─────────────────────────────────────────── */
+.ig-table { width: 100%; border-collapse: collapse; font-family: var(--font-mono); font-size: 0.78rem; }
+.ig-table th {
+  font-family: var(--font-primary); font-weight: 400; font-size: 0.6rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--sentinel-cyan); text-align: left; padding: 0.6rem 0.75rem;
+  background: var(--table-head); border-bottom: 1px solid var(--card-border);
+}
+.ig-table td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--hairline); color: var(--monolith); vertical-align: top; }
+.ig-table tbody tr:nth-child(even) { background: var(--row-alt); }
+.ig-table--compact { font-size: 0.65rem; }
+.ig-table--compact th {
+  font-weight: 700; font-size: 0.5rem; letter-spacing: 0.04em; padding: 4px 6px;
+  background: var(--table-head-compact); border-bottom: 1px solid var(--table-rule-compact);
+}
+.ig-table--compact td { padding: 3px 6px; border-bottom: 1px solid var(--hairline-compact); }
+.ig-table--compact tbody tr:nth-child(even) { background: var(--row-alt-compact); }
+.ig-ticker { font-weight: 700; color: var(--monolith); }
+.ig-price { font-weight: 700; color: var(--flame-core); }
+.ig-up { color: var(--green); }
+.ig-down { color: var(--red); }
+.ig-neutral { color: var(--monolith-dim); }
+.ig-lobe-active { color: var(--green); font-weight: 700; }
+.ig-lobe-standby { color: var(--flame-core); font-weight: 700; }
+.ig-lobe-offline { color: var(--red); font-weight: 700; }
+
+/* ── Section heading ────────────────────────────────────── */
+.ig-section { margin-bottom: var(--space-8); }
+.ig-section-number {
+  font-family: var(--font-primary); font-weight: 700; font-size: 0.65rem; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--purple-neon); margin-bottom: 0.25rem;
+}
+.ig-section-title {
+  font-family: var(--font-primary); font-weight: 400; font-size: 0.85rem; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--sentinel-cyan); padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--cyan-rule); margin-bottom: var(--space-4);
+}
+.ig-section-label {
+  font-family: var(--font-primary); font-size: 0.55rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--purple-amethyst); margin: var(--space-6) 0 0;
+  padding-bottom: 0.3rem; border-bottom: 1px solid var(--border-soft);
+}
+
+/* ── Clock cards ────────────────────────────────────────── */
+.ig-clock {
+  background: var(--panel-inset-strong); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+  padding: 0.6rem 0.8rem; text-align: center;
+}
+.ig-clock-time { font-family: var(--font-mono); font-size: 1.6rem; font-weight: 700; color: var(--clock-lilac); text-shadow: var(--clock-glow); }
+.ig-clock-date { font-size: 0.6rem; color: var(--monolith-dim); margin-top: 2px; }
+.ig-celestial-readout {
+  font-family: var(--font-mono); font-size: 1.4rem; font-weight: 700; color: var(--clock-periwinkle);
+  text-shadow: var(--celestial-glow);
+}
+.ig-celestial-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.05em; color: var(--celestial-indigo); }
+.ig-celestial-value { color: var(--celestial-indigo-soft); font-weight: 700; }
+
+/* ── Grid and page shells ───────────────────────────────── */
+.ig-grid { display: grid; gap: var(--space-4); }
+.ig-grid > * { min-width: 0; }
+.ig-grid--2 { grid-template-columns: 1fr 1fr; }
+.ig-grid--3 { grid-template-columns: repeat(3, 1fr); gap: 0.6rem; }
+.ig-grid--4 { grid-template-columns: repeat(4, 1fr); gap: var(--space-2); }
+.ig-grid--6 { grid-template-columns: repeat(6, 1fr); gap: var(--space-1); }
+@media (max-width: 960px) {
+  .ig-grid--2 { grid-template-columns: 1fr; }
+  .ig-grid--3 { grid-template-columns: 1fr 1fr; }
+  .ig-grid--6 { grid-template-columns: repeat(3, 1fr); }
+}
+.ig-page { max-width: 960px; margin: 0 auto; padding: var(--space-7); }
+.ig-page--wide { max-width: 1440px; padding: var(--space-4) var(--space-6) var(--space-7); }
+
+/* ── Footer ─────────────────────────────────────────────── */
+.ig-footer { border-top: 1px solid var(--card-border); padding-top: var(--space-6); margin-top: var(--space-7); text-align: center; }
+.ig-footer-lockup { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.ig-footer-wordmark { font-family: var(--font-primary); font-weight: 900; font-size: 1.2rem; letter-spacing: 0.12em; color: var(--monolith); }
+.ig-footer-tagline {
+  font-family: var(--font-primary); font-weight: 700; font-size: 0.5rem; letter-spacing: 0.18em;
+  background: var(--footer-gradient);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  color: var(--flame-primary);
+}
+.ig-footer-meta { font-size: 0.6rem; color: var(--monolith-dim); margin-top: 0.5rem; letter-spacing: 0.05em; }
+.ig-footer-telemetry { font-family: var(--font-primary); font-size: 0.5rem; letter-spacing: 0.1em; color: var(--purple-faint); margin-top: 0.5rem; }
+.ig-footer-telemetry--dim { font-family: var(--font-mono); font-size: 0.55rem; letter-spacing: 0; color: var(--monolith-dim); margin-top: 3px; }
+
+/* ── Narrative ──────────────────────────────────────────── */
+.ig-prose p { margin: 0 0 0.75rem; color: var(--monolith-dim); line-height: 1.7; }
+.ig-prose strong { color: var(--monolith); }
+.ig-thesis { color: var(--sentinel-cyan); font-style: normal; }
+.ig-antithesis { color: var(--flame-primary); font-style: normal; }
+.ig-synthesis { color: var(--purple-neon); font-style: normal; font-weight: 700; }
+
+/* ── Ambient layer ──────────────────────────────────────── */
+.ig-particles { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.ig-glow-ring {
+  position: fixed; top: -120px; left: 50%; transform: translateX(-50%); width: 500px; height: 500px;
+  border-radius: var(--radius-round); z-index: 1; pointer-events: none;
+  background: radial-gradient(circle, rgba(157, 0, 255, 0.06) 0%, rgba(0, 0, 0, 0) 70%);
+  animation: ig-glow-pulse 5s ease-in-out infinite;
+}
+.ig-orbital { animation: ig-orbital-pulse 2s ease-in-out infinite; }
+
+/* Added to the source: it defines no reduced-motion behavior. Every Integra animation is decorative. */
+@media (prefers-reduced-motion: reduce) {
+  [class^="ig-"], [class*=" ig-"] { animation: none !important; }
+}

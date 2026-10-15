@@ -301,10 +301,11 @@ Implemented in `evolution/shiva_action/orchestrator.py`, `tools/shiva_toolkit.py
 - **Snake Lens:** Dynamic process flow & thermal fragility. Tracks where exceptions, deadlocks, and network drops occur.
 - **Owl Lens:** Deep nocturnal pattern recognition. Prunes narrative scaffolding and seals thermodynamic loop closure.
 
-### 11.2 Specialized Cognitive Personas:
-- **Green Ranger:** High-intensity code repository deconstruction ($W_y = 0.85, C_c = 1.00 \to \text{Score} = 0.85$, boosted to $1.25$ via EAM).
+### 11.2 Specialized Cognitive Personas
+
 - **Mad Hatter:** High-temperature lateral creativity and non-linear stress testing ($W_y = 0.75, C_c = 0.80 \to \text{Score} = 0.94$).
 - **Rebuttal Protocol:** Adversarial dialectic counter-testing; generates systematic counter-arguments to harden internal hypotheses.
+- **Cheshire Cat Protocol/Environment Daemon**
 
 ---
 

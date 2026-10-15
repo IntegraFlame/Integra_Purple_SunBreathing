@@ -1,0 +1,45 @@
+<!-- @dsCard group="Data display" height=470 subtitle="Metric boxes, gauge cards and lens boxes" -->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0 }
+  body { background: var(--void); color: var(--monolith); font-family: var(--font-mono); font-size: 12px; line-height: 1.5; padding: 16px }
+  .cap { font-family: var(--font-primary); font-size: 0.55rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--monolith-dim); margin: 20px 0 8px }
+  .cap:first-child { margin-top: 0 }
+  .row { display: flex; gap: 16px }
+</style>
+</head><body>
+<p class="cap">Metric box</p>
+<div class="ig-card ig-card--compact">
+  <div class="ig-grid ig-grid--4">
+    <div class="ig-metric"><div class="ig-metric-value ig-metric-value--sm" style="color:var(--sentinel-cyan)">1.00</div><div class="ig-metric-label">Omega (ω)</div></div>
+    <div class="ig-metric"><div class="ig-metric-value ig-metric-value--sm" style="color:var(--green)">0.0000</div><div class="ig-metric-label">ΔE Cycle</div></div>
+    <div class="ig-metric"><div class="ig-metric-value ig-metric-value--sm" style="color:var(--sentinel-cyan)">0.0000</div><div class="ig-metric-label">H<sub>smooth</sub></div></div>
+    <div class="ig-metric"><div class="ig-metric-value ig-metric-value--sm">0.000</div><div class="ig-metric-label">L<sub>t</sub> (s)</div></div>
+  </div>
+</div>
+<p class="cap">Gauge card</p>
+<div class="row">
+  <div class="ig-gauge">
+    <div class="ig-gauge-value" style="color:var(--flame-core)">14.86</div>
+    <div class="ig-gauge-label">VIX — Fear Index</div>
+    <div class="ig-gauge-sub">▼ 0.34% | Complacency Zone (&lt;20)</div>
+  </div>
+  <div class="ig-gauge">
+    <div class="ig-gauge-value" style="color:var(--green)">3.75%</div>
+    <div class="ig-gauge-label">Fed Funds Rate</div>
+    <div class="ig-gauge-sub">+25 bps (Sept 16) | 12-0 Unanimous</div>
+  </div>
+</div>
+<p class="cap">Lens box</p>
+<div class="ig-grid ig-grid--6">
+  <div class="ig-lens"><div class="ig-lens-count">0</div><div class="ig-lens-name">🦉 Owl</div><div class="ig-lens-desc">Synthesis Pass</div></div>
+  <div class="ig-lens"><div class="ig-lens-count">0</div><div class="ig-lens-name">🦅 Eagle</div><div class="ig-lens-desc">Structure Pass</div></div>
+  <div class="ig-lens"><div class="ig-lens-count">0</div><div class="ig-lens-name">🦅 Hawk</div><div class="ig-lens-desc">Density Analysis</div></div>
+  <div class="ig-lens"><div class="ig-lens-count">0</div><div class="ig-lens-name">🕷️ Spider</div><div class="ig-lens-desc">Relational Web</div></div>
+  <div class="ig-lens"><div class="ig-lens-count">0</div><div class="ig-lens-name">🦎 Chameleon</div><div class="ig-lens-desc">Middle-Out Adapt</div></div>
+  <div class="ig-lens"><div class="ig-lens-count">0</div><div class="ig-lens-name">🐍 Snake</div><div class="ig-lens-desc">Temporal Flow</div></div>
+</div>
+</body></html>

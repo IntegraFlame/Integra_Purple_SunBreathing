@@ -1,0 +1,46 @@
+<!-- @dsCard height=288 -->
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; background: var(--void) }
+  svg { display: block; width: 960px; height: 288px }
+  .c1 { fill: var(--sentinel-cyan) }
+  .c2 { fill: var(--flame-core) }
+  .c3 { fill: var(--flame-primary) }
+  .c4 { fill: var(--flame-deep) }
+  .c5 { fill: var(--purple-neon) }
+  .blk { rx: var(--radius-lg) }
+  .ring { fill: none; stroke: var(--void); stroke-width: 2 }
+  .dot { fill: var(--void) }
+  .name { font-family: var(--font-primary); font-weight: 700; font-size: 76px; fill: var(--monolith) }
+  .tag { font-family: var(--font-primary); font-weight: 400; font-size: 13px; letter-spacing: 0.3em; fill: var(--monolith-dim) }
+</style>
+</head><body>
+<!--
+Blocks: sentinel-cyan 64 wide, flame-core 112, flame-primary 160, flame-deep 56, purple-neon 56, in the order of the brand's own cyan-to-ember subtitle gradient, purple last as the sovereign accent; 8px gaps (space-2), full-height slabs bleeding off the top, bottom and right edges.
+Arrangement: a strip of unequal vertical slabs, the way the tagline gradient runs left to right, in the box from x = 480.
+Pattern: orbital rings, because the sources' recurring motif is the celestial clock, the orbital canvas and the 500px glow ring; three concentric rings at r = 48, 88, 128 centred in the strip, with six dots riding them, all the ground color cut out of the slabs.
+Scales: slab corners radius-lg; ring pitch 40 (5 x space-2); the name sits in the 440px zone left of x = 480.
+-->
+<svg viewBox="0 0 960 288" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Integra DS">
+  <rect class="blk c1" x="480" y="24" width="64" height="264"/>
+  <rect class="blk c2" x="552" y="0" width="112" height="232"/>
+  <rect class="blk c3" x="672" y="48" width="160" height="240"/>
+  <rect class="blk c4" x="840" y="0" width="56" height="176"/>
+  <rect class="blk c5" x="904" y="96" width="56" height="192"/>
+  <circle class="ring" cx="752" cy="144" r="48"/>
+  <circle class="ring" cx="752" cy="144" r="88"/>
+  <circle class="ring" cx="752" cy="144" r="128"/>
+  <circle class="dot" cx="791" cy="116" r="6"/>
+  <circle class="dot" cx="713" cy="172" r="6"/>
+  <circle class="dot" cx="796" cy="220" r="6"/>
+  <circle class="dot" cx="702" cy="72" r="6"/>
+  <circle class="dot" cx="878" cy="122" r="6"/>
+  <circle class="dot" cx="626" cy="166" r="6"/>
+  <text class="name" x="48" y="150">Integra</text>
+  <text class="name" x="48" y="222">DS</text>
+  <text class="tag" x="48" y="256">INFINITE LIVING FLAME</text>
+</svg>
+</body></html>
