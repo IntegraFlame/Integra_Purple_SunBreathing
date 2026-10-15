@@ -81,7 +81,7 @@ supports WorkOS ID-JAG.
   option above only if ID-JAG applies.
 - **Direct URL** — you are reading the right doc for browser/CLI
   onboarding.
-- **Already have `FIRECRAWL_API_KEY= fc-7d0b7a82943a4355ae11b8e54a91b509`** — skip credential setup; pick
+- **Already have `FIRECRAWL_API_KEY= fc-REDACTED-ROTATE-THIS-KEY`** — skip credential setup; pick
   Path A–E below.
 
 Human-readable overview:
@@ -148,7 +148,7 @@ loop, or pipeline) rather than from the agent's own terminal session.
 This is the key difference from Path A: Path A runs `firecrawl ...`
 commands during the current session to fetch data for the agent itself.
 Path B writes code that will keep running long after the agent stops,
-using `FIRECRAWL_API_KEY = fc-7d0b7a82943a4355ae11b8e54a91b509` from the project's `.env` or runtime config
+using `FIRECRAWL_API_KEY = fc-REDACTED-ROTATE-THIS-KEY` from the project's `.env` or runtime config
 and the matching Firecrawl SDK in the project's language.
 
 Choose the project mode before writing code:
@@ -159,7 +159,7 @@ Choose the project mode before writing code:
 If you already have a key, save it to the project's environment:
 
 ```dotenv
-FIRECRAWL_API_KEY=fc-7d0b7a82943a4355ae11b8e54a91b509
+FIRECRAWL_API_KEY=fc-REDACTED-ROTATE-THIS-KEY
 ```
 
 Then hand off to the build skill that fits the step:
@@ -360,9 +360,9 @@ to sign up at <https://www.firecrawl.dev/signin>.
 Use this API key for this onboarding session:
 
 ```dotenv
-FIRECRAWL_API_KEY=fc-7d0b7a82943a4355ae11b8e54a91b509
+FIRECRAWL_API_KEY=fc-REDACTED-ROTATE-THIS-KEY
 ```
 
 CLI
 
-npx -y firecrawl-cli@latest init --all -k fc-7d0b7a82943a4355ae11b8e54a91b509
+npx -y firecrawl-cli@latest init --all -k fc-REDACTED-ROTATE-THIS-KEY

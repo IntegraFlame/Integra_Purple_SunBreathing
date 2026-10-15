@@ -47,7 +47,7 @@ Structured Bias & Extraction Modeling POST /v2/scrape with extract: { schema: ..
 Local Whitepaper & Document Parsing firecrawl parse ./doc.pdf -o doc.md Converts local PDF/DOCX/XLSX financial reports and preprints into clean markdown with OCR and table preservation. 100% Direct Match
 Verification Evidence: Active credential located in
 BluprintArchitecture/MCPAPISOFTWARE/FIRECRAWLapi.env
-: FIRECRAWL_API_KEY=fc-7d0b7a82943a4355ae11b8e54a91b509.
+: FIRECRAWL_API_KEY=fc-REDACTED-REVOKED.
 
 1. Shiva Action Multi-Lens Audit: Deep Code Inspection & Interconnectedness
 3.1 Neji Eye (Chameleon Lens) — Granular Code Audit & Middle-Out Dead Zone Penetration

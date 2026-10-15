@@ -971,7 +971,7 @@ Verify that all required credentials and paths are configured in .env, and restr
 
 `cat << 'EOF' > .env`  
 `GEMINI_API_KEY="AIzaSyYourGoogleApiKey"`  
-`ANTHROPIC_API_KEY="sk-ant-api03-YourAnthropicKey"`  
+`ANTHROPIC_API_KEY="sk-ant-REDACTED-REVOKE-THIS-KEY"`  
 `GITHUB_TOKEN="ghp_YourGitHubToken"`  
 `KERNEL_MEMORY_DIR="./kernel_memory"`  
 `DISCORD_WEBHOOK_URL="https://discord.com/api/webhooks/your-webhook"`  

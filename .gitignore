@@ -30,6 +30,10 @@ claudehemisphere.env
 *hemisphere*.env
 Git_personal_access.env
 *.env
+# Google Cloud service-account key files (added 2026-10-15: three were untracked and unignored in the root)
+*integra-deployment-package*.json
+*service-account*.json
+*serviceaccount*.json
 
 # --- Local Databases (ChromaDB, SQLite) ---
 local_dbs/
