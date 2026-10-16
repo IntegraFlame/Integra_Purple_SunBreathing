@@ -11,6 +11,7 @@ The map DESCRIBES. It moves no data. Every move it proposes (ADR-005) needs the 
 """
 
 import os
+import subprocess
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -161,8 +162,128 @@ def inventory(m: Dict[str, Any], bases: Dict[str, str]) -> List[Dict[str, Any]]:
             row.update({"exists": None, "files": None, "bytes": None, "newest_mtime": None, "truncated": False})
         else:
             base_dir = "" if s["base"] == "absolute" else bases.get(s["base"], "")
-            root = s["path"] if s["base"] == "absolute" else os.path.join(base_dir, s["path"])
             skip = [os.path.join(base_dir, sub) for sub in s.get("exclude", [])]
-            row.update(_measure(os.path.normpath(root), skip))
+            row.update(_measure(_store_root(s, bases), skip))
         rows.append(row)
     return rows
+
+
+def _store_root(s: Dict[str, Any], bases: Dict[str, str]) -> str:
+    """The folder or file a store's path names, resolved against its base."""
+    if s["base"] == "absolute":
+        return os.path.normpath(s["path"])
+    return os.path.normpath(os.path.join(bases.get(s["base"], ""), s["path"]))
+
+
+# ───────────── checks validate_memory_map does not make (Brain Map T2, step 2.5, piece P3) ─────────────
+
+
+def audit_memory_map(m: Dict[str, Any]) -> List[str]:
+    """
+    Consistency findings that validate_memory_map does not report, as sentences, sorted; an empty list means none.
+    A `holds` value that is not a defined kind; a kind routed to a store whose `holds` omit it; a store that holds a
+    kind which does not route to it; stores that share a path without naming each other in `shares_path_with`.
+    Pure: it reads the map and nothing else. Dangling store ids are validate_memory_map's to report.
+    """
+    findings: List[str] = []
+    stores = {s.get("id"): s for s in (m.get("stores") or [])}
+    kinds = m.get("kinds") or {}
+    routed: Dict[str, set] = {}
+    for kind, spec in kinds.items():
+        for sid in ([spec.get("primary")] if spec.get("primary") else []) + list(spec.get("also") or []):
+            routed.setdefault(sid, set()).add(kind)
+            if sid in stores and kind not in (stores[sid].get("holds") or []):
+                findings.append(f"kind {kind} routes to store {sid}, but {sid}'s holds omit {kind!r}")
+    for sid, s in stores.items():
+        for kind in s.get("holds") or []:
+            if kind not in kinds:
+                findings.append(f"store {sid} holds {kind!r}, which is not a defined kind")
+            elif kind not in routed.get(sid, set()):
+                findings.append(f"store {sid} holds {kind!r}, but kind {kind} does not route to {sid}")
+    by_path: Dict[Any, List[str]] = {}
+    for sid, s in stores.items():
+        if s.get("base") != "ram" and s.get("path"):
+            by_path.setdefault((s["base"], s["path"]), []).append(sid)
+    for (base, path), ids in by_path.items():
+        for a in ids:
+            for b in ids:
+                declared = b in (stores[a].get("shares_path_with") or []) and a in (stores[b].get("shares_path_with") or [])
+                if a < b and not declared:
+                    findings.append(f"stores {a} and {b} share {base}:{path} without declaring shares_path_with")
+    return sorted(findings)
+
+
+def check_disk(m: Dict[str, Any], bases: Dict[str, str]) -> List[str]:
+    """
+    Declared status against the disk, from metadata only (os.path.exists): a live store whose path is missing, and a
+    proposed store whose path already exists. RAM, unused and retired stores are not judged. Creates nothing.
+    """
+    findings: List[str] = []
+    for s in m.get("stores") or []:
+        if s.get("base") == "ram" or not s.get("path"):
+            continue
+        status, root = s.get("status", "live"), _store_root(s, bases)
+        if status == "live" and not os.path.exists(root):
+            findings.append(f"live store {s['id']}: {root} does not exist")
+        elif status == "proposed" and os.path.exists(root):
+            findings.append(f"proposed store {s['id']}: {root} already exists")
+    return sorted(findings)
+
+
+def _git_lines(git: str, repo: str, *args: str, stdin: Optional[str] = None) -> List[str]:
+    """NUL-separated output of a read-only git command run in `repo` (no optional locks, so the index is not rewritten)."""
+    cp = subprocess.run([git, "--no-optional-locks", "-C", repo, *args], input=stdin.encode("utf-8") if stdin else None,
+                        capture_output=True, check=False)
+    if cp.returncode not in (0, 1):   # check-ignore answers 1 when nothing is ignored
+        raise RuntimeError(cp.stderr.decode("utf-8", "replace").strip() or f"git exited {cp.returncode}")
+    return [p for p in cp.stdout.decode("utf-8", "replace").split("\0") if p]
+
+
+def check_git(m: Dict[str, Any], bases: Dict[str, str], git: str = "git") -> List[str]:
+    """
+    Declared `git:` state against git's own view, read-only (ls-files, check-ignore; about four calls per repository).
+    A store declared tracked may hold no untracked, not-ignored file and must not be ignored itself; a store declared
+    ignored must be ignored and hold no tracked file. Sub-stores named in `exclude` are left to their own entries.
+    A base that is not the top of a git repository, or that git cannot read, gives one finding instead of a crash.
+    """
+    findings: List[str] = []
+    by_base: Dict[str, List[Dict[str, Any]]] = {}
+    for s in m.get("stores") or []:
+        if s.get("base") in ("homebase", "repo") and s.get("git") in ("tracked", "ignored") and s.get("path"):
+            by_base.setdefault(s["base"], []).append(s)
+    for base, members in sorted(by_base.items()):
+        repo = bases.get(base, "")
+        try:
+            top = subprocess.run([git, "-C", repo, "rev-parse", "--show-toplevel"], capture_output=True, check=False)
+            top_dir = top.stdout.decode("utf-8", "replace").strip()
+            if top.returncode != 0 or os.path.normcase(os.path.normpath(top_dir)) != os.path.normcase(os.path.normpath(repo)):
+                findings.append(f"base {base}: {repo} is not the top of a git repository")
+                continue
+            tracked = _git_lines(git, repo, "ls-files", "-z")
+            untracked = _git_lines(git, repo, "ls-files", "-z", "--others", "--exclude-standard")
+            paths = [s["path"].replace("\\", "/").rstrip("/") for s in members]
+            ignored = set(_git_lines(git, repo, "check-ignore", "-z", "--stdin", stdin="\0".join(paths) + "\0"))
+        except (OSError, RuntimeError) as exc:
+            findings.append(f"base {base}: git could not read {repo}: {exc}")
+            continue
+
+        def under(files: List[str], s: Dict[str, Any]) -> int:
+            root = s["path"].replace("\\", "/").rstrip("/")
+            skip = [x.replace("\\", "/").rstrip("/") + "/" for x in s.get("exclude", [])]
+            return sum(1 for f in files if (f == root or f.startswith(root + "/")) and not any(f.startswith(x) for x in skip))
+
+        for s in members:
+            path = s["path"].replace("\\", "/").rstrip("/")
+            if s["git"] == "tracked":
+                if path in ignored:
+                    findings.append(f"store {s['id']}: declared tracked, but {path} is git-ignored")
+                n = under(untracked, s)
+                if n:
+                    findings.append(f"store {s['id']}: declared tracked, but {n} file(s) under {path} are untracked")
+            else:
+                if path not in ignored:
+                    findings.append(f"store {s['id']}: declared ignored, but {path} is not git-ignored")
+                n = under(tracked, s)
+                if n:
+                    findings.append(f"store {s['id']}: declared ignored, but {n} file(s) under {path} are tracked")
+    return sorted(findings)
