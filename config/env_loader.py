@@ -50,6 +50,8 @@ DEFAULT_ENV_VARS = {
     "NEXUS_MODEL": "claude-opus-5-5",
     "SHIVA_MODEL": "claude-sonnet-5-5",
     "RODIN_MODEL": "gemini-3.8-flash",
+    "RODIN_EMBED_MODEL": "gemini-embedding-2",   # set explicitly (ADR-005 action 1); text-embedding-004 is shut down
+    "RODIN_EMBED_DIM": "768",
     "THINKING_BUDGET": "8192",
 }
 

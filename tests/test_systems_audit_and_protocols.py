@@ -345,8 +345,13 @@ def test_the_hoard_count_and_collection():
     hoard = TheHoard()
     node_count = hoard.count()
     assert isinstance(node_count, int)
-    # The Hoard was ingested with 2,795 chunks in addition to prior nodes
-    assert node_count >= 2795
+    # This test used to assert `node_count >= 2795`, the size of the legacy `integra_hoard` collection, whose vectors
+    # were SHA-256 pseudo-vectors (measured 2026-10-15: 5,526 rows, none from a model). The Hoard now counts only the
+    # active embedding space's collection, which fills when scripts/ingest_knowledge.py --apply runs, so the count is
+    # a live-state fact and not a unit-test fact. What can be asserted everywhere is which collection is counted.
+    tel = hoard.get_telemetry()
+    assert tel["chroma_collection"] == hoard.space.collection_name()
+    assert tel["active_space"] == hoard.space.id
 
 
 # ─── 15. VOLTRON PROTOCOL IN TO-DO & ACTIVE CONFIG ───────────────────────────

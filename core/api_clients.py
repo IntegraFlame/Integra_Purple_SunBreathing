@@ -693,42 +693,54 @@ class RodinClient:
     Gemini API Client — Rodin Route Retrieval (Memory Layer KNN Engine).
     
     Model: Gemini 3.8 Flash
-    Embedding: text-embedding-004 (768-d invariant)
+    Embedding: gemini-embedding-2 at 768 dimensions (RODIN_EMBED_MODEL, RODIN_EMBED_DIM).
+               text-embedding-004 was shut down on the Gemini Developer API on 2026-01-14.
     Role: Fast topological retrieval, semantic embedding generation for KNN density estimation.
     SDK: google-genai (modern unified) via client.aio.models.generate_content()
+
+    embed() / embed_sync() keep their legacy contract for the model router and the selftest (a vector, or [] on
+    failure) and keep the reason in last_embed_error. Rodin itself goes through memory.embedding_service, which
+    raises EmbeddingUnavailable instead of returning an empty list.
     """
     def __init__(self, model_name: Optional[str] = None):
         self.model_name = model_name or os.environ.get("RODIN_MODEL", "gemini-3.8-flash")
-        self.embedding_model = os.environ.get("RODIN_EMBED_MODEL", "text-embedding-004")
+        self.embedding_model = os.environ.get("RODIN_EMBED_MODEL", "gemini-embedding-2")
+        self.last_embed_error: Optional[str] = None
+        try:
+            self.embedding_dim = int(os.environ.get("RODIN_EMBED_DIM", "768"))
+        except ValueError:
+            self.embedding_dim = 768
+            self.last_embed_error = "BAD_CONFIG: RODIN_EMBED_DIM is not a number; using 768"
+            logger.error("RodinClient: %s", self.last_embed_error)
         self.api_key = os.environ.get("GEMINI_API_KEY")
         self.client = _make_gemini_client()
         if not self.client:
             logger.error("RodinClient: No Gemini API client could be initialized.")
 
-    async def embed(self, text: str, model_name: Optional[str] = None) -> List[float]:
-        """Generates a text embedding vector via Gemini embed_content API."""
-        if not self.client:
-            return []
-        embed_model = model_name or self.embedding_model
-        async def _call():
-            return await self.client.aio.models.embed_content(
-                model=embed_model,
-                contents=text
-            )
-        try:
-            res = await call_with_backoff(_call)
-            if hasattr(res, 'embedding') and hasattr(res.embedding, 'values'):
-                return list(res.embedding.values)
-            elif hasattr(res, 'embeddings') and res.embeddings:
-                return list(res.embeddings[0].values)
-            return []
-        except Exception as e:
-            logger.error(f"RodinClient embed failed: {e}")
-            return []
-
     def embed_sync(self, text: str, model_name: Optional[str] = None) -> List[float]:
-        """Synchronous wrapper for embed()."""
-        return run_sync(self.embed(text, model_name))
+        """
+        One embedding via client.models.embed_content with output_dimensionality set (memory.embedding_service
+        holds the call, its timeout and its retries). Returns [] on failure and keeps the reason in last_embed_error.
+        """
+        from memory.embedding_service import EmbeddingUnavailable, GeminiEmbedBackend
+
+        backend = GeminiEmbedBackend(client_factory=lambda: self.client)
+        try:
+            vec = backend.embed_texts([text], model=model_name or self.embedding_model, dim=self.embedding_dim)[0]
+        except EmbeddingUnavailable as exc:
+            self.last_embed_error = str(exc)
+            logger.error(f"RodinClient embed failed: {exc}")
+            return []
+        if len(vec) != self.embedding_dim:
+            self.last_embed_error = f"BAD_DIMENSION: expected {self.embedding_dim} values, got {len(vec)}"
+            logger.error(f"RodinClient embed failed: {self.last_embed_error}")
+            return []
+        self.last_embed_error = None
+        return vec
+
+    async def embed(self, text: str, model_name: Optional[str] = None) -> List[float]:
+        """Async wrapper: the SDK call is blocking, so it runs in a worker thread and never stalls the event loop."""
+        return await asyncio.to_thread(self.embed_sync, text, model_name)
 
     async def generate(self, prompt: str, system_prompt: str = "") -> GenerationResult:
         if not self.client:
@@ -1050,7 +1062,8 @@ INTEGRA_MODEL_REGISTRY = {
     "rodin_retrieval": {
         "client_class": RodinClient,
         "default_model": "gemini-3.8-flash",
-        "embedding_model": "text-embedding-004",
+        "embedding_model": "gemini-embedding-2",
+        "embedding_dim": 768,
         "description": "Rodin Route Retrieval — KNN Topological Memory Engine"
     },
     "jean_grey_phoenix": {

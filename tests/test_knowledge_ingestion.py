@@ -86,6 +86,7 @@ def test_ingestion_engine_with_temporary_hoard():
             outcome_label=1.0,
             metadata={"lobe": "architecture", "source_file": "test_arch.md"}
         )
+        # A vector must name its embedding space to be indexed (this synthetic vector is a test double).
         res = hoard.commit_node_v2(
             payload=node.payload,
             spacetime_anchor=node.spacetime_anchor,
@@ -93,15 +94,16 @@ def test_ingestion_engine_with_temporary_hoard():
             embedding_64d=node.embedding_64d,
             embedding_768d=node.embedding_768d,
             outcome_label=node.outcome_label,
-            metadata=node.metadata
+            metadata=node.metadata,
+            embed_space=hoard.space.id,
         )
         assert res["status"] == "COMMITTED_TO_HOARD_V2"
         assert len(hoard.local_sparse_cache) == 1
+        assert res["chroma_synced"] is True
 
         # Test query
         results = hoard.chroma_query([0.1] * 768, n_results=1)
-        # Even if chroma_collection is in fallback mode, should return list
-        assert isinstance(results, list)
+        assert [r["ccid"] for r in results] == ["LOBE_ARCH_TEST_001"]
 
 
 def test_lobe_definitions_intact():

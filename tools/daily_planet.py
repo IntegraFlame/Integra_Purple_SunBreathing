@@ -544,18 +544,17 @@ class DailyPlanetProtocol:
         return report
 
     # ─────────────────────────────────────────────────────────────────────────
-    # STAGE 6: HOARD NODE COMMITMENT (HoardNode v2.0 Dual MRL Embedding)
+    # STAGE 6: HOARD NODE COMMITMENT (no invented vector; embedding is a separate, explicit step)
     # ─────────────────────────────────────────────────────────────────────────
     def stage_6_commit_to_hoard(self, report: DailyPlanetReport) -> str:
         """
-        Commits the report to The Hoard memory manifold with dual MRL embeddings
-        (coarse 64d, fine 768d) and Keplerian celestial indexing.
+        Commits the report to The Hoard memory manifold with Keplerian celestial indexing.
+        The node is stored WITHOUT a vector (metadata embedding_status PENDING): this stage used to give it a SHA-512
+        pseudo-vector, which looked like an embedding and was not one. TheHoard.embed_pending() /
+        tools/rodin_reembed.py embeds it with the real model, in the Hoard's embedding space.
         """
         ccid = f"CCID_DAILY_PLANET_{report.report_id}"
         report.hoard_ccid = ccid
-
-        # Generate coarse (64d) and fine (768d) embeddings
-        coarse_64d, fine_768d = self._generate_mrl_embeddings(report.summary)
 
         spacetime_anchor = {
             "x": report.celestial_vector[0],
@@ -580,7 +579,8 @@ class DailyPlanetProtocol:
             "lifecycle": "DAILY_PLANET_6_STAGE",
             "cra_approved": True,
             "query": report.query,
-            "domain": report.domain_focus
+            "domain": report.domain_focus,
+            "embedding_status": "PENDING"
         }
 
         # Commit directly via Hoard v2.0
@@ -588,8 +588,6 @@ class DailyPlanetProtocol:
             ccid=ccid,
             payload=payload,
             spacetime_anchor=spacetime_anchor,
-            embedding_64d=coarse_64d,
-            embedding_768d=fine_768d,
             outcome_label=1.0,  # Validated sovereign research artifact
             metadata=metadata
         )
@@ -708,6 +706,8 @@ class DailyPlanetProtocol:
     def _generate_mrl_embeddings(self, text: str) -> Tuple[List[float], List[float]]:
         """
         Generates deterministic pseudo-MRL embeddings (coarse 64d, fine 768d).
+        NOT a model embedding: SHA-512 bytes scaled to a unit vector. It carries no meaning, nothing stores it any
+        more (stage 6 commits without a vector), and it is kept only because its unit test exercises it.
         Conforms to Matryoshka sub-vector preservation:
         The 64d vector is the prefix slice of the normalized 768d vector.
         """

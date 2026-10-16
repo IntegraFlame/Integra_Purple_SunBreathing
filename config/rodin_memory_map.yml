@@ -1,0 +1,328 @@
+# INTEGRA O/S: RODIN MEMORY MAP
+#
+# Where each kind of knowledge lives, what indexes it, and where it must never go.
+# Rodin's memory-mapping role; ADR-005 (the memory substrate). Loaded and checked by memory/memory_map.py.
+#
+# STATUS: PROPOSED (2026-10-15, Claude Code session 73d8a26c) for the Architect's approval.
+# This file DESCRIBES. It moves no data and changes no setting. Every move it points toward needs a yes.
+#
+# Fields:  tier    W working memory   H hot index (derived)   C cold source of truth   L library
+#                  R relational       S save states           A archive (raw history)  D documents   I inbox
+#          base    homebase = integra-homebase (nested repo) | repo = Integra_Purple_SunBreathing (root repo)
+#                  | claude_memory = the assistant's memory folder | absolute | ram
+#          git     tracked = published in the public repo | ignored | outside-repo | n/a
+#          visibility  public-repo (anything here is published) | local-only (never published)
+#          onedrive    true = the folder is inside OneDrive (SQLite and OneDrive do not mix: see ADR-005)
+
+version: 1
+status: PROPOSED
+embedding_space: "gemini-embedding-2|768|asym-v1"
+
+stores:
+  # ───────────── working memory ─────────────
+  - id: ram_embedding_cache
+    tier: W
+    base: ram
+    visibility: local-only
+    git: n/a
+    source_of_truth: false
+    holds: [query_embedding, document_embedding]
+    writer: "memory.embedding_service.EmbeddingService (LRU, 512 entries per process)"
+    note: "Lost at restart by design. Saves a paid call when the same text is embedded twice."
+
+  - id: ram_hoard_cache
+    tier: W
+    base: ram
+    visibility: local-only
+    git: n/a
+    source_of_truth: false
+    holds: [node]
+    writer: "TheHoard.local_sparse_cache (filled by commits and by load_shards_from_disk)"
+    note: "The kernel does not load the shards at startup (only scripts/enter_swds.py does). Gate III reads the vector index first and this cache only as a fallback."
+
+  - id: rolling_context
+    tier: W
+    base: homebase
+    path: kernel_memory/rolling_context.json
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [working_context]
+    writer: "TheHoard (creates it); PhoenixForge.consolidate_sleep_cycle (records the last SWDS epoch)"
+    note: "Tiny today. If it ever holds conversation turns it would be published: keep it content-free, or make it local-only (Architect's decision)."
+
+  - id: core_identity
+    tier: D
+    base: homebase
+    path: kernel_memory/core_identity.txt
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [identity]
+    writer: "TheHoard (creates it if missing)"
+
+  - id: claude_memory_index
+    tier: W
+    base: claude_memory
+    path: "."
+    visibility: local-only
+    git: outside-repo
+    source_of_truth: true
+    holds: [assistant_note]
+    writer: "the assistant (Claude Code auto-memory: MEMORY.md and the notes it points to)"
+
+  # ───────────── nodes: cold source of truth, hot index ─────────────
+  - id: raw_shards
+    tier: C
+    base: homebase
+    path: kernel_memory/hoard/raw_shards
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [node, save_state, crystallization]
+    writer: "TheHoard.commit_node_v2 and embed_pending (atomic replace; only the three embedding keys change)"
+    note: "One JSON file per node. kernel_memory is tracked in git, so every committed node is published: a node that must stay private belongs in a local-only store."
+
+  - id: chroma_active
+    tier: H
+    base: homebase
+    path: local_dbs/chroma_storage
+    collection: "integra_hoard__gemini-embedding-2-768-asym-v1"
+    visibility: local-only
+    git: ignored
+    source_of_truth: false
+    onedrive: true
+    holds: [node, lobe_chunk]
+    writer: "TheHoard.chroma_upsert, chroma_upsert_many, embed_pending; scripts/ingest_knowledge.py"
+    note: "One collection per embedding space. Derived: it can be rebuilt from the shards and the lobe files."
+
+  - id: chroma_legacy
+    tier: H
+    base: homebase
+    path: local_dbs/chroma_storage
+    collection: "integra_hoard"
+    status: retired
+    visibility: local-only
+    git: ignored
+    source_of_truth: false
+    onedrive: true
+    holds: []
+    writer: "nobody (never queried, never written)"
+    note: "5,526 rows measured 2026-10-15; none holds a vector from a model and 2,974 rows are exact duplicate chunks. Delete only with the Architect's approval, after the new collection is built."
+
+  - id: libraries
+    tier: L
+    base: homebase
+    path: kernel_memory/hoard/libraries
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [library_book]
+    writer: "PhoenixForge.consolidate_sleep_cycle (SWDS)"
+
+  - id: modules
+    tier: D
+    base: homebase
+    path: kernel_memory/hoard/modules
+    status: unused
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    holds: []
+    writer: "nobody yet"
+    note: "Blueprint manifests per the Hoard schema; empty."
+
+  - id: vectors_dir
+    tier: H
+    base: homebase
+    path: kernel_memory/vectors
+    status: unused
+    visibility: public-repo
+    git: tracked
+    source_of_truth: false
+    holds: []
+    writer: "nobody yet"
+    note: "Reserved by the schema. The vectors live in the shard files and the Chroma collection; do not add a third copy here."
+
+  - id: drop_in
+    tier: I
+    base: homebase
+    path: kernel_memory/drop_in
+    status: unused
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    holds: [inbox_file]
+    writer: "the Architect (by hand)"
+    note: "Empty. Anything dropped here becomes tracked unless it is ignored."
+
+  - id: metatron_db
+    tier: R
+    base: homebase
+    path: local_dbs/metatron_manifold.db
+    visibility: local-only
+    git: ignored
+    source_of_truth: true
+    onedrive: true
+    holds: [thermo_loop]
+    writer: "memory.database.metatron_deploy.record_loop (called only by the unwired auto_crystallize)"
+    note: "SQLite with WAL files inside OneDrive: ADR-005 action 4 moves it out."
+
+  # ───────────── save states, archive, documents ─────────────
+  - id: save_states_root
+    tier: S
+    base: repo
+    path: "The Hoard"
+    exclude: ["The Hoard/antigravity_conversations", "The Hoard/Slow-Wave Deep Sleep Reports"]   # stores of their own, listed below
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [save_state, handoff]
+    writer: "the assistant at a thread's end (CCID_<unix>_SAVE_STATE_REPORT.md and its JSON)"
+
+  - id: swds_reports
+    tier: S
+    base: repo
+    path: "The Hoard/Slow-Wave Deep Sleep Reports"
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [swds_report]
+    writer: "the SWDS wake report"
+
+  - id: antigravity_archive
+    tier: A
+    base: repo
+    path: "The Hoard/antigravity_conversations"
+    visibility: local-only
+    git: ignored
+    source_of_truth: true
+    onedrive: true
+    holds: [conversation_archive]
+    writer: "copied from ~/.gemini by the Architect; read by the folder-13 method"
+    note: "Archive content never goes into the public repo. Its summaries (_summaries/) are local too."
+
+  - id: docs_blueprint
+    tier: D
+    base: homebase
+    path: docs
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [ruling]
+    writer: "the assistant and the Architect (blueprint, ADRs, design decisions)"
+    note: "No ingestion lobe covers this folder, so Rodin cannot retrieve the canonical blueprint today. Adding a lobe is the Architect's decision."
+
+  - id: reading_ledger
+    tier: D
+    base: homebase
+    path: orchestration/UNIFY_READING_LEDGER.md
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    holds: [reading_ledger_row]
+    writer: "the assistant (content-free rows only)"
+
+  - id: tasks
+    tier: D
+    base: repo
+    path: productivity/TASKS.md
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    holds: [task]
+    writer: "the assistant and the Architect"
+
+  # ───────────── proposed (ADR-005); nothing exists until the Architect approves ─────────────
+  - id: memory_db
+    tier: C
+    base: absolute
+    path: 'C:\IntegraData\memory.db'
+    status: proposed
+    visibility: local-only
+    git: outside-repo
+    source_of_truth: true
+    onedrive: false
+    holds: [node, handoff]
+    writer: "(proposed) one SQLite file: nodes, edges, vectors (sqlite-vec, 768-d, model name per vector), FTS5, the ledger; served to every thread by a small MCP memory server"
+    note: "ADR-005 option A, Proposed 2026-10-09. Replaces the three Hoard locations and the OneDrive-resident databases."
+
+kinds:
+  identity:
+    primary: core_identity
+    description: "The kernel's identity text. It is read at start, not retrieved."
+    embed: false
+  working_context:
+    primary: rolling_context
+    also: [ram_hoard_cache]
+    description: "What the kernel needs right now."
+    embed: false
+  assistant_note:
+    primary: claude_memory_index
+    description: "The assistant's own working notes: who the Architect is, feedback, project facts the code does not show."
+    embed: false
+  node:
+    primary: raw_shards
+    also: [chroma_active, ram_hoard_cache]
+    description: "A Hoard node: the file is the source of truth, the vector is an index row with its embedding space recorded."
+    embed: true
+  save_state:
+    primary: save_states_root
+    also: [raw_shards, chroma_active]
+    description: "A checkpoint written at a thread's end; the Hoard also holds it as a node."
+    embed: true
+  crystallization:
+    primary: raw_shards
+    also: [metatron_db]
+    description: "A node recording one thermodynamic loop."
+    embed: false
+  thermo_loop:
+    primary: metatron_db
+    description: "One Metatron loop row."
+    embed: false
+  swds_report:
+    primary: swds_reports
+    description: "The wake report of a sleep cycle."
+    embed: false
+  library_book:
+    primary: libraries
+    description: "A consolidated book written by SWDS."
+    embed: false
+  lobe_chunk:
+    primary: chroma_active
+    description: "A chunk of a document that stays where it is (the 12th Step lobes). The file is the source of truth; the chunk is a rebuildable index row."
+    embed: true
+  conversation_archive:
+    primary: antigravity_archive
+    description: "Raw history. Read in place by the folder-13 method."
+    embed: false
+  ruling:
+    primary: docs_blueprint
+    description: "Blueprint, ADRs, design decisions."
+    embed: true
+  reading_ledger_row:
+    primary: reading_ledger
+    description: "A content-free record that a folder was read."
+    embed: false
+  task:
+    primary: tasks
+    description: "An open or finished task."
+    embed: false
+  handoff:
+    primary: save_states_root
+    also: [memory_db]
+    description: "What the next thread needs first. Today the save state; ADR-005 adds get_kernel_card and write_handoff over MCP."
+    embed: true
+  secret:
+    primary: null
+    also: []
+    never: "Credentials live only in git-ignored .env files and the operating system's environment. They are never written to a shard, a chunk, a report, a ledger row, a note, a log or a document."
+    description: "API keys, tokens, recovery codes."
+    embed: false

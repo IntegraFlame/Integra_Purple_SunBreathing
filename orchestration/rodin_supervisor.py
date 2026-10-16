@@ -2,20 +2,31 @@
 INTEGRA O/S: RODIN SUPERVISOR (AGENT CONDUCTOR)
 Module: orchestration/rodin_supervisor.py
 Layer: 3 (Cognitive Fulcrum / Swarm Orchestration)
-Version: 8.2.2-PURPLE
+Version: 8.2.3-PURPLE
 
-The Rodin Supervisor coordinates node evaluation across worker agents 
-(AnalystAgent, ResearchAgent, DBAgent, DevOpsAgent) through a standardized 
-state schema. It uses the KNN-Enhanced RodinProtocol to mathematically 
+The Rodin Supervisor coordinates node evaluation across worker agents
+(AnalystAgent, ResearchAgent, DBAgent, DevOpsAgent) through a standardized
+state schema. It uses the KNN-Enhanced RodinProtocol to mathematically
 validate reasoning paths before dispatching agents.
 
 This enforces the Voltron Principle: acute, focused, centralized action,
 preventing the dispersal of unsupervised agents that create false-positives.
+
+v8.2.3: Gate III is evaluated on the real embedding of the prompt against the Hoard's nodes in that
+embedding space (it used a constant vector and an empty candidate list). When the embedding model cannot
+be used the result is an ERROR, not a HALT, and Alexandria is not sent out: an infrastructure fault is not
+a knowledge gap. A PASS returns the retrieved neighbours as evidence; the worker agents named in the
+registry are labels only, and the output says so.
+
+dispatch() blocks on the embedding call (network). Call it from a worker thread (a plain `def` FastAPI
+endpoint runs in a threadpool), never directly from the event loop.
 """
 
 from typing import TypedDict, List, Dict, Any, Optional
+import json
 import time
 
+from memory.embedding_service import EmbeddingUnavailable
 from memory.rodin_protocol import RodinProtocol
 from memory.alexandria_protocol import AlexandriaProtocol
 
@@ -40,19 +51,49 @@ class AgentState(TypedDict):
 
 class RodinSupervisor:
     """
-    The Agent Conductor. Coordinates the Swarm based on the mathematical 
+    The Agent Conductor. Coordinates the Swarm based on the mathematical
     verdicts of the RodinProtocol and routes failures to the AlexandriaProtocol.
     """
 
-    def __init__(self, rodin_protocol: RodinProtocol = None):
+    def __init__(self, rodin_protocol: RodinProtocol = None, alexandria: Any = None):
         self.rodin = rodin_protocol or RodinProtocol()
-        self.alexandria = AlexandriaProtocol()
+        self.alexandria = alexandria or AlexandriaProtocol()
         self.agent_registry = {
             "ANALYST": "AnalystAgent - Data synthesis and metric evaluation",
             "RESEARCH": "ResearchAgent - Deep traversal of internal Hoard",
             "DBA": "DBAgent - SQL/pgvector database interactions",
             "DEVOPS": "DevOpsAgent - Environment modification and tool execution"
         }
+
+    PREVIEW_CHARS = 500
+
+    @classmethod
+    def _slim_neighbour(cls, node: Dict[str, Any]) -> Dict[str, Any]:
+        """A neighbour without its vector and with a short preview of its content."""
+        keep = ("ccid", "distance", "similarity", "outcome_label", "created_at", "embed_space", "is_stale")
+        slim = {k: node[k] for k in keep if k in node}
+        payload = node.get("payload")
+        text = payload if isinstance(payload, str) else json.dumps(payload, ensure_ascii=False, default=str)
+        slim["payload_preview"] = text[: cls.PREVIEW_CHARS] + ("..." if len(text) > cls.PREVIEW_CHARS else "")
+        return slim
+
+    def _candidates_from_hoard(self, embedding) -> tuple:
+        """(candidates, source, note). source is INDEX (Chroma neighbours), CACHE (in-memory nodes) or NONE (no Hoard)."""
+        hoard = self.rodin.hoard
+        if hoard is None:
+            return [], "NONE", "no Hoard is attached to Rodin"
+        note = None
+        if hoard.vector_search_available():
+            try:
+                rows = hoard.chroma_candidates(
+                    embedding.vector, n_results=self.rodin.k * 3, space_id=embedding.space.id
+                )
+                return rows, "INDEX", None
+            except Exception as exc:  # noqa: BLE001  (reported in the result, then the cache is used)
+                note = f"index query failed, using the in-memory nodes: {exc}"
+        else:
+            note = "the vector index is unavailable, using the in-memory nodes"
+        return hoard.get_rodin_candidates(space_id=embedding.space.id), "CACHE", note
 
     def initialize_state(self, prompt: str) -> AgentState:
         """Initialize a blank state for the agent swarm."""
@@ -71,42 +112,73 @@ class RodinSupervisor:
     def dispatch(self, state: AgentState, candidate_nodes: List[Dict[str, Any]] = None) -> AgentState:
         """
         The central conductor loop.
-        1. Evaluates the current state via RodinProtocol's KNN Gate III.
-        2. If PASS: Selects the appropriate worker agent and executes.
-        3. If HALT: Dispatches the Alexandria Protocol for Loop 2 Learning.
+        1. Embeds the prompt (the real model, or an ERROR result: no substitute vector, no Alexandria).
+        2. Evaluates the Hoard's nodes in that embedding space through RodinProtocol's KNN Gate III.
+        3. If PASS: returns the neighbours as evidence (no worker agent exists yet, and the output says so).
+        4. If HALT: dispatches the Alexandria Protocol for Loop 2 Learning.
         """
-        if candidate_nodes is None:
-            # Fallback to internal hoard query if no candidates provided
-            candidate_nodes = []
-            if self.rodin.hoard:
-                # Mock extraction for backward compatibility
-                pass
+        prompt = state["input"]
 
-        # 1. Run the KNN Node Integrity Review (Gate III)
-        # We need a query vector. In a real embedding space, this would be computed via a model.
-        # Here we mock the 768d vector for the routing logic.
-        mock_query_vec = [0.1] * 768 
-        
+        # 1. The query vector: the model's, or an honest failure
+        try:
+            embedding = self.rodin.generate_query_embedding(prompt)
+        except EmbeddingUnavailable as exc:
+            state["rodin_output"] = {
+                "decision": "ERROR",
+                "action_route": "NONE",
+                "error": {"code": exc.code, "detail": exc.detail},
+                "log": f"Gate III not evaluated: embedding unavailable ({exc.code}).",
+            }
+            state["intermediate_steps"].append({"action": "EMBEDDING_UNAVAILABLE", "code": exc.code})
+            state["output"] = (
+                f"Rodin could not evaluate Gate III: embedding unavailable ({exc.code}: {exc.detail}). "
+                "No agent was dispatched and Alexandria was not triggered."
+            )
+            state["spacetime_payload"]["causal_proof"].append("RODIN_EMBEDDING_UNAVAILABLE")
+            return state
+
+        # 2. Candidates: the caller's, else the nearest rows of the Hoard's index in the query's space (nodes AND lobe
+        #    chunks), else the nodes held in memory when the index cannot be used (said so in the result).
+        source_note = None
+        if candidate_nodes is not None:
+            source = "CALLER"
+        else:
+            candidate_nodes, source, source_note = self._candidates_from_hoard(embedding)
+
+        # 3. Run the KNN Node Integrity Review (Gate III)
         gate_result = self.rodin.review_node_integrity(
-            query_vec=mock_query_vec,
-            candidate_nodes=candidate_nodes
+            query_vec=embedding.vector,
+            candidate_nodes=candidate_nodes,
+            space=embedding.space,
         )
-        
+        # The state travels in HTTP responses: neighbours keep their identity and scores, not their vectors.
+        gate_result = {
+            **gate_result,
+            "neighbors": [self._slim_neighbour(n) for n in gate_result.get("neighbors", [])],
+            "candidate_source": source,
+            "candidate_source_note": source_note,
+        }
+
         state["rodin_output"] = gate_result
         state["spacetime_payload"]["causal_proof"].append("RODIN_GATE_III_EVALUATED")
 
-        # 2. Conductor Routing
+        # 4. Conductor Routing
         if gate_result["decision"] == "PASS":
-            # The neighborhood is safe. Route to an internal worker agent.
-            # (In a full LangGraph, this would invoke the specific node).
+            # The neighbourhood is reliable. Rodin retrieves ingredients, not meals: the neighbours are the result.
+            neighbour_ids = [n.get("ccid") for n in gate_result.get("neighbors", [])]
             state["intermediate_steps"].append({
-                "action": "DISPATCH_INTERNAL_AGENT",
-                "agent": "ANALYST", # Defaulting for simulation
-                "confidence": gate_result["confidence"]
+                "action": "GATE_III_PASS",
+                "confidence": gate_result["confidence"],
+                "neighbors": neighbour_ids,
+                "worker_dispatch": "NOT_IMPLEMENTED",
             })
-            state["output"] = f"Action successfully executed by Swarm. [M_knn = {gate_result['confidence']:.4f}]"
-            state["spacetime_payload"]["causal_proof"].append("EXECUTE_ACTION")
-            
+            state["output"] = (
+                f"Gate III PASS [M_knn = {gate_result['confidence']:.4f}]. "
+                f"{len(neighbour_ids)} neighbour node(s) retrieved: {', '.join(str(i) for i in neighbour_ids)}. "
+                "No worker agent ran: the swarm roles are not implemented."
+            )
+            state["spacetime_payload"]["causal_proof"].append("GATE_III_PASS_RETRIEVAL_ONLY")
+
         else:
             # The neighborhood is unstable or stale.
             # Trigger Alexandria Protocol (Loop 2 Learning).
@@ -114,9 +186,9 @@ class RodinSupervisor:
                 "action": "TRIGGER_ALEXANDRIA_PROTOCOL",
                 "failure_reasons": gate_result.get("failure_reasons", [])
             })
-            
+
             alexandria_result = self.alexandria.execute_loop_2_learning(state["input"])
-            
+
             state["output"] = f"Rodin halted execution. Alexandria Protocol engaged. {alexandria_result['status']}"
             state["spacetime_payload"]["causal_proof"].append("ALEXANDRIA_FALLBACK_TRIGGERED")
 

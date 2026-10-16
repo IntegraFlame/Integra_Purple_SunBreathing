@@ -2,7 +2,7 @@
 INTEGRA O/S: ROUTE RETRIEVAL METHODOLOGY
 Module: memory/rodin_protocol.py
 Layer: 2 (Cheshire Cat Kernel & Rodin: Inter-Hemispheric Highway & Veto Arbiter)
-Status: PRODUCTION SOVEREIGN IMPLEMENTATION (KNN-Enhanced v8.2.2)
+Status: PRODUCTION SOVEREIGN IMPLEMENTATION (KNN-Enhanced v8.2.2, loud failures v8.2.3)
 
 Enhancement: Replaces monolithic centroid-based M_sem with localized
 K-Nearest Neighbors (KNN) Isotropic Density Estimation (M_knn).
@@ -16,14 +16,29 @@ Mathematical Foundation:
         - d = cosine distance between P_current and neighbor N_i
         - sigma = Gaussian kernel bandwidth (default 0.5)
 
+    (The code in calculate_neighborhood_density divides by the summed weights, not by K.
+    That difference is recorded as an open question and is not changed here.)
+
 Gate III RLVR Decision:
     PASS (Execute Action)  : M_knn >= tau (0.85) AND M_stale = False
     HALT (Alexandria Loop)  : M_knn < tau OR M_stale = True
+
+v8.2.3, loud failures (ADR-005 action 2): the query vector comes from the embedding model
+(memory/embedding_service.py) or the call raises EmbeddingUnavailable. There is no hash fallback.
+A retrieval that could not use the model or the vector index says so (`degraded`, `fallback_reason`).
 """
 
 import math
 import time
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Tuple, Optional, Union
+
+from memory.embedding_service import (
+    EmbeddingResult,
+    EmbeddingService,
+    EmbeddingSpace,
+    EmbeddingUnavailable,
+    get_default_embedding_service,
+)
 
 
 class RodinProtocol:
@@ -32,8 +47,10 @@ class RodinProtocol:
     Retrieves 'ingredients, not meals' using Cosine Similarity:
     q . k = ||q|| * ||k|| * cos(theta)
 
-    Applies Matryoshka Representation Learning (MRL) for fast 64-dim sweeps
-    followed by fine 768-dim context reranking.
+    Applies Matryoshka Representation Learning (MRL): a fast coarse sweep on the
+    first `coarse_dim` coordinates, then a fine 768-dim rerank. gemini-embedding-2 is
+    trained with MRL and documents 128-3072 as its supported sizes, so the coarse
+    tier defaults to 128 (the earlier 64 is below the documented minimum).
 
     KNN Enhancement (v8.2.2):
         Instead of comparing against a single centroid, the protocol now
@@ -50,16 +67,18 @@ class RodinProtocol:
     DEFAULT_TAU = 0.85              # Gate III RLVR threshold
     DEFAULT_SIGMA = 0.5             # Gaussian kernel bandwidth
     DEFAULT_STALE_SECONDS = 604800  # 7 days in seconds
-    COARSE_SIMILARITY_FLOOR = 0.60  # Minimum similarity for MRL Phase 1 pass
+    COARSE_SIMILARITY_FLOOR = 0.60  # Minimum similarity for MRL Phase 1 pass (not yet calibrated on real embeddings)
+    DEFAULT_COARSE_DIM = 128        # documented minimum of gemini-embedding-2
 
     def __init__(
         self,
         hoard=None,
-        mrl_dimensions: Tuple[int, int] = (64, 768),
+        mrl_dimensions: Tuple[int, int] = (DEFAULT_COARSE_DIM, 768),
         k_neighbors: int = DEFAULT_K,
         tau_threshold: float = DEFAULT_TAU,
         sigma: float = DEFAULT_SIGMA,
         stale_threshold_seconds: float = DEFAULT_STALE_SECONDS,
+        embedder: Optional[EmbeddingService] = None,
     ):
         self.coarse_dim, self.fine_dim = mrl_dimensions
         self.hoard = hoard
@@ -67,6 +86,10 @@ class RodinProtocol:
         self.tau = tau_threshold
         self.sigma = sigma
         self.stale_threshold = stale_threshold_seconds
+        self.embedder = embedder
+
+    def _service(self) -> EmbeddingService:
+        return self.embedder or get_default_embedding_service()
 
     # ─────────────────────────────────────────────
     #  CORE MATH: Cosine Similarity / Distance
@@ -89,14 +112,14 @@ class RodinProtocol:
         return 1.0 - self.calculate_cosine_similarity(vec_a, vec_b)
 
     # ─────────────────────────────────────────────
-    #  MRL PHASE 1: Coarse 64-dim Filter (O(1))
+    #  MRL PHASE 1: Coarse prefix filter (O(1))
     # ─────────────────────────────────────────────
 
     def mrl_coarse_filter(
         self, query_vec: List[float], candidate_nodes: List[Dict[str, Any]]
     ) -> List[Dict[str, Any]]:
         """
-        MRL Phase 1: Fast 64-dimensional scan.
+        MRL Phase 1: Fast scan on the first `coarse_dim` coordinates.
         Eliminates candidates below the coarse similarity floor.
         Returns a reduced candidate set for Phase 2 fine re-ranking.
         """
@@ -246,19 +269,56 @@ class RodinProtocol:
             }
 
     # ─────────────────────────────────────────────
+    #  CANDIDATE HYGIENE: same space, same size
+    # ─────────────────────────────────────────────
+
+    @staticmethod
+    def _space_id(space: Union[EmbeddingSpace, str, None]) -> Optional[str]:
+        return space.id if isinstance(space, EmbeddingSpace) else space
+
+    def _usable_candidates(
+        self,
+        query_vec: List[float],
+        candidate_nodes: List[Dict[str, Any]],
+        space: Union[EmbeddingSpace, str, None] = None,
+    ) -> Tuple[List[Dict[str, Any]], int, int]:
+        """
+        Keeps candidates whose vector is in the query's space (when a space is given) and has the query's length.
+        Vectors from another model, or from no named space, are not comparable, so they never take part.
+        Returns (usable, excluded_other_space, excluded_dim_mismatch).
+        """
+        space_id = self._space_id(space)
+        usable: List[Dict[str, Any]] = []
+        other_space = dim_mismatch = 0
+        for node in candidate_nodes:
+            if space_id is not None and node.get("embed_space") != space_id:
+                other_space += 1
+                continue
+            emb = node.get("embedding")
+            if not emb or len(emb) != len(query_vec):
+                dim_mismatch += 1
+                continue
+            usable.append(node)
+        return usable, other_space, dim_mismatch
+
+    # ─────────────────────────────────────────────
     #  UNIFIED PIPELINE: route_retrieval_sweep
     # ─────────────────────────────────────────────
 
     def route_retrieval_sweep(
-        self, query_vec: List[float], candidate_nodes: List[Dict[str, Any]]
+        self,
+        query_vec: List[float],
+        candidate_nodes: List[Dict[str, Any]],
+        space: Union[EmbeddingSpace, str, None] = None,
     ) -> List[Dict[str, Any]]:
         """
         Legacy-compatible two-phase MRL retrieval sweep.
-        Phase 1: 64-dim coarse filter
+        Phase 1: coarse prefix filter
         Phase 2: Full-dim fine rerank
         Returns scored neighbors sorted by similarity descending.
         """
-        coarse_passed = self.mrl_coarse_filter(query_vec, candidate_nodes)
+        usable, _, _ = self._usable_candidates(query_vec, candidate_nodes, space)
+        coarse_passed = self.mrl_coarse_filter(query_vec, usable)
         fine_ranked = self.mrl_fine_rerank(query_vec, coarse_passed)
         # Return sorted by similarity descending for backward compat
         return sorted(fine_ranked, key=lambda x: x["similarity"], reverse=True)
@@ -268,22 +328,28 @@ class RodinProtocol:
     # ─────────────────────────────────────────────
 
     def review_node_integrity(
-        self, query_vec: List[float], candidate_nodes: List[Dict[str, Any]]
+        self,
+        query_vec: List[float],
+        candidate_nodes: List[Dict[str, Any]],
+        space: Union[EmbeddingSpace, str, None] = None,
     ) -> Dict[str, Any]:
         """
         Full KNN-Enhanced Rodin Pipeline:
-        1. MRL Phase 1: Coarse 64d filter
-        2. MRL Phase 2: Fine 768d re-rank -> K nearest neighbors
-        3. Calculate M_knn (Neighborhood Density)
-        4. Check M_stale (Temporal Validity)
-        5. Gate III RLVR Decision
+        1. Candidate hygiene: same space, same dimension (counted, never silent)
+        2. MRL Phase 1: Coarse prefix filter
+        3. MRL Phase 2: Fine 768d re-rank -> K nearest neighbors
+        4. Calculate M_knn (Neighborhood Density)
+        5. Check M_stale (Temporal Validity)
+        6. Gate III RLVR Decision
 
         Returns:
             Dict with decision (PASS/HALT), M_knn score, staleness,
-            neighbor data, and routing information.
+            neighbor data, routing information and the candidate counts.
         """
+        usable, other_space, dim_mismatch = self._usable_candidates(query_vec, candidate_nodes, space)
+
         # Phase 1: Coarse filter
-        coarse_passed = self.mrl_coarse_filter(query_vec, candidate_nodes)
+        coarse_passed = self.mrl_coarse_filter(query_vec, usable)
 
         # Phase 2: Fine re-rank -> top K
         neighbors = self.mrl_fine_rerank(query_vec, coarse_passed)
@@ -300,6 +366,10 @@ class RodinProtocol:
             "is_stale": is_stale,
             "k_neighbors_found": len(neighbors),
             "coarse_candidates": len(coarse_passed),
+            "candidates_total": len(candidate_nodes),
+            "excluded_other_space": other_space,
+            "excluded_dim_mismatch": dim_mismatch,
+            "embedding_space": self._space_id(space),
             "neighbors": neighbors,
             **gate_result,
         }
@@ -308,47 +378,22 @@ class RodinProtocol:
     #  QUERY VECTOR GENERATION
     # ─────────────────────────────────────────────
 
-    def generate_query_vector(self, prompt: str) -> List[float]:
+    def generate_query_embedding(self, prompt: str, task: str = "search result") -> EmbeddingResult:
         """
-        Generates a query vector from a prompt string for MRL retrieval.
-
-        Block 8 (Phase D): Uses RodinClient (Gemini 2.0 Flash) for real
-        text embeddings when available. Falls back to deterministic hash-based
-        pseudo-embedding if the API is unreachable.
-
-        Returns:
-            A list of floats representing the query vector (768-dim).
+        The query's embedding from the model, in the documented query format, with the space it belongs to.
+        Raises EmbeddingUnavailable when the model cannot be used. There is no substitute vector.
         """
-        # Attempt live embedding via RodinClient
-        try:
-            from core.api_clients import RodinClient
-            from core.model_router import MODEL_ROUTER
-            client = MODEL_ROUTER.get_routed_client("rodin_retrieval") or RodinClient()
-            if client.client is not None:
-                vec = client.embed_sync(prompt)
-                if vec and len(vec) > 0:
-                    # Align to fine_dim (768)
-                    if len(vec) < self.fine_dim:
-                        vec = vec + [0.0] * (self.fine_dim - len(vec))
-                    else:
-                        vec = vec[:self.fine_dim]
-                    # Normalize to unit vector for cosine similarity
-                    norm = math.sqrt(sum(v * v for v in vec))
-                    if norm > 0:
-                        vec = [v / norm for v in vec]
-                    return vec
-        except Exception:
-            pass  # Fall back to hash-based embedding
+        result = self._service().embed_query(prompt, task=task)
+        if result.space.dim != self.fine_dim:
+            raise EmbeddingUnavailable(
+                "BAD_DIMENSION",
+                f"space {result.space.id} has {result.space.dim} dimensions but Rodin's fine tier uses {self.fine_dim}",
+            )
+        return result
 
-        # Fallback: deterministic pseudo-embedding from the prompt
-        import hashlib
-        hash_bytes = hashlib.sha256(prompt.encode()).digest()
-        raw = list(hash_bytes) * (self.fine_dim // len(hash_bytes) + 1)
-        vec = [float(b) / 255.0 for b in raw[:self.fine_dim]]
-        norm = math.sqrt(sum(v * v for v in vec))
-        if norm > 0:
-            vec = [v / norm for v in vec]
-        return vec
+    def generate_query_vector(self, prompt: str, task: str = "search result") -> List[float]:
+        """The query vector (unit length, fine_dim values) or EmbeddingUnavailable."""
+        return self.generate_query_embedding(prompt, task=task).vector
 
     # ─────────────────────────────────────────────
     #  HIGH-LEVEL API: route_retrieval
@@ -357,28 +402,47 @@ class RodinProtocol:
     def route_retrieval(self, prompt: str) -> Dict[str, Any]:
         """
         High-level retrieval interface for the Cheshire Cat Kernel.
-        Uses the Hoard's internal sparse cache as the candidate pool,
-        applying MRL cosine KNN when embeddings are populated,
-        and substring matching as a fallback.
-
-        Block 8 Enhancement: Attempts ChromaDB vector search via
-        live embeddings before falling back to internal cache.
+        Embeds the prompt, searches the Hoard's vector index for that embedding space, and falls back to
+        substring matching when it cannot. The fallback is never silent: `degraded` is True when the model or
+        the vector index could not be used, `fallback_reason` says why, and `embed_error` carries the model's error.
 
         Returns ingredients (contextual paths), not fixed answers.
         """
-        results = []
+        results: List[Dict[str, Any]] = []
         retrieval_method = "NO_HOARD"
+        degraded = False
+        fallback_reason: Optional[str] = None
+        embed_error: Optional[Dict[str, str]] = None
+        search_error: Optional[str] = None
+        space_id: Optional[str] = None
+        index_rows: Optional[int] = None
 
         if self.hoard is not None:
-            # Attempt vector search via ChromaDB first
+            vector: Optional[List[float]] = None
             try:
-                query_vec = self.generate_query_vector(prompt)
-                chroma_results = self.hoard.chroma_query(query_vec, n_results=self.k)
-                if chroma_results:
-                    results = chroma_results
-                    retrieval_method = "MRL_COSINE_KNN_CHROMA"
-            except Exception:
-                pass
+                emb = self.generate_query_embedding(prompt)
+                vector, space_id = emb.vector, emb.space.id
+            except EmbeddingUnavailable as exc:
+                degraded = True
+                fallback_reason = f"EMBEDDING_UNAVAILABLE:{exc.code}"
+                embed_error = {"code": exc.code, "detail": exc.detail}
+
+            if vector is not None:
+                if not self.hoard.vector_search_available():
+                    degraded = True
+                    fallback_reason = "VECTOR_SEARCH_UNAVAILABLE"
+                else:
+                    try:
+                        results = self.hoard.chroma_query(vector, n_results=self.k, space_id=space_id)
+                        index_rows = self.hoard.count()
+                        if results:
+                            retrieval_method = "MRL_COSINE_KNN_CHROMA"
+                        else:
+                            fallback_reason = "NO_VECTOR_MATCH"
+                    except Exception as exc:  # noqa: BLE001  (reported below, never hidden)
+                        degraded = True
+                        fallback_reason = f"VECTOR_SEARCH_ERROR:{type(exc).__name__}"
+                        search_error = str(exc)[:300]
 
             # Fallback to internal substring query
             if not results:
@@ -390,5 +454,28 @@ class RodinProtocol:
             "retrieved_paths": results,
             "retrieval_method": retrieval_method,
             "candidate_count": len(results),
+            "degraded": degraded,
+            "fallback_reason": fallback_reason,
+            "embed_error": embed_error,
+            "search_error": search_error,
+            "embedding_space": space_id,
+            "index_rows": index_rows,
             "status": "RODIN_ROUTE_RETRIEVAL_COMPLETE",
+        }
+
+    # ─────────────────────────────────────────────
+    #  STATUS (what GET /rodin/telemetry reports)
+    # ─────────────────────────────────────────────
+
+    def status(self) -> Dict[str, Any]:
+        """
+        Evidence, not a constant: the embedder's state (UNPROVEN until a call has been made, READY after a call
+        returned valid vectors, DEGRADED after a failure, MISCONFIGURED on a bad setting) and its counters.
+        """
+        stats = self._service().stats()
+        return {
+            "embedder_state": stats["state"],
+            "embedding": stats,
+            "coarse_dim": self.coarse_dim,
+            "fine_dim": self.fine_dim,
         }

@@ -3,6 +3,16 @@ INTEGRA O/S: MEMORY MANIFOLD
 Module: memory/the_hoard.py
 Layer: 3 (The Hoard: High-Dimensional Geometric Memory)
 
+Schema v2.1 (Rodin embedding spaces):
+    - Every node may carry a vector, and a vector is trusted only when it names its EmbeddingSpace
+      (model | dimension | prompt format, memory/embedding_service.py). A vector with no space, or an
+      all-zero vector, is stored but never indexed and never searched.
+    - Chroma keeps ONE collection per space (integra_hoard__gemini-embedding-2-768-asym-v1). The
+      legacy collection `integra_hoard` is left untouched and never queried: its 5,526 rows were
+      measured on 2026-10-15 to hold no vector from a model.
+    - Nothing in this module fabricates a vector. Embedding happens in embed_pending(), which is
+      explicit, dry-run by default, deduplicated, stops at the first failure and writes shards atomically.
+
 Schema v2.0 (Phase D+ Upgrade):
     - Adds `outcome_label`, `embedding_64d`, `embedding_768d`, `is_stale`, `created_at`
     - Implements `kernel_memory/` directory structure per blueprint spec:
@@ -23,9 +33,22 @@ Schema v2.0 (Phase D+ Upgrade):
 
 import os
 import json
+import logging
 import time
-import hashlib
-from typing import List, Dict, Any, Optional, Union
+from collections import OrderedDict
+from typing import List, Dict, Any, Optional, Tuple, Union
+
+from memory.embedding_service import (
+    EmbeddingService,
+    EmbeddingSpace,
+    EmbeddingUnavailable,
+    approx_tokens,
+    estimate_cost_usd,
+    get_default_embedding_service,
+    resolve_space_from_env,
+)
+
+logger = logging.getLogger("integra.hoard")
 
 # Celestial temporal injection — all timestamps routed through celestial middleware
 try:
@@ -35,17 +58,22 @@ except ImportError:
     celestial_time = time.time
     celestial_ccid = lambda prefix="CCID": f"{prefix}_{int(time.time())}"
 
+HOARD_VECTOR_DIM = 768  # the schema fields are named embedding_768d; another dimension needs a schema change
+
+LEGACY_COLLECTION = "integra_hoard"
+
 
 class HoardNode:
     """
     A single node in The Hoard memory manifold.
-    
-    Schema v2.0 Fields:
+
+    Schema v2.1 Fields:
         ccid: Cheshire Cat Interaction ID (unique identifier).
         payload: The actual knowledge content (dict, str, or any JSON-serializable).
         spacetime_anchor: 4D celestial coordinates {x, y, z, t}.
-        embedding_64d: Coarse MRL embedding (64 dimensions) for fast retrieval.
-        embedding_768d: Fine MRL embedding (768 dimensions) for precision re-rank.
+        embedding_64d: Prefix slice of the 768d vector (legacy field; Rodin slices the 768d vector itself).
+        embedding_768d: The node's vector in `embed_space`; all zeros when the node has none yet.
+        embed_space: Id of the EmbeddingSpace the vector belongs to, or None. A vector with no space is untrusted.
         outcome_label: Post-hoc quality label (1.0 = SUCCESS, 0.0 = FAILURE, 0.5 = UNKNOWN).
         is_stale: Whether this node has exceeded the temporal staleness threshold.
         created_at: Unix timestamp of node creation.
@@ -54,7 +82,7 @@ class HoardNode:
     """
     __slots__ = (
         "ccid", "payload", "spacetime_anchor",
-        "embedding_64d", "embedding_768d",
+        "embedding_64d", "embedding_768d", "embed_space",
         "outcome_label", "is_stale", "created_at",
         "sufficiency_score", "metadata"
     )
@@ -71,17 +99,24 @@ class HoardNode:
         created_at: Optional[float] = None,
         sufficiency_score: float = 1.0,
         metadata: Optional[Dict[str, Any]] = None,
+        embed_space: Optional[str] = None,
     ):
         self.ccid = ccid
         self.payload = payload
         self.spacetime_anchor = spacetime_anchor
         self.embedding_64d = embedding_64d or [0.0] * 64
-        self.embedding_768d = embedding_768d or [0.0] * 768
+        self.embedding_768d = embedding_768d or [0.0] * HOARD_VECTOR_DIM
+        self.embed_space = embed_space
         self.outcome_label = outcome_label
         self.is_stale = is_stale
         self.created_at = created_at or celestial_time()
         self.sufficiency_score = sufficiency_score
         self.metadata = metadata or {}
+
+    @property
+    def has_vector(self) -> bool:
+        """True only for a non-zero vector that names its space. An untagged vector is not trusted."""
+        return self.embed_space is not None and any(v != 0.0 for v in self.embedding_768d)
 
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to a JSON-compatible dictionary."""
@@ -91,6 +126,7 @@ class HoardNode:
             "spacetime_anchor": self.spacetime_anchor,
             "embedding_64d": self.embedding_64d,
             "embedding_768d": self.embedding_768d,
+            "embed_space": self.embed_space,
             "outcome_label": self.outcome_label,
             "is_stale": self.is_stale,
             "created_at": self.created_at,
@@ -103,11 +139,12 @@ class HoardNode:
         """
         Convert to a Rodin-compatible candidate dict.
         Uses the 768d embedding as the primary 'embedding' key,
-        which Rodin then slices for MRL Phase 1 (64d) and Phase 2 (768d).
+        which Rodin then slices for the coarse tier and the fine re-rank.
         """
         return {
             "ccid": self.ccid,
             "embedding": self.embedding_768d,
+            "embed_space": self.embed_space,
             "outcome_label": self.outcome_label,
             "created_at": self.created_at,
             "payload": self.payload,
@@ -116,7 +153,7 @@ class HoardNode:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "HoardNode":
-        """Deserialize from a dictionary (e.g., loaded from JSON)."""
+        """Deserialize from a dictionary (e.g., loaded from JSON). Shards written before v2.1 have no embed_space."""
         return cls(
             ccid=data.get("ccid", "UNKNOWN"),
             payload=data.get("payload"),
@@ -128,28 +165,158 @@ class HoardNode:
             created_at=data.get("created_at"),
             sufficiency_score=data.get("sufficiency_score", 1.0),
             metadata=data.get("metadata"),
+            embed_space=data.get("embed_space"),
         )
+
+
+def node_embedding_text(node: "HoardNode") -> Tuple[str, Optional[str]]:
+    """
+    (text, title) to embed for a node, in the documented document format [E1]:
+    a lobe chunk embeds its text, a report its summary, a string itself, anything else its sorted JSON.
+    The title is a real one (file name, section header) or None, which the format renders as "none".
+    A ccid is never used as a title: it is noise to the model.
+    """
+    payload = node.payload
+    meta = node.metadata if isinstance(node.metadata, dict) else {}
+    title: Optional[str] = meta.get("filename") or None
+    if isinstance(payload, str):
+        return payload, title
+    if isinstance(payload, dict):
+        title = title or payload.get("filename") or payload.get("header") or payload.get("title") or None
+        for key in ("text", "summary"):
+            value = payload.get(key)
+            if isinstance(value, str) and value.strip():
+                return value, title
+        return json.dumps(payload, ensure_ascii=False, sort_keys=True), title
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True), title
+
+
+def _write_json_atomic(path: str, data: Any) -> None:
+    """Write to a temporary file in the same folder, then replace. A crash leaves the old file or the new one, never half of one."""
+    tmp = f"{path}.tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        os.replace(tmp, path)
+    except Exception:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+        raise
+
+
+def load_nodes_from_shards(shards_dir: str) -> Tuple[List["HoardNode"], Dict[str, int]]:
+    """
+    Read-only: the node shards of a folder as HoardNodes, plus a report {loaded, skipped_not_a_node, unreadable}.
+    A file that is not a node (no `ccid` and `payload`) or cannot be parsed is counted and skipped, so it can never
+    be rewritten as one. A repeated ccid keeps its first shard. Nothing is created or changed.
+    """
+    report = {"loaded": 0, "skipped_not_a_node": 0, "unreadable": 0}
+    nodes: List[HoardNode] = []
+    if not os.path.isdir(shards_dir):
+        return nodes, report
+    seen = set()
+    for filename in sorted(os.listdir(shards_dir)):
+        if not filename.endswith(".json"):
+            continue
+        try:
+            with open(os.path.join(shards_dir, filename), "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            report["unreadable"] += 1
+            continue
+        if not isinstance(data, dict) or "ccid" not in data or "payload" not in data:
+            report["skipped_not_a_node"] += 1
+            continue
+        try:
+            node = HoardNode.from_dict(data)
+        except Exception:
+            report["unreadable"] += 1
+            continue
+        if node.ccid not in seen:
+            seen.add(node.ccid)
+            nodes.append(node)
+            report["loaded"] += 1
+    return nodes, report
+
+
+def _group_pending(
+    nodes: List["HoardNode"],
+    space: EmbeddingSpace,
+    limit: Optional[int] = None,
+    node_text=node_embedding_text,
+) -> Tuple[List[Tuple[Tuple[str, Optional[str]], List["HoardNode"]]], int, int, int]:
+    """
+    (unique (text, title) groups with their nodes, pending node count, already-embedded count, empty-text count).
+    A node is pending unless it holds a vector that names `space`; identical (text, title) pairs form one group.
+    """
+    pending: List[HoardNode] = []
+    already = 0
+    for node in nodes:
+        if node.has_vector and node.embed_space == space.id:
+            already += 1
+        else:
+            pending.append(node)
+    groups: "OrderedDict[Tuple[str, Optional[str]], List[HoardNode]]" = OrderedDict()
+    skipped_empty = 0
+    for node in pending:
+        text, title = node_text(node)
+        if not text or not text.strip():
+            skipped_empty += 1
+            continue
+        groups.setdefault((text, title), []).append(node)
+    unique = list(groups.items())
+    if limit is not None:
+        unique = unique[: max(0, int(limit))]
+    return unique, len(pending), already, skipped_empty
+
+
+def _plan_dict(space, unique, pending, already, skipped_empty, dry_run) -> Dict[str, Any]:
+    tokens = sum(approx_tokens(text) for (text, _), _ in unique)
+    return {
+        "dry_run": dry_run,
+        "space": space.id,
+        "pending": pending,
+        "already_embedded": already,
+        "unique_texts": len(unique),
+        "skipped_empty": skipped_empty,
+        "estimated_tokens": tokens,
+        "estimated_cost_usd": estimate_cost_usd(tokens),
+        "estimated_cost_batch_usd": estimate_cost_usd(tokens, batch=True),
+    }
+
+
+def plan_embedding(
+    nodes: List["HoardNode"],
+    space: EmbeddingSpace,
+    limit: Optional[int] = None,
+    node_text=node_embedding_text,
+) -> Dict[str, Any]:
+    """What embedding these nodes in `space` would take: counts, tokens and price. Pure: no Hoard, no network, no write."""
+    unique, pending, already, skipped_empty = _group_pending(nodes, space, limit, node_text)
+    return _plan_dict(space, unique, pending, already, skipped_empty, dry_run=True)
 
 
 class TheHoard:
     """
-    High-Dimensional Semantic Manifold (v2.1 — Local Sovereign):
-    
+    High-Dimensional Semantic Manifold (v2.2 — Local Sovereign, embedding spaces):
+
     The Hoard serves as Integra's persistent geometric memory substrate.
-    It stores HoardNodes with dual MRL embeddings (64d coarse, 768d fine),
+    It stores HoardNodes with a vector in a named EmbeddingSpace,
     outcome labels for KNN success-density gating, and temporal staleness tracking.
-    
+
     Architecture:
         - In-memory: `local_sparse_cache` (List[HoardNode]) for fast Rodin retrieval.
         - On-disk: `kernel_memory/` directory tree for Phoenix SWDS consolidation.
-        - Vector DB: ChromaDB (local persistent) for semantic similarity search.
+        - Vector DB: ChromaDB (local persistent), one collection per EmbeddingSpace.
         - Relational: SQLite (via SWDS pipeline) for historical archival.
-    
-    The dual-embedding schema enables the Rodin Protocol's MRL pipeline:
-        Phase 1: 64d coarse filter (O(1) elimination)
+
+    The retrieval schema enables the Rodin Protocol's MRL pipeline:
+        Phase 1: coarse prefix filter (O(1) elimination)
         Phase 2: 768d fine re-rank (precision KNN)
     """
-    
+
     # --- kernel_memory/ Directory Structure ---
     KERNEL_DIRS = [
         "hoard/raw_shards",      # Unconsolidated waking-state JSON shards
@@ -163,28 +330,53 @@ class TheHoard:
         self,
         base_dir: Optional[str] = None,
         chroma_path: Optional[str] = None,
+        embedder: Optional[EmbeddingService] = None,
+        space: Optional[EmbeddingSpace] = None,
     ):
         self.local_sparse_cache: List[HoardNode] = []
+        self.last_load_report: Dict[str, int] = {"loaded": 0, "skipped_not_a_node": 0, "unreadable": 0}
+        self._legacy_rows_cache: Optional[int] = None
 
         # Determine root project directory and kernel_memory base
         if base_dir:
             self.root_dir = base_dir
         else:
             self.root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-        
+
+        # The embedding space this Hoard indexes. An explicit embedder fixes it; otherwise the environment decides.
+        self.embedder = embedder
+        self.config_error: Optional[str] = None
+        if embedder is not None and space is not None and embedder.space != space:
+            raise ValueError(f"embedder space {embedder.space.id} differs from the requested space {space.id}")
+        if space is not None:
+            self.space = space
+        elif embedder is not None:
+            self.space = embedder.space
+            self.config_error = embedder.config_error
+        else:
+            self.space, self.config_error = resolve_space_from_env()
+        if self.space.dim != HOARD_VECTOR_DIM and not self.config_error:
+            self.config_error = (
+                f"The Hoard stores {HOARD_VECTOR_DIM}-d vectors (embedding_768d); space {self.space.id} "
+                f"has {self.space.dim}. Set RODIN_EMBED_DIM={HOARD_VECTOR_DIM}."
+            )
+        if self.config_error:
+            logger.error("Hoard embedding configuration problem: %s", self.config_error)
+
         self.kernel_memory_dir = os.path.join(self.root_dir, "kernel_memory")
         # Legacy compat: The Hoard directory (for save states and CCID files)
         self.hoard_dir = os.path.join(self.kernel_memory_dir, "hoard")
-        
+
         # ChromaDB: Local persistent vector store
         self._chroma_path = chroma_path or os.path.join(self.root_dir, "local_dbs", "chroma_storage")
         os.makedirs(self._chroma_path, exist_ok=True)
         self._chroma_client = None
         self._chroma_collection = None
-        
+        self._chroma_collection_name = self.space.collection_name()
+
         # Initialize directory structure
         self._initialize_kernel_memory()
-        
+
         # Initialize ChromaDB collection
         self._initialize_chromadb()
 
@@ -193,7 +385,7 @@ class TheHoard:
         for subdir in self.KERNEL_DIRS:
             full_path = os.path.join(self.kernel_memory_dir, subdir)
             os.makedirs(full_path, exist_ok=True)
-        
+
         # Create core_identity.txt if it doesn't exist
         identity_path = os.path.join(self.kernel_memory_dir, "core_identity.txt")
         if not os.path.exists(identity_path):
@@ -204,7 +396,7 @@ class TheHoard:
                     "Omega: 1.00\n"
                     "Starfire: [Auteur=1.0, King=1.0, Prophet=1.0]^T\n"
                 )
-        
+
         # Create rolling_context.json if it doesn't exist
         context_path = os.path.join(self.kernel_memory_dir, "rolling_context.json")
         if not os.path.exists(context_path):
@@ -212,13 +404,13 @@ class TheHoard:
                 json.dump({"turns": [], "last_ccid": None}, f, indent=2)
 
     def _initialize_chromadb(self):
-        """Initialize the local ChromaDB persistent client and collection."""
+        """Initialize the local ChromaDB persistent client and the collection of the active embedding space."""
         try:
             import chromadb
             self._chroma_client = chromadb.PersistentClient(path=self._chroma_path)
             self._chroma_collection = self._chroma_client.get_or_create_collection(
-                name="integra_hoard",
-                metadata={"hnsw:space": "cosine"}
+                name=self._chroma_collection_name,
+                metadata={"hnsw:space": "cosine", "embed_space": self.space.id},
             )
         except ImportError:
             # ChromaDB not installed — fall back to cache-only mode
@@ -241,12 +433,18 @@ class TheHoard:
                 pass
             self._chroma_client = None
 
+    def vector_search_available(self) -> bool:
+        """False when ChromaDB is missing or failed to start; Rodin then reports degraded retrieval."""
+        return self._chroma_collection is not None
+
     def chroma_upsert(self, node: 'HoardNode') -> bool:
         """
-        Upsert a HoardNode into the ChromaDB collection for semantic search.
-        Uses the 768d embedding and stores metadata for filtered retrieval.
+        Upsert a HoardNode into the active space's ChromaDB collection.
+        Only a non-zero vector that names the active space is indexed; anything else is refused (False).
         """
-        if self._chroma_collection is None:
+        if self._chroma_collection is None or self.config_error:
+            return False
+        if not node.has_vector or node.embed_space != self.space.id:
             return False
         try:
             self._chroma_collection.upsert(
@@ -258,6 +456,7 @@ class TheHoard:
                     "is_stale": node.is_stale,
                     "created_at": node.created_at,
                     "sufficiency_score": node.sufficiency_score,
+                    "embed_space": node.embed_space,
                 }]
             )
             return True
@@ -265,18 +464,72 @@ class TheHoard:
             print(f"[HOARD] ChromaDB upsert failed for {node.ccid}: {e}")
             return False
 
-    def chroma_query(self, query_embedding: List[float], n_results: int = 5) -> List[Dict[str, Any]]:
+    def chroma_upsert_many(self, items: List[Tuple["HoardNode", str]]) -> int:
         """
-        Semantic similarity search via ChromaDB.
-        Returns the top N most similar nodes by cosine distance.
+        Batch upsert of (node, document text) pairs into the active collection (the 12th Step ingestion uses it).
+        Only trusted nodes are indexed (a non-zero vector in the active space); the number indexed is returned.
+        The node's simple metadata (lobe, source file, chunk position, ...) is stored with the row.
+        A ChromaDB failure raises RuntimeError: a bulk load that loses rows must not look like a success.
         """
+        if self._chroma_collection is None or self.config_error:
+            return 0
+        rows = [(n, d) for n, d in items if n.has_vector and n.embed_space == self.space.id]
+        if not rows:
+            return 0
+        metadatas = []
+        for node, _ in rows:
+            meta = {k: v for k, v in (node.metadata or {}).items() if isinstance(v, (str, int, float, bool))}
+            meta.update({
+                "outcome_label": node.outcome_label,
+                "is_stale": node.is_stale,
+                "created_at": node.created_at,
+                "sufficiency_score": node.sufficiency_score,
+                "embed_space": node.embed_space,
+            })
+            metadatas.append(meta)
+        try:
+            self._chroma_collection.upsert(
+                ids=[n.ccid for n, _ in rows],
+                embeddings=[n.embedding_768d for n, _ in rows],
+                documents=[d for _, d in rows],
+                metadatas=metadatas,
+            )
+        except Exception as e:
+            raise RuntimeError(f"ChromaDB upsert failed: {type(e).__name__}: {e}") from e
+        return len(rows)
+
+    def chroma_get_metadata(self, ids: List[str]) -> Dict[str, Dict[str, Any]]:
+        """Metadata of the rows that already exist in the active collection, keyed by id (empty when none or no ChromaDB)."""
+        if self._chroma_collection is None or not ids:
+            return {}
+        try:
+            got = self._chroma_collection.get(ids=list(ids), include=["metadatas"])
+            return {i: (m or {}) for i, m in zip(got["ids"], got["metadatas"])}
+        except Exception:
+            return {}
+
+    def chroma_query(
+        self,
+        query_embedding: List[float],
+        n_results: int = 5,
+        where: Optional[Dict[str, Any]] = None,
+        space_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        Semantic similarity search in the active space's collection (top N by cosine distance).
+        `space_id`, when given, must be the active space: a query vector from another space raises ValueError
+        instead of returning meaningless neighbours. A ChromaDB failure raises RuntimeError; only a missing
+        ChromaDB returns [] (check vector_search_available()).
+        """
+        if space_id is not None and space_id != self.space.id:
+            raise ValueError(f"query vector is in space {space_id}; this Hoard indexes {self.space.id}")
         if self._chroma_collection is None:
             return []
+        kwargs: Dict[str, Any] = {"query_embeddings": [query_embedding], "n_results": n_results}
+        if where:
+            kwargs["where"] = where
         try:
-            results = self._chroma_collection.query(
-                query_embeddings=[query_embedding],
-                n_results=n_results,
-            )
+            results = self._chroma_collection.query(**kwargs)
             return [
                 {
                     "ccid": results["ids"][0][i],
@@ -287,14 +540,50 @@ class TheHoard:
                 for i in range(len(results["ids"][0]))
             ]
         except Exception as e:
-            print(f"[HOARD] ChromaDB query failed: {e}")
+            raise RuntimeError(f"ChromaDB query failed: {type(e).__name__}: {e}") from e
+
+    def chroma_candidates(
+        self,
+        query_embedding: List[float],
+        n_results: int = 21,
+        space_id: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """
+        The nearest rows of the active space's index, shaped as Rodin candidates (ccid, embedding, embed_space,
+        outcome_label, created_at, is_stale, payload). This is what Gate III reviews: every indexed row, node or lobe
+        chunk, not only the nodes held in memory. A foreign `space_id` raises ValueError; no ChromaDB returns [];
+        a ChromaDB failure raises RuntimeError.
+        """
+        if space_id is not None and space_id != self.space.id:
+            raise ValueError(f"query vector is in space {space_id}; this Hoard indexes {self.space.id}")
+        if self._chroma_collection is None:
             return []
+        try:
+            res = self._chroma_collection.query(
+                query_embeddings=[query_embedding],
+                n_results=n_results,
+                include=["embeddings", "documents", "metadatas", "distances"],
+            )
+            rows = []
+            for i, ccid in enumerate(res["ids"][0]):
+                meta = (res["metadatas"][0][i] or {}) if res.get("metadatas") else {}
+                rows.append({
+                    "ccid": ccid,
+                    "embedding": [float(x) for x in res["embeddings"][0][i]],
+                    "embed_space": meta.get("embed_space"),
+                    "outcome_label": meta.get("outcome_label", 0.5),
+                    "created_at": meta.get("created_at", time.time()),
+                    "is_stale": meta.get("is_stale", False),
+                    "payload": res["documents"][0][i] if res.get("documents") else None,
+                })
+            return rows
+        except Exception as e:
+            raise RuntimeError(f"ChromaDB query failed: {type(e).__name__}: {e}") from e
 
     def count(self) -> int:
         """
-        Returns the total number of indexed nodes in The Hoard.
-        Queries the persistent ChromaDB collection if active, or falls back
-        to the local sparse cache count.
+        Returns the total number of indexed nodes in the active space's collection,
+        or the local sparse cache count when ChromaDB is not active.
         """
         if self._chroma_collection is not None:
             try:
@@ -302,6 +591,22 @@ class TheHoard:
             except Exception:
                 pass
         return len(self.local_sparse_cache)
+
+    def _legacy_collection_rows(self) -> Optional[int]:
+        """Rows in the old `integra_hoard` collection, read once and kept: this code never writes to it, and the
+        telemetry route is polled every second."""
+        if self._legacy_rows_cache is not None:
+            return self._legacy_rows_cache
+        if self._chroma_client is None:
+            return None
+        try:
+            self._legacy_rows_cache = self._chroma_client.get_collection(LEGACY_COLLECTION).count()
+        except Exception:
+            return None
+        return self._legacy_rows_cache
+
+    def _shard_path(self, ccid: str) -> str:
+        return os.path.join(self.kernel_memory_dir, "hoard", "raw_shards", f"{ccid}.json")
 
     # ─────────────────────────────────────────────
     #  COMMIT: v2 (Full Schema)
@@ -316,11 +621,13 @@ class TheHoard:
         embedding_768d: Optional[List[float]] = None,
         outcome_label: float = 0.5,
         metadata: Optional[Dict[str, Any]] = None,
+        embed_space: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
-        Commits a fully-schemed HoardNode with dual MRL embeddings,
-        outcome label, and temporal metadata.
-        
+        Commits a fully-schemed HoardNode, outcome label, and temporal metadata.
+        A caller that supplies a vector must also say which space it is in (`embed_space`);
+        a vector without a space is stored but not indexed or searched.
+
         Also persists the node as a raw shard to kernel_memory/hoard/raw_shards/.
         """
         node = HoardNode(
@@ -331,20 +638,18 @@ class TheHoard:
             embedding_768d=embedding_768d,
             outcome_label=outcome_label,
             metadata=metadata,
+            embed_space=embed_space,
         )
         self.local_sparse_cache.append(node)
 
         # Persist to raw_shards/
-        shard_path = os.path.join(
-            self.kernel_memory_dir, "hoard", "raw_shards", f"{ccid}.json"
-        )
+        shard_path = self._shard_path(ccid)
         try:
-            with open(shard_path, "w", encoding="utf-8") as f:
-                json.dump(node.to_dict(), f, indent=2)
+            _write_json_atomic(shard_path, node.to_dict())
         except Exception as e:
             print(f"[HOARD] Failed to persist shard {ccid}: {e}")
 
-        # Upsert to ChromaDB for semantic vector search
+        # Upsert to ChromaDB for semantic vector search (only a vector in the active space is indexed)
         chroma_synced = self.chroma_upsert(node)
 
         return {
@@ -354,6 +659,7 @@ class TheHoard:
             "file": shard_path,
             "schema_version": "2.1",
             "has_embeddings": embedding_768d is not None,
+            "embed_space": node.embed_space,
             "chroma_synced": chroma_synced,
         }
 
@@ -365,8 +671,8 @@ class TheHoard:
         self, payload: Any, vector_4d: Dict[str, Any], ccid: str
     ) -> Dict[str, Any]:
         """
-        Legacy-compatible commit. Wraps commit_node_v2 with default
-        embeddings and outcome_label = 0.5 (UNKNOWN).
+        Legacy-compatible commit. Wraps commit_node_v2 with no vector
+        and outcome_label = 0.5 (UNKNOWN).
         """
         result = self.commit_node_v2(
             payload=payload,
@@ -385,11 +691,11 @@ class TheHoard:
     def mark_outcome(self, ccid: str, outcome: float) -> bool:
         """
         Post-hoc label a committed node with a success/failure outcome.
-        
+
         Args:
             ccid: The CCID of the node to label.
             outcome: 1.0 = SUCCESS, 0.0 = FAILURE, 0.5 = UNKNOWN.
-        
+
         Returns:
             True if the node was found and labeled, False otherwise.
         """
@@ -397,9 +703,7 @@ class TheHoard:
             if node.ccid == ccid:
                 node.outcome_label = outcome
                 # Update the on-disk shard
-                shard_path = os.path.join(
-                    self.kernel_memory_dir, "hoard", "raw_shards", f"{ccid}.json"
-                )
+                shard_path = self._shard_path(ccid)
                 if os.path.exists(shard_path):
                     try:
                         with open(shard_path, "r+", encoding="utf-8") as f:
@@ -421,7 +725,7 @@ class TheHoard:
         """
         Returns all nodes that have exceeded the temporal staleness threshold.
         Default: 7 days (604800 seconds).
-        
+
         Used by Phoenix SWDS consolidation to identify nodes needing refresh.
         """
         current_time = celestial_time()
@@ -437,13 +741,17 @@ class TheHoard:
     #  RODIN INTEGRATION: Get Candidate Pool
     # ─────────────────────────────────────────────
 
-    def get_rodin_candidates(self) -> List[Dict[str, Any]]:
+    def get_rodin_candidates(self, space_id: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Returns all cached nodes in Rodin-compatible format.
-        Each dict contains 'embedding' (768d), 'outcome_label', 'created_at',
-        matching the field names that RodinProtocol expects.
+        Returns cached nodes in Rodin-compatible format.
+        Each dict contains 'embedding' (768d), 'embed_space', 'outcome_label', 'created_at',
+        matching the field names that RodinProtocol expects. With `space_id`, only nodes
+        that hold a vector in that space are returned.
         """
-        return [node.to_rodin_candidate() for node in self.local_sparse_cache]
+        nodes = self.local_sparse_cache
+        if space_id is not None:
+            nodes = [n for n in nodes if n.has_vector and n.embed_space == space_id]
+        return [node.to_rodin_candidate() for node in nodes]
 
     # ─────────────────────────────────────────────
     #  QUERY: Substring (Legacy Internal)
@@ -469,39 +777,103 @@ class TheHoard:
         """
         Loads all raw shard JSON files from kernel_memory/hoard/raw_shards/
         into the local_sparse_cache. Used at startup to restore state.
-        
+        A file that is not a node (no `ccid` and `payload`) is skipped, so it can never be rewritten as one;
+        the counts are kept in `last_load_report`.
+
         Returns:
             Number of shards loaded.
         """
         shards_dir = os.path.join(self.kernel_memory_dir, "hoard", "raw_shards")
+        nodes, report = load_nodes_from_shards(shards_dir)
+        existing_ccids = {n.ccid for n in self.local_sparse_cache}
         loaded = 0
-        if not os.path.isdir(shards_dir):
-            return 0
-        
-        for filename in sorted(os.listdir(shards_dir)):
-            if filename.endswith(".json"):
-                filepath = os.path.join(shards_dir, filename)
-                try:
-                    with open(filepath, "r", encoding="utf-8") as f:
-                        data = json.load(f)
-                    node = HoardNode.from_dict(data)
-                    # Avoid duplicates
-                    existing_ccids = {n.ccid for n in self.local_sparse_cache}
-                    if node.ccid not in existing_ccids:
-                        self.local_sparse_cache.append(node)
-                        loaded += 1
-                except Exception:
-                    pass
+        for node in nodes:
+            # Avoid duplicates
+            if node.ccid not in existing_ccids:
+                existing_ccids.add(node.ccid)
+                self.local_sparse_cache.append(node)
+                loaded += 1
+        report["loaded"] = loaded
+        self.last_load_report = report
         return loaded
 
-    def _generate_pseudo_embedding(self, content: str, dim: int = 768) -> List[float]:
+    # ─────────────────────────────────────────────
+    #  EMBEDDING: the explicit step (dry-run by default)
+    # ─────────────────────────────────────────────
+
+    def _merge_embedding_into_shard(self, node: "HoardNode", vector: List[float], space_id: str) -> None:
+        """Update only the three embedding keys of the node's shard, keeping everything else in the file as it is."""
+        path = self._shard_path(node.ccid)
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)  # an unreadable shard raises: it is never overwritten
+            if not isinstance(data, dict):
+                raise ValueError(f"{path} is not a JSON object")
+        else:
+            data = node.to_dict()
+        data["embedding_768d"] = vector
+        data["embedding_64d"] = vector[:64]
+        data["embed_space"] = space_id
+        _write_json_atomic(path, data)
+
+    def embed_pending(
+        self,
+        embedder: Optional[EmbeddingService] = None,
+        *,
+        limit: Optional[int] = None,
+        dry_run: bool = True,
+        batch_size: int = 16,
+        pause_s: float = 0.0,
+        sleep=time.sleep,
+    ) -> Dict[str, Any]:
         """
-        Generates deterministic pseudo-embeddings from content hash.
-        Produces consistent vectors for testing, bootstrapping, and offline embedding.
+        Embeds every node that has no trusted vector in the active space: nodes with no vector, with a vector
+        that names no space (untrusted), or with a vector from another space.
+
+        dry_run=True (the default) only counts and prices; it never contacts the embedding API.
+        With dry_run=False: identical (text, title) pairs are embedded once; batches go out `batch_size` pairs at a
+        time; the first failure stops the run and is reported (`stopped_early`, `error`) with the progress made;
+        each shard is updated atomically and only after its vector arrived. `limit` caps the unique pairs of this run.
+        `pause_s` waits that long between batches (pacing: a rate limit is a certainty on a free key).
         """
-        hash_bytes = hashlib.sha256(content.encode("utf-8")).digest()
-        raw = list(hash_bytes) * (dim // len(hash_bytes) + 1)
-        return [float(b) / 255.0 for b in raw[:dim]]
+        unique, pending, already, skipped_empty = _group_pending(self.local_sparse_cache, self.space, limit)
+        receipt: Dict[str, Any] = _plan_dict(self.space, unique, pending, already, skipped_empty, dry_run)
+        receipt.update({"embedded": 0, "texts_sent": 0, "stopped_early": False, "error": None, "shard_errors": []})
+        if dry_run:
+            return receipt
+
+        if self.config_error:
+            raise EmbeddingUnavailable("BAD_CONFIG", self.config_error)
+        service = embedder or self.embedder or get_default_embedding_service()
+        if service.space != self.space:
+            raise ValueError(f"embedder space {service.space.id} differs from the Hoard's {self.space.id}")
+
+        sent_before = service.stats().get("texts_sent", 0) if hasattr(service, "stats") else 0
+        for off in range(0, len(unique), max(1, int(batch_size))):
+            if off > 0 and pause_s > 0:
+                sleep(pause_s)
+            batch = unique[off: off + max(1, int(batch_size))]
+            try:
+                results = service.embed_documents([(text, title) for (text, title), _ in batch])
+            except EmbeddingUnavailable as exc:
+                receipt["stopped_early"] = True
+                receipt["error"] = {"code": exc.code, "detail": exc.detail}
+                break
+            for ((_, _), nodes), res in zip(batch, results):
+                for node in nodes:
+                    try:
+                        self._merge_embedding_into_shard(node, res.vector, self.space.id)
+                    except Exception as exc:  # noqa: BLE001  (a shard that cannot be written keeps its old vector state)
+                        receipt["shard_errors"].append({"ccid": node.ccid, "error": f"{type(exc).__name__}: {exc}"})
+                        continue
+                    node.embedding_768d = list(res.vector)
+                    node.embedding_64d = list(res.vector[:64])
+                    node.embed_space = self.space.id
+                    self.chroma_upsert(node)
+                    receipt["embedded"] += 1
+        if hasattr(service, "stats"):
+            receipt["texts_sent"] = service.stats().get("texts_sent", 0) - sent_before
+        return receipt
 
     # ─────────────────────────────────────────────
     #  SAVE STATE SYNCHRONIZATION
@@ -511,14 +883,17 @@ class TheHoard:
         """
         Synchronizes an external Save State (e.g. from The_Hoard/CCID_*.json)
         into The Hoard's kernel_memory manifold.
-        
+
         Extracts:
             - ccid
             - celestial spacetime anchor
             - cognitive telemetry, identity matrix, and work inventory as payload
-            - Generates dual MRL embeddings (64d coarse, 768d fine)
             - Sets outcome_label = 1.0 (verified system save state)
             - Commits via commit_node_v2 into raw_shards and local_sparse_cache
+
+        The node is embedded only when this Hoard was given an embedder; otherwise it is stored without a vector
+        (embedding_status PENDING) and embed_pending() embeds it later. A failed embedding never blocks the sync:
+        the node is stored without a vector and the receipt carries the error. No vector is ever invented.
         """
         if isinstance(file_path_or_dict, str):
             with open(file_path_or_dict, "r", encoding="utf-8") as f:
@@ -530,7 +905,7 @@ class TheHoard:
 
         ccid = data.get("ccid", celestial_ccid())
         celestial_stamp = data.get("celestial_stamp", {})
-        
+
         # Construct 4D spacetime anchor
         spacetime_anchor = {
             "x": 30.5888,
@@ -550,10 +925,18 @@ class TheHoard:
             "type": "SAVE_STATE_CHECKPOINT"
         }
 
-        # Embed content for Rodin topological retrieval
-        serialized_text = json.dumps(payload, sort_keys=True)
-        embedding_768d = self._generate_pseudo_embedding(serialized_text, 768)
-        embedding_64d = embedding_768d[:64]
+        embedding_768d: Optional[List[float]] = None
+        embedding_64d: Optional[List[float]] = None
+        embed_space: Optional[str] = None
+        embedding_error: Optional[Dict[str, str]] = None
+        if self.embedder is not None:
+            text, title = node_embedding_text(HoardNode(ccid=ccid, payload=payload, spacetime_anchor=spacetime_anchor))
+            try:
+                res = self.embedder.embed_document(text, title)
+                embedding_768d, embedding_64d, embed_space = res.vector, res.vector[:64], res.space.id
+            except EmbeddingUnavailable as exc:
+                embedding_error = {"code": exc.code, "detail": exc.detail}
+                logger.warning("save state %s stored without a vector: %s", ccid, exc)
 
         # Save states are verified successful states -> outcome_label = 1.0
         commit_res = self.commit_node_v2(
@@ -563,17 +946,23 @@ class TheHoard:
             embedding_64d=embedding_64d,
             embedding_768d=embedding_768d,
             outcome_label=1.0,
-            metadata={"source_file": source_file, "is_checkpoint": True}
+            metadata={"source_file": source_file, "is_checkpoint": True},
+            embed_space=embed_space,
         )
 
-        return {
+        receipt = {
             "status": "SAVE_STATE_SYNCED_TO_HOARD",
             "ccid": ccid,
             "shard_file": commit_res["file"],
             "source": source_file,
-            "mrl_embeddings_created": True,
+            "mrl_embeddings_created": embed_space is not None,
+            "embedding_status": "EMBEDDED" if embed_space is not None else "PENDING",
+            "embed_space": embed_space,
             "outcome_label": 1.0
         }
+        if embedding_error is not None:
+            receipt["embedding_error"] = embedding_error
+        return receipt
 
     def sync_all_save_states(self, source_dir: Optional[str] = None) -> List[Dict[str, Any]]:
         """
@@ -600,20 +989,38 @@ class TheHoard:
     #  TELEMETRY
     # ─────────────────────────────────────────────
 
-    def get_telemetry(self) -> Dict[str, Any]:
-        """Returns a snapshot of the Hoard's current state for Heimdall monitoring."""
+    def get_telemetry(self, include_legacy_rows: bool = False) -> Dict[str, Any]:
+        """
+        Returns a snapshot of the Hoard's current state for Heimdall monitoring. It reads the in-memory nodes only: no
+        ChromaDB call is made unless `include_legacy_rows` asks for the legacy collection's size, because this runs
+        inside an async route that is polled every second, and a native ChromaDB call there can wedge the server.
+        """
         stale_count = sum(1 for n in self.local_sparse_cache if n.is_stale)
         labeled_count = sum(1 for n in self.local_sparse_cache if n.outcome_label != 0.5)
-        embedded_count = sum(
-            1 for n in self.local_sparse_cache
-            if any(v != 0.0 for v in n.embedding_768d)
-        )
+        embedded = untrusted = other_space = unembedded = 0
+        for n in self.local_sparse_cache:
+            if n.has_vector and n.embed_space == self.space.id:
+                embedded += 1
+            elif n.has_vector:
+                other_space += 1
+            elif any(v != 0.0 for v in n.embedding_768d):
+                untrusted += 1
+            else:
+                unembedded += 1
         return {
             "total_nodes": len(self.local_sparse_cache),
             "stale_nodes": stale_count,
             "labeled_nodes": labeled_count,
-            "embedded_nodes": embedded_count,
-            "schema_version": "2.0",
+            "embedded_nodes": embedded,
+            "unembedded_nodes": unembedded,
+            "untrusted_vector_nodes": untrusted,
+            "other_space_nodes": other_space,
+            "active_space": self.space.id,
+            "chroma_collection": self._chroma_collection_name,
+            "vector_search_available": self.vector_search_available(),
+            "legacy_collection_rows": self._legacy_collection_rows() if include_legacy_rows else None,
+            "config_error": self.config_error,
+            "schema_version": "2.1",
             "kernel_memory_dir": self.kernel_memory_dir,
         }
 

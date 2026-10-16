@@ -359,18 +359,20 @@ class TestPass3_HoardWisdom:
                 ccid="TEL_001",
                 embedding_768d=[0.1] * 768,
                 outcome_label=1.0,
+                embed_space=hoard.space.id,  # a vector counts as embedded only when it names its space
             )
             hoard.commit_node_v2(
                 payload="b",
                 spacetime_anchor={"t": 2},
                 ccid="TEL_002",
             )
-            
+
             tel = hoard.get_telemetry()
             assert tel["total_nodes"] == 2
             assert tel["labeled_nodes"] == 1  # Only TEL_001 has non-0.5 outcome
-            assert tel["embedded_nodes"] == 1  # Only TEL_001 has non-zero embeddings
-            assert tel["schema_version"] == "2.0"
+            assert tel["embedded_nodes"] == 1  # Only TEL_001 holds a vector in the active space
+            assert tel["unembedded_nodes"] == 1  # TEL_002 has none
+            assert tel["schema_version"] == "2.1"
 
     def test_cheshire_cat_kernel_can_use_upgraded_hoard(self):
         """

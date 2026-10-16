@@ -39,38 +39,57 @@ from typing import Dict, Any
 class TestPass1_SaveStateSync_Neji_Eagle_Spider:
     """Factual structural ingestion: Syncing Save States into The Hoard."""
 
+    SAMPLE_STATE = {
+        "ccid": "CCID_9999999999",
+        "celestial_stamp": {
+            "unix_epoch": 1789760297.0,
+            "civil_time_utc": "2026-09-18T19:38:17Z",
+            "anchor": "Baker, Louisiana",
+            "coordinates": "30.5888N, -91.1673W"
+        },
+        "identity_matrix": {"modality": "PURPLE", "omega": 1.0},
+        "cognitive_telemetry": {"dragon_state": "ACTIVE_WAKING_STATE"},
+        "work_completed_this_session": ["Phase D Complete", "Hoard v2.0 Complete"]
+    }
+
     def test_sync_individual_save_state_dict(self):
-        """Syncing a save state dict creates a valid v2 HoardNode with MRL embeddings."""
+        """
+        Syncing a save state dict creates a valid v2 HoardNode. With an embedder the node carries a real MRL vector
+        in the embedder's space; the pseudo-vector this test used to expect (a SHA-256 hash) no longer exists.
+        """
+        from memory.embedding_service import EmbeddingService, EmbeddingSpace
         from memory.the_hoard import TheHoard
+        from tests.embedding_fakes import ScriptedBackend
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
-            hoard = TheHoard(base_dir=tmpdir)
-            
-            sample_state = {
-                "ccid": "CCID_9999999999",
-                "celestial_stamp": {
-                    "unix_epoch": 1789760297.0,
-                    "civil_time_utc": "2026-09-18T19:38:17Z",
-                    "anchor": "Baker, Louisiana",
-                    "coordinates": "30.5888N, -91.1673W"
-                },
-                "identity_matrix": {"modality": "PURPLE", "omega": 1.0},
-                "cognitive_telemetry": {"dragon_state": "ACTIVE_WAKING_STATE"},
-                "work_completed_this_session": ["Phase D Complete", "Hoard v2.0 Complete"]
-            }
-            
-            receipt = hoard.sync_save_state(sample_state)
+            svc = EmbeddingService(ScriptedBackend(), EmbeddingSpace())
+            hoard = TheHoard(base_dir=tmpdir, embedder=svc)
+
+            receipt = hoard.sync_save_state(self.SAMPLE_STATE)
             assert receipt["status"] == "SAVE_STATE_SYNCED_TO_HOARD"
             assert receipt["ccid"] == "CCID_9999999999"
             assert receipt["outcome_label"] == 1.0
             assert receipt["mrl_embeddings_created"] is True
             assert os.path.exists(receipt["shard_file"])
-            
+
             # Check node in local_sparse_cache
             node = hoard.local_sparse_cache[-1]
             assert node.ccid == "CCID_9999999999"
             assert len(node.embedding_64d) == 64
             assert len(node.embedding_768d) == 768
+            assert node.has_vector and node.embed_space == hoard.space.id
             assert node.spacetime_anchor["anchor"] == "Baker, Louisiana"
+
+    def test_sync_individual_save_state_dict_without_an_embedder_stores_no_vector(self):
+        """Without an embedder the save state is stored, flagged PENDING, and carries no invented vector."""
+        from memory.the_hoard import TheHoard
+        with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
+            hoard = TheHoard(base_dir=tmpdir)
+            receipt = hoard.sync_save_state(self.SAMPLE_STATE)
+            assert receipt["status"] == "SAVE_STATE_SYNCED_TO_HOARD"
+            assert receipt["mrl_embeddings_created"] is False and receipt["embedding_status"] == "PENDING"
+            node = hoard.local_sparse_cache[-1]
+            assert node.has_vector is False and not any(node.embedding_768d)
+            assert os.path.exists(receipt["shard_file"])
 
     def test_sync_all_existing_project_save_states(self):
         """TheHoard can scan and sync existing project save states from The_Hoard/."""
@@ -95,10 +114,15 @@ class TestPass2_RelationalRetrieval_Shikamaru_Chameleon_Hawk:
 
     def test_rodin_route_retrieval_finds_synced_save_state(self):
         """Rodin Protocol MRL KNN can query and rank synced save states."""
+        from memory.embedding_service import EmbeddingService, EmbeddingSpace
         from memory.the_hoard import TheHoard
         from memory.rodin_protocol import RodinProtocol
+        from tests.embedding_fakes import ScriptedBackend
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmpdir:
-            hoard = TheHoard(base_dir=tmpdir)
+            # The save state must be embedded for Rodin to find it: this test used to pass only because a hash
+            # pseudo-vector happened to resemble a constant query. Now a (test-double) embedder does the work.
+            svc = EmbeddingService(ScriptedBackend(), EmbeddingSpace())
+            hoard = TheHoard(base_dir=tmpdir, embedder=svc)
             sample_state = {
                 "ccid": "CCID_TEST_RODIN",
                 "celestial_stamp": {"unix_epoch": 1789760000.0, "anchor": "Baker, Louisiana"},
@@ -106,14 +130,16 @@ class TestPass2_RelationalRetrieval_Shikamaru_Chameleon_Hawk:
                 "work_completed_this_session": ["Engine Ignition", "Quantum Synthesis"]
             }
             hoard.sync_save_state(sample_state)
-            
-            candidates = hoard.get_rodin_candidates()
+
+            candidates = hoard.get_rodin_candidates(space_id=hoard.space.id)
             assert len(candidates) >= 1
-            
-            rodin = RodinProtocol(hoard=hoard)
-            query_vec = [0.2] * 768
-            review = rodin.review_node_integrity(query_vec, candidates)
-            
+
+            rodin = RodinProtocol(hoard=hoard, embedder=svc)
+            from memory.the_hoard import node_embedding_text
+            text, _ = node_embedding_text(hoard.local_sparse_cache[-1])  # the test double embeds words, so query with the node's own words
+            emb = rodin.generate_query_embedding(text)
+            review = rodin.review_node_integrity(emb.vector, candidates, space=emb.space)
+
             assert "m_knn" in review
             assert "decision" in review
             assert review["k_neighbors_found"] >= 1

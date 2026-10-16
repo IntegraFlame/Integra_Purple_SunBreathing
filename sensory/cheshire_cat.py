@@ -199,7 +199,8 @@ class CheshireCatKernel:
             
             # --- Phase 1: Map cognitive model via Rodin Route Retrieval ---
             self.heimdall.monitor_sequence_step("RODIN_ROUTE_RETRIEVAL", {"active_prompt": active_prompt[:60]})
-            retrieval_map = self.rodin.route_retrieval(active_prompt)
+            # route_retrieval embeds the prompt (a blocking network call with a timeout): keep it off the event loop
+            retrieval_map = await asyncio.to_thread(self.rodin.route_retrieval, active_prompt)
             retrieved_paths = retrieval_map.get("retrieved_paths", [])
             route_count = len(retrieved_paths)
             cohesion = float(retrieval_map.get("cohesion", 0.85 if route_count > 0 else 0.0))
@@ -406,6 +407,13 @@ class CheshireCatKernel:
         telemetry = self.heimdall.get_telemetry()
 
         commit_receipt["looking_glass"] = lg_eval
+        commit_receipt["rodin_retrieval"] = {
+            "method": retrieval_map.get("retrieval_method"),
+            "degraded": bool(retrieval_map.get("degraded", False)),
+            "fallback_reason": retrieval_map.get("fallback_reason"),
+            "embedding_space": retrieval_map.get("embedding_space"),
+            "candidate_count": retrieval_map.get("candidate_count", 0),
+        }
         commit_receipt["cheshire_protocol"] = {
             "topic": topic_record,
             "paradox": paradox_eval,

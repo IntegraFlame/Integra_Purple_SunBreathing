@@ -338,19 +338,28 @@ class RodinQueryRequest(BaseModel):
     prompt: str
 
 @app.post("/rodin/query")
-async def execute_rodin_conductor(req: RodinQueryRequest):
+def execute_rodin_conductor(req: RodinQueryRequest):
     """
     POST /rodin/query — Executes the Rodin Supervisor Conductor Loop.
     1. Initializes Swarm AgentState.
-    2. Runs KNN Gate III Evaluation.
-    3. Dispatches worker agent or Alexandria Protocol fallback.
+    2. Embeds the prompt (503 if the embedding model cannot be used; no substitute vector).
+    3. Runs KNN Gate III Evaluation on the Hoard's nodes in that embedding space.
+    4. On PASS returns the retrieved neighbours; on HALT dispatches the Alexandria Protocol fallback.
+
+    A plain `def`: FastAPI runs it in a threadpool instead of blocking the server (FastAPI docs, "Concurrency and
+    async / await"), which matters because step 2 is a blocking network call.
     """
     global last_activity_time
     last_activity_time = celestial_time()
-    
+
     state = rodin_supervisor.initialize_state(req.prompt)
     final_state = rodin_supervisor.dispatch(state)
-    
+
+    if (final_state.get("rodin_output") or {}).get("decision") == "ERROR":
+        return JSONResponse(
+            status_code=503,
+            content={"status": "RODIN_CONDUCTOR_ERROR", "input": req.prompt, "swarm_state": final_state},
+        )
     return {
         "status": "RODIN_CONDUCTOR_COMPLETE",
         "input": req.prompt,
@@ -360,18 +369,28 @@ async def execute_rodin_conductor(req: RodinQueryRequest):
 @app.get("/rodin/telemetry")
 async def get_rodin_telemetry():
     """
-    GET /rodin/telemetry — Returns telemetry for Rodin Protocol settings.
+    GET /rodin/telemetry — Returns telemetry for Rodin Protocol settings and the embedder's evidence.
+    `status` is ONLINE until an embedding call fails (then DEGRADED) or the embedding setting is bad
+    (MISCONFIGURED). `embedder_state` is the finer reading: UNPROVEN (no call made yet), READY, DEGRADED, MISCONFIGURED.
     """
     # SWDS-FIX: Dashboard GET polling must not reset inactivity timer
     # last_activity_time = celestial_time()  # Removed for SWDS detection
-    
+
+    rodin = rodin_supervisor.rodin
+    rodin_status = rodin.status()
+    embedder_state = rodin_status["embedder_state"]
     return {
-        "status": "ONLINE",
-        "knn_k": rodin_supervisor.rodin.k,
-        "gate_iii_tau": rodin_supervisor.rodin.tau,
-        "gaussian_sigma": rodin_supervisor.rodin.sigma,
-        "stale_threshold_s": rodin_supervisor.rodin.stale_threshold,
-        "coarse_floor": rodin_supervisor.rodin.COARSE_SIMILARITY_FLOOR,
+        "status": embedder_state if embedder_state in ("DEGRADED", "MISCONFIGURED") else "ONLINE",
+        "embedder_state": embedder_state,
+        "embedding": rodin_status["embedding"],
+        "coarse_dim": rodin_status["coarse_dim"],
+        "fine_dim": rodin_status["fine_dim"],
+        "hoard": rodin.hoard.get_telemetry() if rodin.hoard is not None else None,
+        "knn_k": rodin.k,
+        "gate_iii_tau": rodin.tau,
+        "gaussian_sigma": rodin.sigma,
+        "stale_threshold_s": rodin.stale_threshold,
+        "coarse_floor": rodin.COARSE_SIMILARITY_FLOOR,
         "alexandria_threshold": rodin_supervisor.alexandria.threshold,
         "registered_agents": rodin_supervisor.agent_registry
     }
@@ -483,7 +502,7 @@ async def run_models_selftest(x_integra_admin: Optional[str] = Header(None)):
     - Real provider connectivity (Vertex AI Express Mode & Anthropic Messages)
     - Power state gating & token telemetry recording
     - Deep thinking blocks, prompt/candidate/thinking token telemetry
-    - Rodin text embedding vector generation (text-embedding-004)
+    - Rodin text embedding vector generation (gemini-embedding-2, 768-d)
     """
     global _last_selftest_time
     expected_token = os.environ.get("INTEGRA_ADMIN_TOKEN")
