@@ -118,7 +118,11 @@ def _seed_initial_session(conn: sqlite3.Connection, session_id: Optional[str] = 
     Uses CCID (Cheshire Cat ID) timestamp format.
     """
     if session_id is None:
-        session_id = f"CCID_{int(time.time())}"
+        try:
+            from core.celestial_middleware import celestial_ccid  # the Celestial Sentinel's CCID (Brain Map T1)
+            session_id = celestial_ccid("CCID")
+        except Exception:
+            session_id = f"CCID_{int(time.time())}"
 
     # Check if any session exists
     existing = conn.execute(

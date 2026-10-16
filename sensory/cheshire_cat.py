@@ -358,7 +358,8 @@ class CheshireCatKernel:
 
             # --- Phase 5: Commit into The Hoard Physical Substrate ---
             self.heimdall.monitor_sequence_step("HOARD_COMMIT")
-            ccid = f"CCID_{int(time.time())}"
+            # The node's CCID and celestial stamp come from Phoenix's single Sentinel stamp (Brain Map T1)
+            ccid = synthesized_node.get("ccid") or f"CCID_{int(time.time())}"
             
             # Enrich payload with Looking Glass and Cheshire Cat Protocol metadata
             node_payload = {
@@ -379,7 +380,8 @@ class CheshireCatKernel:
             commit_receipt = self.hoard.commit_node(
                 payload=node_payload,
                 vector_4d=synthesized_node["spacetime_anchor"],
-                ccid=ccid
+                ccid=ccid,
+                celestial_stamp=synthesized_node.get("celestial_stamp"),
             )
             commit_receipt["file_path"] = commit_receipt["file"]
         except Exception as exc:

@@ -789,14 +789,19 @@
     animateParticles();
 
     // ═══════════════════════════════════════════════════════════════
-    // CELESTIAL PHYSICS CONSTANTS (bit-identical to Python engine)
+    // CELESTIAL FRAME CONSTANTS — loaded from GET /celestial/frame (the Celestial
+    // Sentinel's active frame). Frame 1 below is only the fallback if that call fails.
     // ═══════════════════════════════════════════════════════════════
-    const ANCHOR_LON = -91.1673;
-    const EARTH_ROT_SPEED = 360.0 / 86400.0;
-    const LUNAR_CYCLE_SEC = 2551442.8;
-    const BASE_EPOCH = 1785052800.0;
-    const SIDEREAL_YEAR = 31558149.763;
-    const ECCENTRICITY = 0.0167086;
+    let CEL_FRAME = {
+      frame: 1, fallback: true,
+      rotation: { ref_unix: 1785052800.0, period_s: 86400.0, anchor_lon: -91.1673 },
+      lunar: { ref_unix: 1785052800.0, period_s: 2551442.8 },
+      orbit: { ref_unix: 1785052800.0, period_s: 31558149.763, eccentricity: 0.0167086 }
+    };
+    fetch('/celestial/frame')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(f => { CEL_FRAME = Object.assign({}, f, { fallback: false }); })
+      .catch(() => { console.warn('celestial frame: using frame 1 (fallback)'); });
 
     function solveKepler(M, e) {
       let E = (e < 0.8) ? M : Math.PI;
@@ -899,7 +904,7 @@
       cx2.fillText('Baker, LA', 6, h - 6);
 
       // Anchor marker on Earth (small dot at anchor longitude)
-      const anchorRad = ((ANCHOR_LON + rotDeg) * Math.PI) / 180;
+      const anchorRad = ((CEL_FRAME.rotation.anchor_lon + rotDeg) * Math.PI) / 180;
       const ax = ex + 8 * Math.cos(anchorRad);
       const ay = ey + 8 * Math.sin(anchorRad);
       cx2.fillStyle = '#a855f7';
@@ -911,12 +916,12 @@
     // Continuous orbital animation at 30fps (independent of API poll)
     function animateOrbital() {
       const nowUnix = Date.now() / 1000;
-      const elapsed = nowUnix - BASE_EPOCH;
-      let rotDeg = (ANCHOR_LON + (elapsed * EARTH_ROT_SPEED)) % 360.0;
+      const F = CEL_FRAME;
+      let rotDeg = (F.rotation.anchor_lon + ((nowUnix - F.rotation.ref_unix) * (360.0 / F.rotation.period_s))) % 360.0;
       if (rotDeg < 0) rotDeg += 360.0;
-      const lunarRatio = ((elapsed / LUNAR_CYCLE_SEC) % 1.0 + 1.0) % 1.0;
-      const meanAnomaly = ((elapsed / SIDEREAL_YEAR) % 1.0) * 2 * Math.PI;
-      const E = solveKepler(meanAnomaly, ECCENTRICITY);
+      const lunarRatio = (((nowUnix - F.lunar.ref_unix) / F.lunar.period_s) % 1.0 + 1.0) % 1.0;
+      const meanAnomaly = ((((nowUnix - F.orbit.ref_unix) / F.orbit.period_s) % 1.0 + 1.0) % 1.0) * 2 * Math.PI;
+      const E = solveKepler(meanAnomaly, F.orbit.eccentricity);
       const orbPos = (E / (2 * Math.PI)) % 1.0;
 
       lastRotDeg = rotDeg; lastOrbPos = orbPos; lastLunar = lunarRatio;
@@ -1017,7 +1022,8 @@
       if (cel.orbital_trajectory_pos != null)
         document.getElementById('celestial-orb').textContent = cel.orbital_trajectory_pos.toFixed(4);
       if (cel.grid_bucket)
-        document.getElementById('celestial-bucket').textContent = cel.grid_bucket;
+        document.getElementById('celestial-bucket').textContent =
+          cel.grid_bucket + (cel.frame != null ? ' · frame ' + cel.frame : '');
     }
 
     function updateMetatron(m) {

@@ -2,54 +2,35 @@
 INTEGRA O/S: CELESTIAL CLOCK MIDDLEWARE — TEMPORAL INVARIANT ENFORCEMENT
 Module: core/celestial_middleware.py
 Layer: 7 → 2 Bridge (Time → Mind)
-Status: BLOCK 2 / PHASE D — SOVEREIGN TEMPORAL INJECTION
 
 Purpose:
-    Provides a single source of temporal truth for all Integra microservices.
-    All modules MUST use get_celestial_timestamp() instead of datetime.now().
-    
-    The Celestial Clock is not decorative — it is the temporal anchor for:
-    1. Save state metadata and CCID stamps
-    2. SWDS cycle checkpoints
-    3. Rodin mapping point coordinates
-    4. Hoard node 4D spacetime stamps (x, y, z, t)
-    5. Reboot continuity — on system restart, the clock can mathematically
-       recall the last boot/live checkpoint and resume with correct celestial time.
-
-Architecture:
-    - On first call, attempts to reach http://localhost:8000/clock/full
-    - Uses exponential backoff with 3 retries (health-check loop)
-    - If kernel is unreachable (startup race), falls back to DEGRADED_MODE
-      with datetime.now(UTC) + a warning flag
-    - Once the kernel is up, automatically upgrades to SOVEREIGN_MODE
-    
-Checkpoint Persistence:
-    - Writes last known celestial state to config/celestial_checkpoint.json
-    - On reboot, reads checkpoint to compute elapsed celestial delta
-    - Ensures dΦ continuity across restarts
+    The public time functions every Integra module already imports. Since Brain Map T1 (2026-10-16) they are
+    thin wrappers over the Celestial Sentinel (temporal/celestial_sentinel.py), the runtime owner of celestial
+    time (decision D5):
+      - celestial_time()            the system clock (ADR-001 option A)
+      - celestial_ccid(prefix)      a CCID from the same instant as a Sentinel stamp
+      - get_celestial_timestamp()   a CelestialTimestamp built from a Sentinel stamp (no HTTP call to the kernel)
+      - get_celestial_metadata_sync() / stamp_celestial_metadata()   stamp metadata for a payload
+      - get_reboot_delta()          downtime, from the last checkpoint before this start
+    The Sentinel is the only checkpoint writer; nothing here writes the checkpoint itself.
 """
 
-import os
-import json
 import time
-import asyncio
 import logging
 from dataclasses import dataclass, asdict
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any
-from pathlib import Path
+
+from temporal.celestial_sentinel import (
+    LEGACY_CHECKPOINT_PATH,
+    CelestialStamp,
+    get_sentinel,
+)
 
 logger = logging.getLogger("integra-celestial-middleware")
 
-# --- Paths ---
-_PROJECT_ROOT = Path(__file__).parent.parent  # integra-homebase/
-_CHECKPOINT_PATH = _PROJECT_ROOT / "config" / "celestial_checkpoint.json"
-
-# --- Clock Service Config ---
-_CLOCK_URL = "http://localhost:8000/clock/full"
-_MAX_RETRIES = 3
-_INITIAL_DELAY = 0.5
-_BACKOFF_FACTOR = 2.0
+# The tracked checkpoint of the pre-Sentinel era. Read once by the Sentinel for the reboot delta; never written.
+_CHECKPOINT_PATH = LEGACY_CHECKPOINT_PATH
 
 
 @dataclass
@@ -58,214 +39,109 @@ class CelestialTimestamp:
     civil_dt: str               # YYYY-MM-DD HH:MM:SS CDT
     utc_iso: str                # ISO-8601 UTC
     unix_epoch: float           # Unix timestamp
-    celestial_vector: Optional[Dict[str, Any]] = None  # dΦ, angular momentum, etc.
+    celestial_vector: Optional[Dict[str, Any]] = None  # rotation, lunar, orbit, sigma, grid bucket, frame
     ccid: Optional[str] = None  # Cheshire Cat ID for this moment
     grid_bucket: Optional[str] = None  # Grid bucket identifier
-    mode: str = "SOVEREIGN"     # SOVEREIGN or DEGRADED
-    
+    mode: str = "SOVEREIGN"     # SOVEREIGN, or DEGRADED when the Sentinel could not stamp or ran on its fallback
+
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
 
 
+def _timestamp_from_stamp(st: CelestialStamp) -> CelestialTimestamp:
+    return CelestialTimestamp(
+        civil_dt=st.civil_dt(),
+        utc_iso=st.utc,
+        unix_epoch=st.unix,
+        celestial_vector=st.vector_dict(),
+        ccid=f"CCID_{int(st.unix)}",
+        grid_bucket=st.grid,
+        mode="DEGRADED" if st.frame_fallback else "SOVEREIGN",
+    )
+
+
 class CelestialMiddleware:
-    """
-    Singleton middleware managing celestial clock connections and checkpoint persistence.
-    
-    Architecture:
-        - Health-check loop with exponential backoff on startup
-        - Persists last known state to celestial_checkpoint.json
-        - On reboot, loads checkpoint and computes celestial delta
-        - Automatically upgrades from DEGRADED to SOVEREIGN when clock comes online
-    """
-    
+    """Compatibility layer over the Celestial Sentinel. Holds no clock of its own."""
+
     def __init__(self):
-        self._mode = "INITIALIZING"
-        self._last_response: Optional[Dict[str, Any]] = None
-        self._last_response_at: float = 0.0  # time.time() when _last_response was cached
-        self._last_checkpoint: Optional[Dict[str, Any]] = None
+        self._mode = "SOVEREIGN"
         self._boot_time = time.time()
-        self._clock_online = False
-        self._http_client = None
-        
-        # Load last checkpoint for reboot continuity
-        self._load_checkpoint()
-    
-    def _load_checkpoint(self):
-        """Load the last celestial checkpoint from disk for reboot continuity."""
+        # The last checkpoint written before this start (read by the Sentinel; used only for the reboot delta).
         try:
-            if _CHECKPOINT_PATH.exists():
-                with open(_CHECKPOINT_PATH, "r", encoding="utf-8") as f:
-                    self._last_checkpoint = json.load(f)
-                logger.info(
-                    f"Celestial checkpoint loaded — last boot: "
-                    f"{self._last_checkpoint.get('civil_dt', 'UNKNOWN')}"
-                )
-            else:
-                logger.info("No celestial checkpoint found — fresh boot.")
+            self._last_checkpoint: Optional[Dict[str, Any]] = get_sentinel().previous_checkpoint
         except Exception as e:
-            logger.warning(f"Failed to load celestial checkpoint: {e}")
+            logger.warning(f"Celestial Sentinel unavailable at middleware start: {e}")
             self._last_checkpoint = None
-    
-    def _persist_checkpoint(self, timestamp: CelestialTimestamp):
-        """Persist the current celestial state to disk for reboot continuity."""
-        try:
-            _CHECKPOINT_PATH.parent.mkdir(parents=True, exist_ok=True)
-            checkpoint_data = timestamp.to_dict()
-            checkpoint_data["persisted_at"] = datetime.now(timezone.utc).isoformat()
-            checkpoint_data["boot_uptime_s"] = round(time.time() - self._boot_time, 2)
-            
-            with open(_CHECKPOINT_PATH, "w", encoding="utf-8") as f:
-                json.dump(checkpoint_data, f, indent=2, default=str)
-        except Exception as e:
-            logger.warning(f"Failed to persist celestial checkpoint: {e}")
-    
-    async def _fetch_clock(self) -> Optional[Dict[str, Any]]:
-        """Fetch /clock/full from the Genesis Kernel with error handling."""
-        try:
-            # Lazy import to avoid circular dependency at module load time
-            import httpx
-            async with httpx.AsyncClient(timeout=2.0) as client:
-                response = await client.get(_CLOCK_URL)
-                if response.status_code == 200:
-                    return response.json()
-        except ImportError:
-            # httpx not available, try urllib
-            try:
-                import urllib.request
-                import urllib.error
-                req = urllib.request.Request(_CLOCK_URL)
-                with urllib.request.urlopen(req, timeout=2) as resp:
-                    return json.loads(resp.read().decode())
-            except Exception:
-                pass
-        except Exception:
-            pass
-        return None
-    
-    async def _health_check_with_backoff(self) -> bool:
-        """
-        Attempt to reach the Celestial Clock with exponential backoff.
-        Returns True if clock is online, False if all retries exhausted.
-        """
-        delay = _INITIAL_DELAY
-        for attempt in range(_MAX_RETRIES + 1):
-            result = await self._fetch_clock()
-            if result is not None:
-                self._last_response = result
-                self._last_response_at = time.time()
-                self._clock_online = True
-                self._mode = "SOVEREIGN"
-                logger.info(f"Celestial Clock online (attempt {attempt + 1})")
-                return True
-            if attempt < _MAX_RETRIES:
-                logger.info(
-                    f"Celestial Clock not ready (attempt {attempt + 1}/{_MAX_RETRIES + 1}), "
-                    f"retrying in {delay:.1f}s..."
-                )
-                await asyncio.sleep(delay)
-                delay *= _BACKOFF_FACTOR
-        
-        self._mode = "DEGRADED"
-        logger.warning(
-            "Celestial Clock unreachable after backoff — entering DEGRADED_MODE. "
-            "Using UTC fallback. Will auto-upgrade when clock comes online."
-        )
-        return False
-    
+
     def _build_degraded_timestamp(self) -> CelestialTimestamp:
-        """Build a degraded timestamp using system UTC when clock is unreachable."""
+        """Used only if the Sentinel itself fails: the system clock, no celestial vector."""
         now = datetime.now(timezone.utc)
-        civil_dt = now.strftime("%Y-%m-%d %H:%M:%S UTC")
-        
-        # If we have a checkpoint, compute elapsed delta
-        elapsed_note = None
-        if self._last_checkpoint:
-            last_epoch = self._last_checkpoint.get("unix_epoch", 0)
-            if last_epoch:
-                elapsed = time.time() - last_epoch
-                elapsed_note = f"Elapsed since last checkpoint: {elapsed:.0f}s"
-        
+        now_epoch = time.time()
         return CelestialTimestamp(
-            civil_dt=civil_dt,
+            civil_dt=now.strftime("%Y-%m-%d %H:%M:%S UTC"),
             utc_iso=now.isoformat(),
-            unix_epoch=time.time(),
-            celestial_vector=self._last_checkpoint.get("celestial_vector") if self._last_checkpoint else None,
-            ccid=f"CCID_{int(time.time())}",
+            unix_epoch=now_epoch,
+            celestial_vector=None,
+            ccid=f"CCID_{int(now_epoch)}",
             grid_bucket=None,
             mode="DEGRADED",
         )
-    
+
     def _build_sovereign_timestamp(self, clock_data: Dict[str, Any]) -> CelestialTimestamp:
-        """Build a sovereign timestamp from live /clock/full response."""
-        # Extract fields from the clock response
-        digital = clock_data.get("digital_numerical_clock", {})
-        celestial = clock_data.get("celestial_spacetime_vector", clock_data.get("celestial_kinematic_vector", {}))
-        
-        civil_dt = digital.get("local_datetime_cdt", 
-                    digital.get("civil_datetime",
-                    datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S CDT")))
-        utc_iso = digital.get("utc_iso8601",
-                   digital.get("utc_iso",
-                   datetime.now(timezone.utc).isoformat()))
-        
+        """Map a /clock or /clock/full response into a CelestialTimestamp (canonical and legacy key names)."""
+        digital = (
+            clock_data.get("digital_clock")
+            or clock_data.get("digital_numerical_clock")
+            or {}
+        )
+        celestial = (
+            clock_data.get("celestial_clock")
+            or clock_data.get("celestial_spacetime_vector")
+            or clock_data.get("celestial_kinematic_vector")
+            or {}
+        )
+        civil_dt = (
+            digital.get("local_time_24h")
+            or digital.get("local_datetime_cdt")
+            or digital.get("civil_datetime")
+            or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        )
+        utc_iso = (
+            digital.get("iso_8601_utc")
+            or digital.get("utc_iso8601")
+            or digital.get("utc_iso")
+            or datetime.now(timezone.utc).isoformat()
+        )
+        now_epoch = time.time()
+        grid_bucket = clock_data.get("grid_bucket") or celestial.get("grid_bucket")
         return CelestialTimestamp(
             civil_dt=civil_dt,
             utc_iso=utc_iso,
-            unix_epoch=time.time(),
+            unix_epoch=now_epoch,
             celestial_vector=celestial,
-            ccid=f"CCID_{int(time.time())}",
-            grid_bucket=clock_data.get("grid_bucket"),
+            ccid=f"CCID_{int(now_epoch)}",
+            grid_bucket=grid_bucket,
             mode="SOVEREIGN",
         )
-    
+
     async def get_timestamp(self) -> CelestialTimestamp:
-        """
-        THE primary entry point. All microservices call this instead of datetime.now().
-        
-        Behavior:
-        1. If clock is online → returns SOVEREIGN timestamp with live dΦ
-        2. If clock was online but becomes unreachable → attempts reconnect
-        3. If clock never reached → returns DEGRADED with UTC + checkpoint data
-        """
-        if not self._clock_online:
-            # Try to connect (with backoff on first attempt, single try on subsequent)
-            if self._mode == "INITIALIZING":
-                await self._health_check_with_backoff()
-            else:
-                # Quick single attempt to auto-upgrade
-                result = await self._fetch_clock()
-                if result is not None:
-                    self._last_response = result
-                    self._last_response_at = time.time()
-                    self._clock_online = True
-                    self._mode = "SOVEREIGN"
-        
-        if self._clock_online:
-            # Try to get fresh data
-            result = await self._fetch_clock()
-            if result is not None:
-                self._last_response = result
-                self._last_response_at = time.time()
-                ts = self._build_sovereign_timestamp(result)
-                self._persist_checkpoint(ts)
-                return ts
-            else:
-                # Clock went offline — degrade gracefully
-                self._clock_online = False
-                self._mode = "DEGRADED"
-                logger.warning("Celestial Clock went offline — degrading to UTC fallback")
-        
-        return self._build_degraded_timestamp()
-    
+        """THE primary entry point: a CelestialTimestamp from a Sentinel stamp. No network call."""
+        try:
+            return _timestamp_from_stamp(get_sentinel().stamp("celestial_timestamp"))
+        except Exception as e:
+            logger.warning(f"Celestial Sentinel stamp failed, degraded timestamp returned: {e}")
+            return self._build_degraded_timestamp()
+
+    def _persist_checkpoint(self, timestamp: Optional[CelestialTimestamp] = None) -> None:
+        """Kept for old callers: the Sentinel writes the checkpoint (the only writer)."""
+        get_sentinel().write_checkpoint("middleware")
+
     def get_last_checkpoint(self) -> Optional[Dict[str, Any]]:
-        """Returns the last persisted checkpoint for reboot delta computation."""
+        """Returns the last checkpoint written before this start."""
         return self._last_checkpoint
-    
+
     def get_reboot_delta(self) -> Optional[float]:
-        """
-        Computes the time elapsed since the last checkpoint.
-        Used on reboot to mathematically recall the correct celestial position.
-        """
+        """Seconds elapsed since the last checkpoint written before this start."""
         if self._last_checkpoint and self._last_checkpoint.get("unix_epoch"):
             return time.time() - self._last_checkpoint["unix_epoch"]
         return None
@@ -278,7 +154,7 @@ _middleware = CelestialMiddleware()
 async def get_celestial_timestamp() -> CelestialTimestamp:
     """
     Module-level convenience function.
-    
+
     Usage in any microservice:
         from core.celestial_middleware import get_celestial_timestamp
         ts = await get_celestial_timestamp()
@@ -288,56 +164,115 @@ async def get_celestial_timestamp() -> CelestialTimestamp:
 
 
 def get_last_checkpoint() -> Optional[Dict[str, Any]]:
-    """Returns the last persisted celestial checkpoint."""
+    """Returns the last celestial checkpoint written before this start."""
     return _middleware.get_last_checkpoint()
 
 
 def get_reboot_delta() -> Optional[float]:
-    """Returns seconds elapsed since last checkpoint (for reboot continuity)."""
+    """Returns seconds elapsed since the last checkpoint (for reboot continuity)."""
     return _middleware.get_reboot_delta()
 
 
 def celestial_time() -> float:
     """
     SYNCHRONOUS drop-in replacement for time.time().
-    
-    Returns the unix epoch from the last known celestial state.
-    If the middleware has a cached server response, uses that.
-    If checkpoint exists, uses checkpoint + elapsed since boot.
-    Falls back to time.time() if nothing is available.
-    
+
+    ADR-001 (Option A, applied 2026-10-15): returns the live system clock.
+
+    The system clock is the single source of civil time. The celestial vector is
+    a pure function of it (temporal/celestial_clock.py), so stamping with
+    time.time() keeps both clocks consistent by construction.
+
+    The checkpoint is a record of "last seen alive at ..." and is used ONLY by
+    get_reboot_delta() to compute downtime -- never to compute the current time. (The previous
+    "checkpoint + seconds since boot" branch froze every boot at the checkpoint
+    date, 2026-10-06 20:59:42; see blueprint Section 3.5 / FP-02.)
+
     Usage:
         from core.celestial_middleware import celestial_time
         created_at = celestial_time()   # instead of time.time()
     """
-    # Priority 1: Last server response (SOVEREIGN mode)
-    # The cached epoch is only refreshed when get_timestamp() is awaited. Advance it by
-    # the time elapsed since receipt — otherwise the value freezes and long-running loops
-    # (e.g. swds_scheduler's 07:00 wake check) never see the clock move.
-    if _middleware._last_response:
-        dig = _middleware._last_response.get("digital_clock", {})
-        epoch = dig.get("unix_timestamp")
-        if epoch:
-            elapsed = time.time() - _middleware._last_response_at if _middleware._last_response_at else 0.0
-            return float(epoch) + max(0.0, elapsed)
-    
-    # Priority 2: Checkpoint + elapsed delta
-    cp = _middleware._last_checkpoint
-    if cp and cp.get("unix_epoch"):
-        elapsed = time.time() - _middleware._boot_time
-        return cp["unix_epoch"] + elapsed
-    
-    # Priority 3: Raw system time (DEGRADED)
     return time.time()
 
 
 def celestial_ccid(prefix: str = "CCID") -> str:
     """
-    Generate a CCID stamped with celestial epoch instead of system time.
-    
+    A CCID from the same instant as a Celestial Sentinel stamp.
+
     Usage:
         from core.celestial_middleware import celestial_ccid
-        ccid = celestial_ccid("CRYSTAL")  # → "CCID_CRYSTAL_1790214787"
+        ccid = celestial_ccid("CRYSTAL")  # → "CRYSTAL_1792132445"
     """
-    epoch = int(celestial_time())
-    return f"{prefix}_{epoch}"
+    try:
+        return get_sentinel().ccid(prefix)
+    except Exception as e:
+        logger.warning(f"Celestial Sentinel ccid failed, system clock used: {e}")
+        return f"{prefix}_{int(time.time())}"
+
+
+def get_celestial_metadata_sync(
+    payload_title: str = "INTEGRA_EVENT",
+    persist_checkpoint: bool = False,
+) -> Dict[str, Any]:
+    """
+    Synchronous Celestial + Digital metadata for a payload: the Sentinel stamp (active frame), plus the
+    Sacred Calendar, HLC vector, checkpoint hash and Hoard manifest from DualTemporalEngine in the same frame.
+    With persist_checkpoint the Sentinel also writes its checkpoint (it remains the only writer).
+    """
+    from temporal.celestial_clock import DualTemporalEngine
+
+    sentinel = get_sentinel()
+    st = sentinel.stamp("metadata")
+    engine = DualTemporalEngine()
+    engine.set_frame(sentinel.active_frame)
+    full = engine.get_full_telemetry()
+    manifest = engine.generate_hoard_manifest(payload_title)
+    if persist_checkpoint:
+        sentinel.write_checkpoint("metadata_sync")
+
+    return {
+        "civil_dt": st.civil_dt(),
+        "utc_iso": st.utc,
+        "unix_epoch": st.unix,
+        "ccid": f"CCID_{int(st.unix)}",
+        "grid_bucket": st.grid,
+        "frame": st.frame,
+        "celestial_vector": st.vector_dict(),
+        "celestial_stamp": st.to_dict(),
+        "digital_clock": full.get("digital_clock", {}),
+        "sacred_calendar": full.get("sacred_calendar", {}),
+        "causal_vector_clock": full.get("causal_vector_clock", []),
+        "cosmic_checkpoint_hash": full.get("cosmic_checkpoint_hash", ""),
+        "hoard_manifest": manifest,
+        "sync_isolation_verified": True,
+        "all_systems_true": True,
+        "mode": "DEGRADED" if st.frame_fallback else "SOVEREIGN",
+    }
+
+
+def stamp_celestial_metadata(
+    payload: Dict[str, Any],
+    payload_title: str = "INTEGRA_NODE",
+    persist_checkpoint: bool = False,
+) -> Dict[str, Any]:
+    """
+    Enriches any dictionary payload in place (and returns it) with a 'celestial_metadata' block,
+    a 'celestial_stamp', a 'created_at' epoch and a 'grid_bucket'.
+    """
+    meta = get_celestial_metadata_sync(
+        payload_title=payload_title,
+        persist_checkpoint=persist_checkpoint,
+    )
+    payload["celestial_metadata"] = meta
+    payload.setdefault("celestial_stamp", meta["celestial_stamp"])
+    payload.setdefault("created_at", meta["unix_epoch"])
+    payload.setdefault("grid_bucket", meta["grid_bucket"])
+    return payload
+
+
+def sync_celestial_checkpoint_now() -> Dict[str, Any]:
+    """Has the Sentinel write its checkpoint now, and returns the metadata of that moment."""
+    return get_celestial_metadata_sync(
+        payload_title="CELESTIAL_CHECKPOINT_SYNC",
+        persist_checkpoint=True,
+    )

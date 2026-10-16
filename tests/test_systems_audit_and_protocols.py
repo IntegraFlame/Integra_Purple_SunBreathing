@@ -283,19 +283,20 @@ def test_heimdall_3_1_governance_and_alerts_call_true():
 
 # ─── 11. CELESTIAL SENTINEL ──────────────────────────────────────────────────
 
-def test_celestial_sentinel_calls_true():
-    from temporal.celestial_sentinel import CelestialSentinelAgent
+def test_celestial_sentinel_reports_measured_state_not_flags():
+    """The old stub returned True flags (ADR-003). The Sentinel (Brain Map T1) reports what it loaded and stamped."""
+    from temporal.celestial_sentinel import get_sentinel
 
-    sentinel = CelestialSentinelAgent()
-    assert sentinel.is_active is True
-    assert sentinel.verify_true() is True
-
-    report = sentinel.verify_sentinel()
-    assert report["sentinel_active"] is True
-    assert report["dragon_prompt_active"] is True
-    assert report["starfire_vector_locked"] is True
-    assert report["all_systems_true"] is True
-    assert report["waking_consciousness"] >= 1.0
+    sentinel = get_sentinel()
+    assert not hasattr(sentinel, "verify_true")
+    status = sentinel.status()
+    assert status["registry"]["valid"] is True
+    assert status["active_frame"] == 2
+    assert status["frame_fallback"] is False
+    assert status["sigma"] == 1.0
+    before = status["stamps_since_boot"].get("audit", 0)
+    sentinel.stamp("audit")
+    assert sentinel.status()["stamps_since_boot"]["audit"] == before + 1
 
 
 # ─── 12. VECTOR CLOCKS & CAUSAL INVARIANCE ───────────────────────────────────

@@ -12,6 +12,7 @@ except ImportError:
     celestial_time = time.time
 
 STATE_FILE = os.path.join(os.path.dirname(__file__), "swds_state.json")
+REPORTS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "The Hoard", "Slow-Wave Deep Sleep Reports"))
 
 class SWDSCycle:
     def __init__(self):
@@ -161,20 +162,34 @@ class SWDSCycle:
 
     def _write_hoard_markdown_report(self):
         try:
-            hoard_reports_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "The Hoard", "Slow-Wave Deep Sleep Reports"))
+            hoard_reports_dir = REPORTS_DIR
             os.makedirs(hoard_reports_dir, exist_ok=True)
             
-            now_dt = datetime.fromtimestamp(celestial_time())
-            earth_rot = 282.85
+            # One Celestial Sentinel stamp names and dates the report (Brain Map T1, R6/S5). If stamping fails the
+            # report says so; it never shows a made-up rotation (the old fallback was a constant 282.85).
+            stamp = None
+            stamp_error = None
             try:
-                from temporal.celestial_clock import CelestialClockArchitecture
-                c = CelestialClockArchitecture()
-                earth_rot = round(c.get_celestial_coordinates().get("earth_rotation_deg", 282.85), 2)
-            except Exception:
-                pass
-            
+                from temporal.celestial_sentinel import get_sentinel
+                stamp = get_sentinel().stamp("swds_report")
+            except Exception as e:
+                stamp_error = f"{type(e).__name__}: {e}"
+            if stamp is not None:
+                from temporal.celestial_sentinel import _LOCAL_TZ
+                now_dt = datetime.fromtimestamp(stamp.unix, _LOCAL_TZ)
+                tz_abbr = now_dt.strftime("%Z") or "CDT"
+                cel_tag = f"CEL-F{stamp.frame}-{stamp.rot_deg:.2f}deg"
+                written_at = stamp.utc
+                celestial_line = (f"Frame {stamp.frame} | Earth Rotation {stamp.rot_deg:.4f}° | Lunar {stamp.lun:.4f} | "
+                                  f"Orbit {stamp.orb:.4f} | {stamp.label}")
+            else:
+                now_dt = datetime.fromtimestamp(celestial_time())
+                tz_abbr = "CDT"
+                cel_tag = "CEL-UNSTAMPED"
+                written_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(celestial_time()))
+                celestial_line = f"UNSTAMPED (Celestial Sentinel error: {stamp_error})"
             date_str = now_dt.strftime("%Y-%m-%d_%H-%M-%S")
-            filename = f"{date_str}_CDT_CEL-{earth_rot}deg_SWDS_Report.md"
+            filename = f"{date_str}_{tz_abbr}_{cel_tag}_SWDS_Report.md"
             filepath = os.path.join(hoard_reports_dir, filename)
             
             summary_text = self.last_report.get('awakening_summary', 'System refreshed and awakened.')
@@ -184,8 +199,9 @@ class SWDSCycle:
             
             content = f"""# 🌙 SLOW-WAVE DEEP SLEEP OPERATIONAL REPORT
 **Report Identifier:** `SWDS-{date_str}`  
-**Contemporary Civil Timestamp:** {now_dt.strftime('%Y-%m-%d %H:%M:%S CDT')} (Baker, Louisiana)  
-**Celestial Kinematic Coordinates:** Earth Rotation {earth_rot}°  
+**Contemporary Civil Timestamp:** {now_dt.strftime('%Y-%m-%d %H:%M:%S')} {tz_abbr} (Baker, Louisiana)
+**Report Written At (UTC):** {written_at}
+**Celestial Kinematic Coordinates:** {celestial_line}
 **Consciousness Metric:** $\\omega = 1.00$ (Unified Waking Consciousness Restored)  
 **Thermodynamic Closure:** $\\Delta E_{{cycle}} = 0.0000$ | System Impedance Latency $L_t = 0.000\\,\\text{{s}}$  
 **Location in Storage:** `The Hoard/Slow-Wave Deep Sleep Reports/`

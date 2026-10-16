@@ -460,18 +460,27 @@ class PhoenixForge:
         embeddings generated from a deterministic hash of the fused content.
         """
         fused_knowledge = f"{analytical_data} + {synthetic_data} fused in Phoenix Fire."
-        created_at = celestial_time()
+        # One Celestial Sentinel stamp gives the node's time, CCID and stamp (Brain Map T1)
+        try:
+            from temporal.celestial_sentinel import stamp_dict
+            celestial_stamp = stamp_dict("phoenix_node")
+        except ImportError:
+            celestial_stamp = None
+        created_at = celestial_stamp["unix"] if celestial_stamp else celestial_time()
         node_ccid = ccid or f"CCID_{int(created_at)}"
-        
+
         embedding_64d, embedding_768d = self._generate_mrl_embedding(fused_knowledge, 768)
 
+        # x, y, z are placeholders until the Atlas defines them (Brain Map T3/T4). `t` is the creation time;
+        # Phoenix's generation counter, which used to sit in `t`, is kept under its own name.
         vector_4d = {
             "x": 1.0,
             "y": 0.5,
             "z": 0.0,
-            "t": self.evolution_generation
+            "t": created_at,
+            "generation": self.evolution_generation,
         }
-        
+
         return {
             "payload": fused_knowledge,
             "spacetime_anchor": vector_4d,
@@ -481,6 +490,7 @@ class PhoenixForge:
             "outcome_label": 0.5,
             "created_at": created_at,
             "ccid": node_ccid,
+            "celestial_stamp": celestial_stamp,
         }
 
     def _generate_mrl_embedding(self, content: str, dim: int = 768) -> Tuple[List[float], List[float]]:

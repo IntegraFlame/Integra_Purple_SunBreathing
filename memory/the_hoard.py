@@ -58,6 +58,15 @@ except ImportError:
     celestial_time = time.time
     celestial_ccid = lambda prefix="CCID": f"{prefix}_{int(time.time())}"
 
+
+def _new_celestial_stamp(kind: str) -> Optional[Dict[str, Any]]:
+    """A Celestial Sentinel stamp for a new node (Brain Map T1), or None if the Sentinel is unavailable (logged)."""
+    try:
+        from temporal.celestial_sentinel import stamp_dict
+    except ImportError:
+        return None
+    return stamp_dict(kind)
+
 HOARD_VECTOR_DIM = 768  # the schema fields are named embedding_768d; another dimension needs a schema change
 
 LEGACY_COLLECTION = "integra_hoard"
@@ -79,12 +88,15 @@ class HoardNode:
         created_at: Unix timestamp of node creation.
         sufficiency_score: Pre-existing sufficiency metric (1.0 = fully sufficient).
         metadata: Arbitrary metadata dict for Looking Glass, Cheshire Protocol telemetry, etc.
+        celestial_stamp: The Celestial Sentinel stamp taken when the node was created (frame, civil time, vector,
+            label, provenance). Additive and optional: nodes written before Brain Map T1 have none, and none is
+            invented for them.
     """
     __slots__ = (
         "ccid", "payload", "spacetime_anchor",
         "embedding_64d", "embedding_768d", "embed_space",
         "outcome_label", "is_stale", "created_at",
-        "sufficiency_score", "metadata"
+        "sufficiency_score", "metadata", "celestial_stamp"
     )
 
     def __init__(
@@ -100,6 +112,8 @@ class HoardNode:
         sufficiency_score: float = 1.0,
         metadata: Optional[Dict[str, Any]] = None,
         embed_space: Optional[str] = None,
+        celestial_stamp: Optional[Dict[str, Any]] = None,
+        stamp_new: bool = True,
     ):
         self.ccid = ccid
         self.payload = payload
@@ -109,7 +123,16 @@ class HoardNode:
         self.embed_space = embed_space
         self.outcome_label = outcome_label
         self.is_stale = is_stale
-        self.created_at = created_at or celestial_time()
+        if created_at or not stamp_new:
+            # An existing node (or a caller that already knows the instant): keep what it carries.
+            # A loaded node without created_at gets "now" as before, but no stamp is invented for it.
+            self.created_at = created_at or celestial_time()
+            self.celestial_stamp = celestial_stamp
+        else:
+            # A new node: one Sentinel stamp gives both the creation time and the celestial stamp.
+            st = celestial_stamp or _new_celestial_stamp("hoard_node")
+            self.created_at = st["unix"] if st else celestial_time()
+            self.celestial_stamp = st
         self.sufficiency_score = sufficiency_score
         self.metadata = metadata or {}
 
@@ -132,6 +155,7 @@ class HoardNode:
             "created_at": self.created_at,
             "sufficiency_score": self.sufficiency_score,
             "metadata": self.metadata,
+            "celestial_stamp": self.celestial_stamp,
         }
 
     # Alias for Rodin Protocol compatibility — Rodin expects `node.get("embedding")`
@@ -166,6 +190,8 @@ class HoardNode:
             sufficiency_score=data.get("sufficiency_score", 1.0),
             metadata=data.get("metadata"),
             embed_space=data.get("embed_space"),
+            celestial_stamp=data.get("celestial_stamp"),
+            stamp_new=False,
         )
 
 
@@ -622,24 +648,33 @@ class TheHoard:
         outcome_label: float = 0.5,
         metadata: Optional[Dict[str, Any]] = None,
         embed_space: Optional[str] = None,
+        celestial_stamp: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Commits a fully-schemed HoardNode, outcome label, and temporal metadata.
         A caller that supplies a vector must also say which space it is in (`embed_space`);
         a vector without a space is stored but not indexed or searched.
 
+        Every new node carries a Celestial Sentinel stamp (the caller's, or one taken now). The anchor's `t` is
+        filled with the stamp's time when the caller left it missing or 0; a `t` the caller gave is kept.
+
         Also persists the node as a raw shard to kernel_memory/hoard/raw_shards/.
         """
+        anchor = dict(spacetime_anchor or {})
         node = HoardNode(
             ccid=ccid,
             payload=payload,
-            spacetime_anchor=spacetime_anchor,
+            spacetime_anchor=anchor,
             embedding_64d=embedding_64d,
             embedding_768d=embedding_768d,
             outcome_label=outcome_label,
             metadata=metadata,
             embed_space=embed_space,
+            created_at=celestial_stamp["unix"] if celestial_stamp else None,
+            celestial_stamp=celestial_stamp,
         )
+        if not anchor.get("t"):
+            anchor["t"] = node.created_at
         self.local_sparse_cache.append(node)
 
         # Persist to raw_shards/
@@ -668,7 +703,8 @@ class TheHoard:
     # ─────────────────────────────────────────────
 
     def commit_node(
-        self, payload: Any, vector_4d: Dict[str, Any], ccid: str
+        self, payload: Any, vector_4d: Dict[str, Any], ccid: str,
+        celestial_stamp: Optional[Dict[str, Any]] = None,
     ) -> Dict[str, Any]:
         """
         Legacy-compatible commit. Wraps commit_node_v2 with no vector
@@ -678,6 +714,7 @@ class TheHoard:
             payload=payload,
             spacetime_anchor=vector_4d,
             ccid=ccid,
+            celestial_stamp=celestial_stamp,
         )
         # Legacy callers expect "COMMITTED_TO_HOARD" status
         result["status"] = "COMMITTED_TO_HOARD"
@@ -1073,16 +1110,18 @@ class TheHoard:
         except Exception as e:
             loop_result = {"status": "METATRON_ERROR", "error": str(e)}
 
-        # Build spacetime anchor
+        # One Celestial Sentinel stamp gives the anchor time, the CCID and the node's stamp
+        stamp = _new_celestial_stamp("crystallization")
+        t_now = stamp["unix"] if stamp else celestial_time()
         spacetime_anchor = {
             "x": 0.0, "y": 0.0, "z": 0.0,
-            "t": celestial_time(),
+            "t": t_now,
             "session_id": session_id,
             "cycle": cycle_iteration,
         }
 
         # Commit crystallization node to Hoard
-        ccid = f"CCID_CRYSTAL_{int(celestial_time())}_{cycle_iteration}"
+        ccid = f"CCID_CRYSTAL_{int(t_now)}_{cycle_iteration}"
         payload = {
             "type": "auto_crystallization",
             "session_id": session_id,
@@ -1097,6 +1136,7 @@ class TheHoard:
             spacetime_anchor=spacetime_anchor,
             ccid=ccid,
             metadata={"source": "auto_crystallize", "block": 6},
+            celestial_stamp=stamp,
         )
 
         return {

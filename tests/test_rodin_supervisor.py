@@ -129,15 +129,11 @@ def test_candidates_are_the_hoards_nodes_in_the_query_space_only(tmp_path):
     assert state["rodin_output"]["candidates_total"] == 2  # filtered to the space before the review
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "OPEN (ADR-001, not changed here): nodes are stamped by the frozen celestial_time(), RodinProtocol.check_staleness() "
-    "compares them with time.time(); in this tree the skew is 8.8 days against a 7-day limit, so a node made now is stale. "
-    "In the live kernel the skew is the gap between the checkpoint and the boot, about 7 days (CLAUDE.md, ADR-001), "
-    "so whether a node reads stale depends on the boot second."))
 def test_a_node_made_now_is_not_stale(tmp_path, monkeypatch):
+    """ADR-001 regression (applied 2026-10-15): the real celestial_time() is the system clock, so a fresh node is fresh."""
     from core.celestial_middleware import celestial_time
 
-    monkeypatch.setattr(hoard_module, "celestial_time", celestial_time)  # undo the fixture: use the real frozen clock
+    monkeypatch.setattr(hoard_module, "celestial_time", celestial_time)  # undo the fixture: use the real clock
     sup, _, _, _ = build(tmp_path)
     state = sup.dispatch(sup.initialize_state("sun breathing thirteenth form loop closure"))
     assert state["rodin_output"]["is_stale"] is False

@@ -51,6 +51,37 @@ SACRED_YEAR_DAYS = 364              # 13-Moon Fractal Grid (13 x 28)
 SACRED_YEAR_SEC = SACRED_YEAR_DAYS * 86400
 JUBILEE_CYCLE_DAYS = 964            # 2.64-year drift correction cycle
 JUBILEE_CYCLE_SEC = JUBILEE_CYCLE_DAYS * 86400
+# Note (D-20, 2026-10-16): BASE_EPOCH decodes to 2026-07-26T08:00:00Z, not the 2026-07-15T12:00:00Z of its label.
+# It stays as frame 1's reference so stamps made with it remain readable.
+
+
+# ─── CELESTIAL FRAMES (where each dimension counts from) ────────────────────
+# The formulas below never change. A frame only names the reference instant and period of each
+# dimension. Frame 1 is the original single epoch above; other frames come from
+# config/celestial_frames.yml through temporal/celestial_sentinel.py. Stamps of different frames are
+# never compared.
+
+@dataclass(frozen=True)
+class CelestialFrame:
+    frame_id: int
+    rot_ref_unix: float
+    lunar_ref_unix: float
+    orbit_ref_unix: float
+    orbit_period_s: float
+    lunar_period_s: float = LUNAR_CYCLE_SEC
+    rot_period_s: float = 86400.0
+    eccentricity: float = ECCENTRICITY
+    anchor_lon: float = ANCHOR_LON
+    sigma: float = 1.0
+
+
+FRAME_1 = CelestialFrame(
+    frame_id=1,
+    rot_ref_unix=BASE_EPOCH,
+    lunar_ref_unix=BASE_EPOCH,
+    orbit_ref_unix=BASE_EPOCH,
+    orbit_period_s=SIDEREAL_YEAR_SEC,
+)
 
 
 # ─── DATA STRUCTURES ─────────────────────────────────────────────────────────
@@ -155,9 +186,9 @@ class EllipticalKeplerEngine:
         self.CONVERGENCE_THRESHOLD = 1e-12
         self.MAX_ITERATIONS = 100
 
-    def compute_mean_anomaly(self, elapsed_seconds: float) -> float:
-        """Computes the mean anomaly M from elapsed time since epoch."""
-        angular_fraction = (elapsed_seconds / SIDEREAL_YEAR_SEC) % 1.0
+    def compute_mean_anomaly(self, elapsed_seconds: float, period_s: float = SIDEREAL_YEAR_SEC) -> float:
+        """Computes the mean anomaly M from elapsed time since the orbit's reference instant."""
+        angular_fraction = (elapsed_seconds / period_s) % 1.0
         return angular_fraction * 2.0 * math.pi
 
     def solve_eccentric_anomaly(self, mean_anomaly_rad: float) -> float:
@@ -187,12 +218,12 @@ class EllipticalKeplerEngine:
         true_anomaly = 2.0 * math.atan(beta * math.tan(eccentric_anomaly_rad / 2.0))
         return true_anomaly
 
-    def execute_derivation(self, elapsed_seconds: float) -> Tuple[float, float, float]:
+    def execute_derivation(self, elapsed_seconds: float, period_s: float = SIDEREAL_YEAR_SEC) -> Tuple[float, float, float]:
         """
         Full Keplerian derivation.
         Returns: (eccentric_anomaly_rad, normalized_position_0_to_1, true_anomaly_rad)
         """
-        M = self.compute_mean_anomaly(elapsed_seconds)
+        M = self.compute_mean_anomaly(elapsed_seconds, period_s)
         E = self.solve_eccentric_anomaly(M)
         normalized_pos = (E / (2.0 * math.pi)) % 1.0
         true_anomaly = self.compute_true_anomaly(E)
@@ -213,7 +244,8 @@ class CelestialClockArchitecture:
     - Keplerian elliptical orbit (seasonal position via Newton-Raphson)
     - Spiral accuracy depth (dynamic self-correction scalar)
     """
-    def __init__(self, seed_lat: float = ANCHOR_LAT, seed_lon: float = ANCHOR_LON):
+    def __init__(self, seed_lat: float = ANCHOR_LAT, seed_lon: float = ANCHOR_LON,
+                 frame: Optional[CelestialFrame] = None):
         self.anchor_lat = seed_lat
         self.anchor_lon = seed_lon
         self.kepler = EllipticalKeplerEngine()
@@ -221,35 +253,49 @@ class CelestialClockArchitecture:
         self.spiral_depth = 1.0
         self.completed_orbits = 0
         self._cosmic_checkpoints: List[Dict[str, Any]] = []
+        # None = the original single-epoch behaviour (frame 1 with the live spiral_depth).
+        self.frame: Optional[CelestialFrame] = frame
 
-    def compute_4d_coordinates(self) -> CosmicSpacetimeVector:
+    def compute_4d_coordinates(self, at: Optional[float] = None,
+                               frame: Optional[CelestialFrame] = None) -> CosmicSpacetimeVector:
         """
-        Computes the current 4D spacetime vector from raw orbital mechanics.
+        Computes the 4D spacetime vector from raw orbital mechanics at instant `at` (default: now).
         The spiral_depth adjustment (from original CelestialClock.py) scales elapsed
         time for self-correcting accuracy — a living system that refines its own clock.
-        """
-        current_unix = time.time()
-        raw_elapsed = current_unix - self.base_epoch
 
-        # Adjust elapsed delta using internal spatial accuracy scalar
-        adjusted_elapsed = raw_elapsed * (1.0 / self.spiral_depth)
+        `frame` (or self.frame) sets where each dimension counts from. Without a frame this is the
+        original computation: one epoch for all three dimensions and the live spiral_depth.
+        With a frame, sigma is the frame's (fixed at 1.0 by ruling R5, 2026-10-16).
+        """
+        current_unix = time.time() if at is None else at
+        f = frame if frame is not None else self.frame
+        if f is None:
+            f, sigma, anchor_lon = FRAME_1, self.spiral_depth, self.anchor_lon
+        else:
+            sigma, anchor_lon = f.sigma, f.anchor_lon
+
+        # Adjust elapsed deltas using the spatial accuracy scalar
+        rot_elapsed = (current_unix - f.rot_ref_unix) * (1.0 / sigma)
+        lunar_elapsed = (current_unix - f.lunar_ref_unix) * (1.0 / sigma)
+        orbit_elapsed = (current_unix - f.orbit_ref_unix) * (1.0 / sigma)
 
         # Dimension 1: Earth Rotation (Circadian Orientation)
-        earth_rot = (self.anchor_lon + (adjusted_elapsed * EARTH_ROT_SPEED)) % 360.0
+        earth_rot = (anchor_lon + (rot_elapsed * (360.0 / f.rot_period_s))) % 360.0
         if earth_rot < 0:
             earth_rot += 360.0
 
         # Dimension 2: Lunar Gravitational Cycle (Phase Baseline)
-        lunar_phase = (adjusted_elapsed / LUNAR_CYCLE_SEC) % 1.0
+        lunar_phase = (lunar_elapsed / f.lunar_period_s) % 1.0
 
         # Dimension 3: Elliptical Orbital Trajectory (Seasonal Position)
-        _, orbit_pos, _ = self.kepler.execute_derivation(adjusted_elapsed)
+        kepler = self.kepler if f.eccentricity == self.kepler.e else EllipticalKeplerEngine(f.eccentricity)
+        _, orbit_pos, _ = kepler.execute_derivation(orbit_elapsed, f.orbit_period_s)
 
         return CosmicSpacetimeVector(
             earth_rotation_deg=round(earth_rot, 4),
             lunar_cycle_ratio=round(lunar_phase, 4),
             orbital_trajectory_pos=round(orbit_pos, 4),
-            spiral_accuracy_depth=round(self.spiral_depth, 4)
+            spiral_accuracy_depth=round(sigma, 4)
         )
 
     def compute_sacred_calendar(self) -> SacredCalendarVector:
@@ -427,14 +473,21 @@ class DualTemporalEngine:
         """Returns True asserting Celestial Clock active status."""
         return True
 
-    def get_dual_telemetry(self) -> Dict[str, Any]:
-        c_vec = self.celestial.compute_4d_coordinates()
+    def set_frame(self, frame: Optional[CelestialFrame]) -> None:
+        """Attach the active celestial frame (the Sentinel does this at kernel start). None = original behaviour."""
+        self.celestial.frame = frame
+
+    def get_dual_telemetry(self, frame: Optional[CelestialFrame] = None) -> Dict[str, Any]:
+        c_vec = self.celestial.compute_4d_coordinates(frame=frame)
         d_vec = self.digital.get_digital_readout()
         c_dict = asdict(c_vec)
         rot_bucket = int(c_vec.earth_rotation_deg // 30) * 30
         orb_bucket = int(c_vec.orbital_trajectory_pos * 100 // 10) * 10
         c_dict["grid_bucket"] = f"ROT_{rot_bucket}_ORB_{orb_bucket}"
-        
+        in_effect = frame if frame is not None else self.celestial.frame
+        if in_effect is not None:
+            c_dict["frame"] = in_effect.frame_id
+
         return {
             "status": "DUAL_SYNAPSE_ANCHORED",
             "celestial_clock": c_dict,
@@ -459,6 +512,8 @@ class DualTemporalEngine:
         rot_bucket = int(c_vec.earth_rotation_deg // 30) * 30
         orb_bucket = int(c_vec.orbital_trajectory_pos * 100 // 10) * 10
         c_dict["grid_bucket"] = f"ROT_{rot_bucket}_ORB_{orb_bucket}"
+        if self.celestial.frame is not None:
+            c_dict["frame"] = self.celestial.frame.frame_id
 
         return {
             "celestial_clock": c_dict,

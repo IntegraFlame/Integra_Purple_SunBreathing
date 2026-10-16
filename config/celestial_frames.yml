@@ -1,0 +1,27 @@
+# Celestial frame registry (Brain Map T1; rulings R1 (c), R2, R5 and S2, 2026-10-16).
+# Owned by temporal/celestial_sentinel.py, which validates it at load.
+# Rules: frame ids are append-only and never reused; a frame's constants are never edited (a correction is a
+# new frame); stamps of different frames are never compared. Frame 1 must equal the built-in constants of
+# temporal/celestial_clock.py.
+schema: celestial_frames/1
+active_frame: 2
+math_module: temporal/celestial_clock.py
+frames:
+  - id: 1
+    name: legacy single epoch
+    status: legacy
+    rotation: {ref_unix: 1785052800.0, period_s: 86400.0, anchor_lon: -91.1673}
+    lunar: {ref_unix: 1785052800.0, period_s: 2551442.8}
+    orbit: {ref_unix: 1785052800.0, period_s: 31558149.763, eccentricity: 0.0167086}
+    sigma: 1.0
+    note: "BASE_EPOCH decodes to 2026-07-26T08:00:00Z although labelled 2026-07-15T12:00:00Z (D-20). Lunar and orbit are not referenced to a new moon or a perihelion."
+  - id: 2
+    name: almanac references
+    status: active
+    rotation: {ref_unix: 1784116800.0, ref_utc: "2026-07-15T12:00:00Z", period_s: 86400.0, anchor_lon: -91.1673}
+    lunar: {ref_unix: 1784022180.0, ref_utc: "2026-07-14T09:43:00Z", period_s: 2551442.8}
+    orbit: {ref_unix: 1767460500.0, ref_utc: "2026-01-03T17:15:00Z", period_s: 31558310.6, eccentricity: 0.0167086}
+    sigma: 1.0
+    sources: "New moon and perihelion: USNO Astronomical Applications API 4.0.1 (cross-checked with NASA GSFC Phases of the Moon 2001-2100 and F. Espenak, Earth at Perihelion and Aphelion 2001-2100). Orbit period: least-squares fit over the 100 perihelia 2001-2100. Lunar period confirmed within 0.4 s by a fit over 1,237 new moons."
+    meaning: "rotation = Baker's local mean-solar hour angle (0 at local mean noon); lunar = fraction of the lunation since a new moon; orbit = eccentric anomaly / 2 pi since perihelion"
+    verified: "Moon within 0.81 d at the 136 new moons 2026-2036; orbit within 1.32 d at the 11 perihelia 2026-2036 (docs/brainmap/Task01_REPORT.md, step 1.3)"

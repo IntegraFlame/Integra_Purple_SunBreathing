@@ -28,3 +28,17 @@ def no_real_model_calls(request, monkeypatch):
     reset_default_embedding_service(None)
     yield
     reset_default_embedding_service(None)
+
+
+@pytest.fixture(autouse=True)
+def celestial_checkpoint_in_tmp(tmp_path, monkeypatch):
+    """
+    No test writes the celestial checkpoint of the tree it runs in (Brain Map T1, R4): the process-wide
+    Celestial Sentinel's checkpoint paths point into the test's tmp_path for the duration of each test.
+    """
+    from temporal.celestial_sentinel import get_sentinel
+
+    sentinel = get_sentinel()
+    monkeypatch.setattr(sentinel, "checkpoint_path", tmp_path / "celestial" / "checkpoint.json")
+    monkeypatch.setattr(sentinel, "legacy_checkpoint_path", tmp_path / "celestial" / "legacy_checkpoint.json")
+    yield

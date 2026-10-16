@@ -268,12 +268,20 @@
     //   - integra-homebase/temporal/celestial_clock.py (Python)
     //   - integra-homebase/temporal/hlc_binary_protocol.py (Binary protocol)
     //   - CODE/dual_clock_widget.html (Original JS source)
-    const ANCHOR_LON = -91.1673;
-    const EARTH_ROT_SPEED = 360.0 / 86400.0;   // 0.00416667 deg/s
-    const LUNAR_CYCLE_SEC = 2551442.8;          // Synodic month
-    const BASE_EPOCH = 1785052800.0;            // 2026-07-15T12:00:00Z
-    const SIDEREAL_YEAR = 31558149.763;         // Sidereal year
-    const ECCENTRICITY = 0.0167086;             // Earth orbital eccentricity
+    // The rotation, lunar and orbit references come from GET /celestial/frame (the Celestial Sentinel's
+    // active frame); frame 1 below is only the fallback if that call fails. BASE_EPOCH still anchors the
+    // sacred calendar, which is a calendar choice, not a frame.
+    const BASE_EPOCH = 1785052800.0;            // decodes to 2026-07-26T08:00:00Z (D-20)
+    let CEL_FRAME = {
+      frame: 1, fallback: true,
+      rotation: { ref_unix: 1785052800.0, period_s: 86400.0, anchor_lon: -91.1673 },
+      lunar: { ref_unix: 1785052800.0, period_s: 2551442.8 },
+      orbit: { ref_unix: 1785052800.0, period_s: 31558149.763, eccentricity: 0.0167086 }
+    };
+    fetch('/celestial/frame')
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(f => { CEL_FRAME = Object.assign({}, f, { fallback: false }); })
+      .catch(() => { console.warn('celestial frame: using frame 1 (fallback)'); });
     const SACRED_YEAR_DAYS = 364;               // 13 x 28
     const JUBILEE_CYCLE_DAYS = 964;             // 2.64-year drift correction
     const bootTime = Date.now();
@@ -321,11 +329,12 @@
       }
 
       // ─── CELESTIAL KINEMATIC CLOCK (local physics — always runs) ───────
-      let rotDeg = (ANCHOR_LON + (elapsedCosmic * EARTH_ROT_SPEED)) % 360.0;
+      const F = CEL_FRAME;
+      let rotDeg = (F.rotation.anchor_lon + ((nowUnix - F.rotation.ref_unix) * (360.0 / F.rotation.period_s))) % 360.0;
       if (rotDeg < 0) rotDeg += 360.0;
-      const lunarRatio = ((elapsedCosmic / LUNAR_CYCLE_SEC) % 1.0 + 1.0) % 1.0;
-      const meanAnomaly = ((elapsedCosmic / SIDEREAL_YEAR) % 1.0) * 2 * Math.PI;
-      const E = solveKepler(meanAnomaly, ECCENTRICITY);
+      const lunarRatio = (((nowUnix - F.lunar.ref_unix) / F.lunar.period_s) % 1.0 + 1.0) % 1.0;
+      const meanAnomaly = ((((nowUnix - F.orbit.ref_unix) / F.orbit.period_s) % 1.0 + 1.0) % 1.0) * 2 * Math.PI;
+      const E = solveKepler(meanAnomaly, F.orbit.eccentricity);
       const orbPos = (E / (2 * Math.PI)) % 1.0;
 
       // Only write celestial values if server hasn't overridden them
@@ -335,7 +344,8 @@
         document.getElementById('celestial-lunar').textContent = lunarRatio.toFixed(4);
         const rotBucket = Math.floor(rotDeg / 30) * 30;
         const orbBucket = Math.floor(orbPos * 100 / 10) * 10;
-        document.getElementById('celestial-bucket').textContent = `ROT_${rotBucket}_ORB_${orbBucket}`;
+        document.getElementById('celestial-bucket').textContent =
+          `ROT_${rotBucket}_ORB_${orbBucket} · frame ${F.frame}${F.fallback ? ' (fallback)' : ''}`;
       }
 
       // ─── SACRED CALENDAR: only use local fallback if server is NOT linked
@@ -499,7 +509,8 @@
           if (cc.lunar_cycle_ratio != null)
             document.getElementById('celestial-lunar').textContent = cc.lunar_cycle_ratio.toFixed(4);
           if (cc.grid_bucket)
-            document.getElementById('celestial-bucket').textContent = cc.grid_bucket;
+            document.getElementById('celestial-bucket').textContent =
+              cc.grid_bucket + (cc.frame != null ? ' · frame ' + cc.frame : '');
         }
 
       } catch (e) {

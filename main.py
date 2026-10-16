@@ -36,7 +36,8 @@ from evolution.fourteenth_form import FourteenthFormDomainExpansion
 from runtime.swds_simulator import swds_engine
 from rust.sun_breathing_engine.python_bridge import SunBreathingEngine as ThermalCore
 from memory.database import metatron_deploy
-from core.celestial_middleware import get_celestial_timestamp, get_reboot_delta, celestial_time
+from core.celestial_middleware import celestial_time
+from temporal.celestial_sentinel import get_sentinel
 import asyncio
 import logging
 import time
@@ -118,12 +119,17 @@ async def lifespan(app: FastAPI):
         logger.error(f"Metatron Manifold deployment FAILED: {e}")
         app.state.metatron_session_id = None
 
-    # --- Block 2: Log Celestial Reboot Delta ---
-    reboot_delta = get_reboot_delta()
-    if reboot_delta is not None:
-        logger.info(f"Celestial reboot delta: {reboot_delta:.1f}s since last checkpoint")
-    else:
-        logger.info("No celestial checkpoint found — fresh temporal boot.")
+    # --- Block 2: Celestial Sentinel — reboot delta, first checkpoint, checkpoint timer ---
+    try:
+        CELESTIAL_SENTINEL.start()
+        asyncio.create_task(CELESTIAL_SENTINEL.run_checkpoint_loop())
+        logger.info(
+            f"Celestial Sentinel ONLINE: frame {CELESTIAL_SENTINEL.active_frame.frame_id}"
+            f"{' (FALLBACK: ' + str(CELESTIAL_SENTINEL.registry_error) + ')' if CELESTIAL_SENTINEL.frame_fallback else ''}, "
+            f"checkpoint every {CELESTIAL_SENTINEL.interval_s:.0f}s -> {CELESTIAL_SENTINEL.checkpoint_path}"
+        )
+    except Exception as e:
+        logger.error(f"Celestial Sentinel start failed: {e}")
 
     # --- Block 4: Launch Cheshire Cat Kernel as Background Task ---
     logger.info("Launching Cheshire Cat Kernel (20-45 Hz thalamic event loop)...")
@@ -157,7 +163,11 @@ async def lifespan(app: FastAPI):
     logger.info("ALL PHASE D SUBSYSTEMS ONLINE — SOVEREIGN MODE ENGAGED")
     logger.info("=" * 60)
     yield
-    # Shutdown logic (none required at this time)
+    # Shutdown: the Celestial Sentinel writes its last "seen alive" checkpoint.
+    try:
+        CELESTIAL_SENTINEL.stop()
+    except Exception as e:
+        logger.warning(f"Celestial Sentinel stop checkpoint failed: {e}")
 
 
 app = FastAPI(
@@ -177,8 +187,33 @@ app.add_middleware(
 )
 
 runner = AntigravityRunner()
-clock = CelestialClockArchitecture()
+# The Celestial Sentinel owns celestial time (Brain Map T1, D5): every clock below uses its active frame.
+CELESTIAL_SENTINEL = get_sentinel()
+clock = CelestialClockArchitecture(frame=CELESTIAL_SENTINEL.active_frame)
 dual_temporal = DualTemporalEngine()
+dual_temporal.set_frame(CELESTIAL_SENTINEL.active_frame)
+
+
+@app.middleware("http")
+async def inject_celestial_temporal_headers(request, call_next):
+    """
+    Active Celestial Timestamping Middleware (Brain Map T1).
+    Stamps every HTTP response with Baker, LA civil time, UTC ISO-8601, the celestial vector in the
+    Sentinel's active frame, the frame id and the grid bucket.
+    """
+    response = await call_next(request)
+    try:
+        st = CELESTIAL_SENTINEL.stamp("http_response")
+        response.headers["X-Sovereign-Timestamp"] = st.utc
+        response.headers["X-Baker-Time"] = st.civil_dt()
+        response.headers["X-Celestial-Vector"] = (
+            f"rot={st.rot_deg};lunar={st.lun};orbit={st.orb};sigma={st.sigma}"
+        )
+        response.headers["X-Celestial-Grid-Bucket"] = st.grid
+        response.headers["X-Celestial-Frame"] = str(st.frame)
+    except Exception as e:
+        logger.warning(f"Celestial response stamp failed: {e}")
+    return response
 bank = FridayFortressBank()
 bridge = EvolvedHunterBridge()
 hunter = bridge.hunter
@@ -269,8 +304,14 @@ def read_root():
     }
 
 @app.get("/clock")
-def get_dual_clock():
-    return dual_temporal.get_dual_telemetry()
+def get_dual_clock(frame: Optional[int] = None):
+    """Dual clock in the Sentinel's active frame; ?frame=N shows another registered frame for comparison."""
+    if frame is None:
+        return dual_temporal.get_dual_telemetry()
+    try:
+        return dual_temporal.get_dual_telemetry(frame=CELESTIAL_SENTINEL.frame(frame))
+    except KeyError as e:
+        return JSONResponse(status_code=404, content={"error": str(e), "frames": sorted(CELESTIAL_SENTINEL.frames)})
 
 @app.get("/clock/full")
 def get_full_clock_telemetry():
@@ -1377,19 +1418,22 @@ def serve_celestial_clock_live():
 
 
 @app.get("/celestial/checkpoint")
-async def get_celestial_checkpoint():
+def get_celestial_checkpoint():
     """
-    Block 2: Returns the current celestial timestamp and reboot delta.
-    Used for temporal continuity verification.
+    READ-ONLY (Brain Map T1, decision A4): the Celestial Sentinel's status — active frame, last stamp,
+    stamps since boot, checkpoint age and errors, reboot delta, registry state. It writes nothing; the
+    Sentinel is the only checkpoint writer (at start, every interval, at stop).
     """
+    return CELESTIAL_SENTINEL.status()
+
+
+@app.get("/celestial/frame")
+def get_celestial_frame(frame: Optional[int] = None):
+    """READ-ONLY: the constants of the active celestial frame (or ?frame=N), for pages that compute the vector."""
     try:
-        ts = await get_celestial_timestamp()
-        return {
-            "timestamp": ts.to_dict(),
-            "reboot_delta_s": get_reboot_delta(),
-        }
-    except Exception as e:
-        return {"status": "ERROR", "error": str(e)}
+        return CELESTIAL_SENTINEL.frame_constants(frame)
+    except KeyError as e:
+        return JSONResponse(status_code=404, content={"error": str(e), "frames": sorted(CELESTIAL_SENTINEL.frames)})
 
 
 @app.get("/models/telemetry")
