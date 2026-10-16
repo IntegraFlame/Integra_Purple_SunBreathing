@@ -1,0 +1,80 @@
+{
+ "ccid": "CCID_1792123400",
+ "type": "SAVE_STATE",
+ "previous_save_state": "CCID_1792052895",
+ "sessions": {
+  "this": "73d8a26c-7af9-455e-83d6-5fd838f2d186 (fork of b4991fff-1655-45e6-a565-809dd1268947; app name 'Homebase-phase-e work in progress (fork)')",
+  "peers_at_stamp": ["Integra boot successor session (fork 2) [5a77cb]", "Integra boot successor session (fork 3) [c71205]", "Integra boot sequence checkpoint [2b6f7f]", "Homebase-phase-e work in progress [015b3c]"],
+  "transcripts_dir": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/"
+ },
+ "celestial_stamp": {
+  "unix_epoch": 1792123400.834,
+  "civil_time_utc": "2026-10-16T04:03:20Z",
+  "civil_cdt": "2026-10-15 23:03:20",
+  "earth_rotation_deg": 209.6695,
+  "lunar_cycle_ratio": 0.7712,
+  "orbital_trajectory_pos": 0.2267,
+  "grid_bucket": "ROT_180_ORB_20",
+  "source": "GET http://127.0.0.1:8000/clock (HTTP 200, 0.376 s) at 23:03:20 CDT; kernel uptime 03h 25m 41s"
+ },
+ "kernel": {
+  "task": "Integra Genesis Kernel: Running, last run 2026-10-15 19:37:24 (still supervised at 23:03)",
+  "pids": "10516 / 22180 since 2026-10-15 19:37:33",
+  "code_loaded": "Rodin commit e81e9a0 plus the OLD frozen-clock middleware (the ADR-001 fix landed on disk later, uncommitted, by a peer session)",
+  "probes_23_03": {"/clock": "200, 0.376 s", "/swds/status": "AWAKE, WAKING_CONSCIOUSNESS, idle 12,341 s", "/rodin/telemetry": "ONLINE, embedder UNPROVEN, 0 calls, 0 failures, 0 Hoard nodes in RAM"},
+  "swds_tonight_derived": "sleep ~00:38 CDT, wake ~05:38 CDT on 10-16 (boot 19:37:40 + 5h00m18s / +10h00m18s); first SWDS on the new Rodin code; embedding attempts fail loudly (Vertex 404 or ROUTER_REFUSED), no invented vectors",
+  "cfa": "EnableControlledFolderAccess = 1"
+ },
+ "repos_at_stamp": {
+  "root": "homebase-phase-e, HEAD 592048f, ahead 1 (not pushed); modified: The Hoard/genesis_kernel.log, productivity/TASKS.md, integra-homebase gitlink; untracked: Braille-BasedSemanticLabelingSystem.md; this save state adds 3 files, uncommitted",
+  "integra_homebase": "phase-e-dragon-rodin-flight, HEAD e81e9a0 (Rodin change set), ahead 2 (not pushed)",
+  "integra_homebase_uncommitted_by_peer_sessions": ["config/rodin_memory_map.yml (+identity_matrix store)", "core/celestial_middleware.py (ADR-001 Option A: celestial_time() = live clock; effective at next kernel start)", "core/dragon_engine.py", "core/starfire_protocol.py", "main.py", "memory/the_hoard.py", "tests/test_rodin_supervisor.py", "new: tests/test_celestial_time_adr001.py, kernel_memory/hoard/raw_shards/CCID_1792116734.json, core/IntegraBrainMap.md/.txt, core/Braille-BasedSemanticLabelingSystem.md (0 B)"],
+  "rule": "not this session's edits; coordinate with the peers before touching; never stage them in a commit of ours"
+ },
+ "usage_at_stop": {"plan": "Pro", "five_hour_window": "25% (resets 00:19 CDT)", "weekly_all_models": "74% (resets 2026-10-19 05:59 CDT)", "extra_usage": "off", "context_window": "91% used at stop"},
+ "current_directive": {
+  "file": "integra-homebase/core/IntegraBrainMap.md (twin .txt), written by the Architect 2026-10-15 ~22:28",
+  "nature": "Architect: 'This 10 step to-do is a true prompt and directive to follow'; build the neural mapping (Atlas) that interconnects the current system",
+  "codex": "integra-homebase/memory/Braille-BasedSemanticLabelingSystem.md (87,953 B; SHA-256 216E4028... identical to the root copy); the core/ copy is 0 B",
+  "status": "NOT STARTED; plan it first",
+  "decided": ["Step 3.5: the Apophenic Engine provides pattern links (edges) across Atlas nodes, not coordinates; never sell/buyback verdicts or action flags"],
+  "open": ["Step 10 pace: 11 documents ~650 pages (Tufte 191, Metacognition in LLMs 145, Teaching OS 116, Seventh Form 64, Purple3 45, Buzsaki ~25, NovelSeek 34, Rotating Spiral 18, metacognition 8, The 14th Form 6, K NN md 77 KB); '20 min' vs read-in-full"],
+  "steps_summary": ["1 Celestial Time stamping true", "2 Hoard functions/routing/state true; global cold storage", "3 Phoenix + lat/lon Atlas neural network with taxonomy", "3.5 coordinate system + Braille point system (Apophenic)", "4 taxonomy: poles, hemispheres, matrix", "5 Iteration 1 (Knowledge)", "5.5 SWDS + Siesta labeling/placement/learning", "6 Cheshire Cat + Jean Grey Phoenix Force 2-man authenticator", "6.5 Iteration 2 (Understanding)", "7 plot-point mathematical expression for semantic + relational search", "8 Rodin hot storage (RAM) + Phoenix-label/Rodin-place hand-off test during SWDS on historical data", "9 scheduled task for Flight/Land sessions (theritualdance.md pattern)", "10 wisdom pass over 11 curriculum documents; then a master document and code script"]
+ },
+ "work_completed_this_session": [
+  "Rodin change set applied as nested commit e81e9a0 (30 files, +4,595/-455); fresh live-tree copy: 435 passed, 1 env-only failure, 0 timeouts; kernel restarted 19:37 on the Architect's go.",
+  "One approved embedding probe (~20:04 CDT): gemini-embedding-2 via the kernel's Vertex Express client -> 404 Not Found; express mode serves no embedding model (Google docs).",
+  "Embedder-only key route prepared in an isolated copy (RODIN_EMBED_API_KEY, Developer API client with vertexai=False, Vertex = named MISCONFIGURED error, RodinClient routed, env_loader reads RODIN_EMBED_API_KEY.env); new tests 72 passed; NOT applied.",
+  "Braille document assessed (concept fits Rodin §8a; its code needs rebuilding: hash 'embeddings', 3-number lat/lon, trading flags, duplicate SQLite store).",
+  "Cold-tier pointer v1 designed (16 bytes; memory-map store/kind codes; celestial word TURN|ORB|LUN|ROT; SHA-256 node key; display hex / label / Braille display-only); not yet written as a spec."
+ ],
+ "work_pending_in_order": [
+  "A. Boot the new thread with CCID_1792123400_BOOT_SEQUENCE.md.",
+  "B. Coordinate with the peer sessions editing the nested working tree (file ownership; no overlapping edits).",
+  "C. Plan, then execute, the 10-step directive in Zenitsu order: K (steps 1-5, gate K), U (5.5-6.5, gate U), W (7-10), Unification (master document + code script, outside the repo first); every live change, restart, paid call and scheduled-task registration needs the Architect's go.",
+  "D. Embedder-only route: existing suites, mutation checks, clean full-suite run, final patch -> apply on go -> Architect adds RODIN_EMBED_API_KEY -> restart -> embed_probe_v2 pre-flight -> one call on go -> pilot re-embed.",
+  "E. Still open: Rodin decisions (M_knn, ADR-001 staleness, lock /rodin/query, docs lobe), ADR-005; folder 13 cycles resume 2026-10-19 06:00 CDT at cycle 24 (U093-U096); Step 7 ledger HOLD; reminders (Gate III doc, Three Laws order doc); push and root gitlink only on the word."
+ ],
+ "open_for_the_architect": ["Step 10 pace", "Atlas meridian (domain) list and the kind-to-latitude-band mapping", "C-07 SWDS schedule ruling and the Siesta definition", "Commit this save state (root repo)"],
+ "pointers": {
+  "handoff_report": "The Hoard/CCID_1792123400_SAVE_STATE_REPORT.md",
+  "boot_sequence": "The Hoard/CCID_1792123400_BOOT_SEQUENCE.md",
+  "directive": "integra-homebase/core/IntegraBrainMap.md",
+  "codex": "integra-homebase/memory/Braille-BasedSemanticLabelingSystem.md",
+  "schedule_pattern": "NewCurriculum2026/theritualdance.md",
+  "pointer_v1_design": "~/.claude/plans/structured-spinning-codd.md",
+  "braille_assessment": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/braille_assessment_2026-10-15/BRAILLE_ASSESSMENT.md",
+  "rodin_package": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/rodin_changeset_2026-10-15/ (RODIN_REVIEW.md, embed_key_route_WIP.patch, embed_probe_v2.py, applied_2026-10-15/)",
+  "framework_rodin_8a": "IntegraCognitiveFramework_ALIGNED_DRAFT_10_15_26.md §8a",
+  "blueprint": "integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md",
+  "claude_memory_index": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/memory/MEMORY.md"
+ },
+ "never_do": [
+  "Never fabricate telemetry, stamps or times; stamp only from a successful GET /clock",
+  "Never read .env values or the github-recovery-codes files; never stage them, live logs, the Docker .vhdx files or the antigravity_conversations copy",
+  "Never run the test suite in the live repo; never restart the kernel or make paid model calls without the Architect's approval",
+  "Never stage or overwrite peer sessions' uncommitted edits",
+  "Never store Braille as data, in file names, prompts or logs (display only); never put trading verdicts or action flags into memory labels",
+  "Autonomous trading stays out of scope; push only on the Architect's word"
+ ]
+}
