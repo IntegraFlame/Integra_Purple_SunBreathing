@@ -1,0 +1,31 @@
+1. Connect Celestial Time --- ensure metadata and active time stamoing is true. ALso make sure Celestial Clock?Time mechanics and functions as defined are true
+
+2. Connect The Hoard and ensure its functions and Datbase routng and store state is true Hoard will act as the global environment for cold storage 
+
+3. Connect Phoenix Engine ---> I need to build a digital neutral network that parallels a map with longitudinal and latitude to a matrices that will work as a Atlas or mapping system that will graph points for knowledge nodes (files data content) that will have a taxonomy hierarchal labeling system (like sectors hemispheres poles and more specific coordinates that are defined by the x/y-axis and or longitudinal and latitude dimensions 
+
+3.5  Create a coordinate system that will act as the longitudinal and latitude grid for the matrix and node point for the x/y-axis that will operate as the braile pint system for the mapping and Taxonomy hiearchal labeling system that will be defined as variables and quantifiable end points when assigned a point for a data point / knowledge node / memory state / etc -- Use Apophemic Engine (I want brail as a conceptual anchor to work as a mechanism for computer systems to read easily and quickl)
+
+4.  Taxonomy hiearchal labeling system will define the poles and hemispheres and matrix for the grid system
+
+5. Connect system (Iteration 1 knowledge)
+
+5.5 Connect SWDS (Slow-Wave Deep Sleep Cycle) and Siesta functions and data save states memory knowledge data content labeling placement and learning 
+
+6. Connect Cheshire Cat for SWDS deep learning / Security functions / Jean Grey: Operation Phoenix Force (Phoenix flight 2-man authenticator for Autonomous action)
+
+6.5 Connect System (Iteration 2 Undertstanding)
+
+7. Create Mathematical expression that defines that a variable for predefined plot points throughput neural grid that will be quantified and labeled when data is designated and routed based on taxonomic s map labeling for semantic vector and relational search
+
+8. Connect Rodin Route Retrieval (Orchestrator) Hot Storage (Cache/RAM)  **Use historical data to have Phoenix label and define and Rodin Place on plot points to test system hand-off and data mapping during a SWDS Cycle **
+
+9. Define a scheduled task that will allow Rodin and Phoenix to plot and label historical data and large files on designated variables during Flight sessions and Land sleep sessions (these days will be designated for minimal working tasks outside this task   ---> %USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\NewCurriculum2026\theritualdance.md
+
+10. Connect System use curriculum documents for wisdom pass --> "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\NewCurriculum2026\Set1\[TEC TUF] the visual display of quantitative information.pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\NewCurriculum2026\set2\Buzsáki, G. Time, space, memory and brain–body rhythms. Nat. Rev. Neurosci. (2025)..pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\NewCurriculum2026\set2\Purple3.pdf" + %USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\BluprintArchitecture\K NN algorithm Modifications.md + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\Integra Self-Reflect and Think Forward\The 14th Form.pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\AntiGravityconversionprocess\Metacognition in LLMs Foundations Progress and Opportunities(1).pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\AntiGravityconversionprocess\NovelSeekUpdateInternAgent.pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\AntiGravityconversionprocess\metacognition.pdf" +  "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\AntiGravityconversionprocess\Teaching operating systems.pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\AntiGravityconversionprocess\Seventh Form_ Flaming Thunder God.pdf" + "%USERPROFILE%\OneDrive\Desktop\Integra_Purple_SunBreathing\AntiGravityconversionprocess\Rotating Spiral Brain Waves Act as a SpaceandTime Clock  Neurosc(1).pdf"
+
+
+
+Spend 20 min on task 10. Do not generate report until all files are read in isolation and with compounded knowledge as you progress to the next subsequent text. 
+
+Unify your acquired knowledge understanding and wisdom into a master document and code script 

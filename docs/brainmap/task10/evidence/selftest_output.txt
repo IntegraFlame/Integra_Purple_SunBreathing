@@ -1,0 +1,75 @@
+Command: C:\Python314\python.exe -I -B brainmap_task10\integra_atlas_reference.py --selftest
+Script sha256: 9164eb103ed5f76bf4d8acd60959678fdf8eed1cb24f59908968294e121b8a3f
+Run: 2026-10-16, ~20:27 CDT (shell clock), exit code 0, wall time 9.2 s for the first full run
+
+PASS  frame 2 reproduces live /clock                                                rot 105.2273 lun 0.2048 orb 0.7813
+PASS  grid bucket matches live                                                      ROT_90_ORB_70
+PASS  celestial word round trip (20k)
+PASS  sentinel decodes to unknown
+PASS  word sorts by turn first
+PASS  atlas pointer round trip (100,000)                                            0 failures
+PASS  rejects frozen instant with a word
+PASS  rejects reserved flag bit
+PASS  Morton interleave round trip (100,000)
+PASS  cell centre maps back to its cell; parents nest
+PASS  equal-area cells despite unequal latitude spans                               32 distinct latitude spans, 1 area
+PASS  taxonomic distance 0 for same cell
+PASS  taxonomic distance grows across hemispheres
+PASS  placement lands in declared zone, hemisphere and meridian
+PASS  level moves a node poleward in both hemispheres
+PASS  retired kind refused
+PASS  braille: one cell per byte, U+2800 block
+PASS  Lie Factor of an honest display is 1
+PASS  Tufte fuel-economy example ~14.8                                              14.84
+PASS  HLC monotonic when physical time stalls or runs back                          [(100.0, 0), (100.0, 1), (100.0, 2), (100.0, 3)]
+PASS  HLC receive adopts a later message                                            (200.0, 8)
+PASS  vector order
+PASS  prune refused while named
+PASS  prune refused until all readers absorbed
+PASS  prune refused without approval
+PASS  prune allowed when every condition holds
+PASS  KNN: self-written labels never vote
+PASS  KNN: bounded normalised score                                                 HALT 0.722
+PASS  pattern links: planted pair found                                             1 kept
+PASS  pattern links: noise yields (almost) nothing                                  0 kept
+PASS  junction promotion needs episodes and days (a one-day burst is not promoted)  ['atlas']
+PASS  semantic kinds never go stale
+PASS  calibrated signal: ECE small                                                  0.0167
+PASS  informative signal: AUROC > 0.5                                               0.829
+PASS  uninformative signal: AUROC ~ 0.5                                             0.509
+PASS  overconfidence shows as confidence Lie Factor > 1                             1.52
+PASS  Brier of perfect confidence is 0
+PASS  hot tier never exceeds node or token budget
+PASS  locality gives hits                                                           hits 2975 misses 2025
+PASS  float32 vector is 4 bytes per dimension
+PASS  quiet night: 13 contiguous hours
+PASS  conversation pauses then resumes 1 h after it ends                            [{'step': 'PAUSE', 'at': '2026-10-19T06:00:00-05:00', 'resume': '2026-10-19T06:40:00-05:00', 'reason': 'active conversation'}]
+PASS  long conversation: resumes at the 05:00 anchor                                [{'step': 'PAUSE', 'at': '2026-10-19T03:00:00-05:00', 'resume': '2026-10-19T05:00:00-05:00', 'reason': 'active conversation (anchor override)'}]
+PASS  sweep visits every meridian once
+PASS  closed night passes the cycle invariant
+PASS  missing receipt breaks the cycle invariant
+PASS  open transaction at wake breaks the cycle invariant
+
+47 passed, 0 failed
+
+=== Mutation check (%USERPROFILE%\t10\mutate.py; each mutant runs --selftest --n 20000) ===
+KILLED   M1 frame-2 rotation ref +1 h: frame 2 reproduces live /clock   rot 90.2273 lun 0.2048 orb 0.7813
+KILLED   M2 self-written labels vote: KNN: self-written labels never vote
+KILLED   M3 no Benjamini-Hochberg: pattern links: noise yields (almost) nothing   9 kept
+KILLED   M4 south band not poleward: level moves a node poleward in both hemispheres
+KILLED   M5 no anchor override: long conversation: resumes at the 05:00 anchor   (resume 10:00 instead of 05:00)
+KILLED   M6 prune ignores readers: prune refused until all readers absorbed
+KILLED   M7 single eviction: hot tier never exceeds node or token budget
+KILLED   M8 Morton bit order swapped: Morton interleave round trip (20,000)
+KILLED   M9 reserved flag bits allowed: rejects reserved flag bit
+KILLED   M10 junction ignores days: junction promotion needs episodes and days   ['atlas', 'burst']
+
+10/10 mutants killed (first mutation run: 9/10; M10 survived, so the one-day-burst case was added to the test)
+
+=== Demo (--demo; console is cp1252 under -I, so the Braille line used its documented hex fallback) ===
+instant      2026-10-17T01:05:34.7Z (= 20:05:34 CDT), frame 2
+vector       rot 105.2273  lun 0.2048  orb 0.7813   bucket ROT_90_ORB_70
+pointer hex  c12131040101830d28697ac795ac2523a2d2aa00
+human label  ROT_90_LUN_20_ORB_70 · raw_shards/node · f2 · trusted · key 7ac795ac2523 · atlas equator/memory d10
+braille      (console cannot encode U+2800; hex above is canonical)
+sweep        cognition -> governance -> evolution -> research -> identity -> operations -> time -> memory

@@ -1,0 +1,28 @@
+# 01 — Tufte, *The Visual Display of Quantitative Information* (2nd ed., 2001)
+
+**Read:** 2026-10-16, 191 pages. The PDF is a scan with no text layer; text came from the pages' 1-bit CCITT layer through Windows OCR (`pdf_ccitt_to_tiff.py` + `ocr_dir.ps1`, 40,698 words). Limitation: the figures were seen only as OCR'd labels, not as images (pages 22, 24, 150, 166 had no text at all). Notes are paraphrase; no passages copied.
+
+## What it says (isolated read)
+- **Excellence:** show the data; make the viewer think about substance, not method; don't distort; many numbers in small space; make large sets coherent; invite comparison; reveal several levels of detail (overview to fine structure); serve a clear purpose; integrate with words and statistics. Excellence is "nearly always multivariate" and requires telling the truth.
+- **Graphics reveal what summaries hide:** Anscombe's quartet (four data sets, identical means, regression line and r = .82, completely different shapes). A single wild point can dominate the statistics but hides in the marginal distribution.
+- **History of the coordinate leap:** maps came 5,000 years before data maps. Apianus (1546) had lat/lon grids but no one put a *measured quantity* at the crossing of the threads instead of a city name. The decisive abstraction (Lambert 1765, Playfair 1786) replaced latitude and longitude with arbitrary measured variables, giving the relational graphic (the scatterplot: the "greatest of all graphical designs").
+- **Data maps:** the cancer atlas (21,000 numbers per map); flaw of blot/patch maps: visual weight follows *area*, not the population that matters. The galaxy map (2.27 M cells): its makers warn that the eye finds filaments even in random noise, and simulated random catalogs show similar patterns.
+- **Time-series:** the most used design; time's natural order gives strength; but chronology is not causation. Exceptions need a mechanism (House mail peaks before elections). Dual labels on one axis (Voyager: date and distance). Marey's train schedule: time across, space down, slope = speed; for cycles, repeat part of the cycle (extra half-turn, "mounted on a cylinder") so nothing is cut at the wrap.
+- **Space-time narratives:** Minard's 1812 campaign: six variables on one surface (size, 2-D position, direction, temperature, dates). Small multiples: one design repeated, indexed by another variable, so the eye sees data change, not design change.
+- **Integrity (six principles):** physical size proportional to the number; clear thorough labeling on the graphic; show data variation, not design variation; deflate money; information-carrying dimensions ≤ dimensions in the data; never quote data out of context ("compared to what?"). **Lie Factor** = effect shown ÷ effect in data; outside 0.95–1.05 is substantial distortion (log LF signs over- vs under-statement).
+- **Why graphics lie:** one skill (artistic) controls work that needs three (substantive, statistical, artistic); the doctrines that data are boring and readers unsophisticated.
+- **Data-ink theory:** data-ink ratio = data-ink ÷ total ink; maximize it; erase non-data-ink; erase redundant data-ink; revise and edit. Redundancy is allowed with purpose (cyclic repeats).
+- **Chartjunk:** moiré vibration, dark grids, "ducks" (decoration that becomes the structure). Grids should be gray and muted; a grid is for plotting, not printing.
+- **Redesigns:** range-frame (frame shows min/max), quartile plot, dot-dash-plot (marginals on the frame), rugplot, white grid.
+- **Multifunctioning elements:** one mark doing several jobs (stem-and-leaf digits; Ayres' division numbers; data-based grids at real events; data-based labels; ID numbers that also encode order, e.g. a study code that is its publication date). Danger: **puzzles** — a sure sign is that a graphic must be decoded verbally. Color has no natural order; shades of gray do. Good hierarchy gives **three viewing depths**: from a distance (overall structure), close up (fine structure), implicit (what lies behind); and separate lines of sight for separate variables.
+- **Data density** = entries in the data matrix ÷ area; maximize within reason; the Shrink Principle; maps reach 10⁵ numbers/in², typical published graphics ~10.
+- **Aesthetics:** words, numbers and drawings together ("data graphics are paragraphs about data"); thin lines; heavier line = data; prefer horizontal (~1.5× wider than tall) unless the data dictate shape. **Epilogue:** design is choice; principles are not certain; the goal is the clear revelation of the complex.
+
+## First links to Integra (isolated, before compounding)
+- The Atlas does literally what Apianus did not: put a measured thing (a knowledge node) at a grid crossing. Tufte's history says the power came from *leaving* geographic analogy for relational axes. That backs the To-Do's ground rule: lat/lon is a **taxonomy bucket**, not the semantic-neighbour index.
+- Blot-map flaw → cells must not get visual or statistical weight from their area: an **equal-area** grid (a T3 ruling) or weight by node count.
+- Galaxy-map warning = **apophenia**: every Apophenic pattern link needs a null test against shuffled/random placements before it is kept.
+- Marey's wrap rule → longitude and celestial rotation are circular; distances and displays must handle the 360° wrap.
+- ID-as-order: a CCID that is a timestamp already carries time "for free" (multifunctioning label).
+- Puzzle test → Braille stays display-only and human-facing displays must not need a decoder; machines read the bit label, people read words.
+- Lie Factor / proportionality → any Atlas display (and any telemetry) must scale marks to measured values and label provenance.
