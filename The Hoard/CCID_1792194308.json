@@ -1,0 +1,72 @@
+{
+ "ccid": "CCID_1792194308",
+ "type": "SAVE_STATE",
+ "previous_save_state": "CCID_1792164893",
+ "sessions": {
+  "this": "462c5ee3 (app name 'Save state checkpoint'; worktree save-state-checkpoint-1a540b used only as a launch point)",
+  "suspended": "Integra boot: resume the Brain Map at T2 (idle; suspended on the Architect's word; never messaged)",
+  "transcripts_dir": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/"
+ },
+ "celestial_stamp": {
+  "unix_epoch": 1792194308.301,
+  "civil_time_utc": "2026-10-16T23:45:08Z",
+  "civil_cdt": "2026-10-16 18:45:08",
+  "frame": 2,
+  "earth_rotation_deg": 85.1173,
+  "lunar_cycle_ratio": 0.2029,
+  "orbital_trajectory_pos": 0.7811,
+  "grid_bucket": "ROT_60_ORB_70",
+  "source": "GET http://127.0.0.1:8000/clock (HTTP 200, 0.050 s); kernel uptime 00h 33m 16s"
+ },
+ "kernel": {
+  "pids": "2316 / 8524 created 2026-10-16 18:07:39 (restart not made by this session; cause not measured)",
+  "task": "Integra Genesis Kernel: Running, last run 18:06:46",
+  "lifespan_start_derived": "18:11:52 (from /clock uptime)"
+ },
+ "repos_at_stamp": {
+  "integra_homebase": "phase-e-dragon-rodin-flight, HEAD e519534, ahead 5 of origin 957a997 (73ec7bd, e81e9a0, 95a7aab, c7053f1, e519534), not pushed",
+  "root": "homebase-phase-e, HEAD a72d5df, ahead 2, not pushed; gitlink still 957a997; this save state adds 3 files and edits CLAUDE.md's boot pointer, uncommitted",
+  "uncommitted_not_ours": ["memory/the_hoard.py (identity hunks)", "core/dragon_engine.py", "core/starfire_protocol.py", "config/rodin_memory_map.yml (+17/-3 identity edit)", "deleted config/Constructionreconfigure.md"],
+  "runtime_written_never_stage": ["runtime/swds_state.json", "kernel_memory/*"],
+  "rule": "stage named files only; pre-commit forbidden-path check; never stage peers' edits or runtime files"
+ },
+ "current_directive": {
+  "file": "integra-homebase/core/IntegraBrainMap.md",
+  "todo": "integra-homebase/docs/brainmap/TODO.md",
+  "t1": "CLOSED 2026-10-16 10:29",
+  "t2": "IN PROGRESS at step 2.5: 2.1-2.3 done (first pass Task02_REPORT.md; independent verification Task02_VERIFICATION_REPORT.md); 2.4 rulings R1-R8 decided; 2.5 plan T2_5_PLAN.md (P1-P9); P3 committed nested e519534 (2026-10-16 18:35:40, not pushed)",
+  "resume_point": "P1: rule on the five remaining gap fixes, then build in a fresh isolated copy (HEAD map blob 1a56596 + fixes + three dead kinds retired + 8 locations declared + live-log store + writer text + shares_path_with for the Chroma pair); at the apply gate save the peer's map edit as a patch first",
+  "five_gap_fixes_to_rule": [
+   "define kinds query_embedding and document_embedding (primary ram_embedding_cache)",
+   "define kind inbox_file (primary drop_in)",
+   "drop node from memory_db.holds (R3)",
+   "drop ram_hoard_cache from working_context.also",
+   "add save_state to chroma_active.holds"
+  ],
+  "rulings": {
+   "R1": "keep publishing cold nodes", "R2": "map live after 2.5 from HEAD", "R3": "memory.db deferred to Phase 2",
+   "R4": "declare the 8 locations, move nothing", "R5": "nothing until T8", "R6": "save-state check open for the node path",
+   "R7": "live log waits for ADR-010", "R8": "D-14 = rewrite the stamps (P7 design)",
+   "dead_kinds": "crystallization, thermo_loop, lobe_chunk retired from the map in P1 (Architect: 'false and lead nowhere'); dead code listed for retirement later"
+  }
+ },
+ "work_pending_in_order": [
+  "A. Boot with The Hoard/CCID_1792194308_BOOT_SEQUENCE.md.",
+  "B. P1: ask the five gap fixes, then build in isolation.",
+  "C. P2/P4/P5, P8, P6 (+ one approved sync run), P7, P9 per T2_5_PLAN.md; kernel restarts batched, each on a go.",
+  "D. At T3's start read the Braille codex (87,953 B) and its HTML (102,777 B) in full.",
+  "E. Root gitlink, push and save-state commits only on the Architect's word.",
+  "F. Parked/open: embedder key route; folder 13 cycle 24 after 2026-10-19 06:00 CDT; Gate III and Three Laws documents; kernel supervision (ADR-010); the peer identity edit."
+ ],
+ "evidence": {
+  "t2_verification": "C:/Users/<user>/t2v/ (scripts, out/)",
+  "p3_build": "C:/Users/<user>/t2p3/ (hb_base, hb_p3, package/P3_BUILD_REPORT.md, p3.patch, FILES.tsv, mutations.txt)"
+ },
+ "never_do": [
+  "Never fabricate telemetry, stamps or times; stamp only from a successful GET /clock",
+  "Never read .env values or the github-recovery-codes files; never stage them, live logs, .vhdx files or the antigravity_conversations copy",
+  "Never run the test suite in the live repo; never restart the kernel or make paid calls without the Architect's approval",
+  "Never stage or overwrite peer sessions' uncommitted edits; never stage runtime-written files",
+  "Braille is display only; no trading verdicts in labels; autonomous trading out of scope; push only on the Architect's word"
+ ]
+}

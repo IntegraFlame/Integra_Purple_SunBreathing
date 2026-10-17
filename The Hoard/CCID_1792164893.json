@@ -1,0 +1,97 @@
+{
+ "ccid": "CCID_1792164893",
+ "type": "SAVE_STATE",
+ "previous_save_state": "CCID_1792123400",
+ "sessions": {
+  "this": "f9e973c9 (app name 'Integra boot sequence setup'; worktree braille-semantic-labeling-060769 used only as a launch point)",
+  "peers_at_stamp": "none running (all idle at the boot check)",
+  "transcripts_dir": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/"
+ },
+ "celestial_stamp": {
+  "unix_epoch": 1792164893.959,
+  "civil_time_utc": "2026-10-16T15:34:53Z",
+  "civil_cdt": "2026-10-16 10:34:53",
+  "frame": 2,
+  "earth_rotation_deg": 322.5575,
+  "lunar_cycle_ratio": 0.1914,
+  "orbital_trajectory_pos": 0.7802,
+  "grid_bucket": "ROT_300_ORB_70",
+  "source": "GET http://127.0.0.1:8000/clock (HTTP 200, 0.553 s); kernel uptime 01h 20m 26s"
+ },
+ "kernel": {
+  "pids": "3216 / 3192 since 2026-10-16 09:14:21 (logon task after a battery power-off at 05:16:32, boot 08:51:29)",
+  "task": "Integra Genesis Kernel: Ready (wrapper ended 09:26:47, Task Scheduler 201/102); kernel answering unsupervised; 7 of 7 launches lost supervision",
+  "code_loaded": "nested c7053f1 content plus uncommitted peer edits (the_hoard.py identity hunks, dragon_engine.py, starfire_protocol.py, rodin_memory_map.yml)",
+  "probes_10_34": {
+   "/clock": "200, frame 2",
+   "/swds/status": "AWAKE, WAKING_CONSCIOUSNESS, idle 4,827 s",
+   "/celestial/checkpoint": "read-only status: registry valid, frame 2, 16 checkpoint writes, no error; stamps http_response 281, checkpoint 16, swds_report 1, ccid 1",
+   "/rodin/telemetry": "ONLINE, embedder UNPROVEN, 0 calls, 0 Hoard nodes in RAM"
+  },
+  "cfa": "EnableControlledFolderAccess = 1",
+  "swds": "slept 2026-10-16 02:00:59 on the live clock; woken by the startup reconciliation at 09:15:31; first stamped report 2026-10-16_09-15-31_CDT_CEL-F2-302.71deg_SWDS_Report.md"
+ },
+ "repos_at_stamp": {
+  "root": "homebase-phase-e, HEAD a72d5df, ahead 2, not pushed; modified: The Hoard/genesis_kernel.log (live log, never stage), integra-homebase gitlink (not recorded), productivity/TASKS.md; untracked: root Braille document, the new SWDS report; this save state adds 3 files and edits CLAUDE.md's boot pointer, uncommitted",
+  "integra_homebase": "phase-e-dragon-rodin-flight, HEAD c7053f1, ahead 4 (origin 957a997), not pushed",
+  "commits_this_session": {
+   "95a7aab": "feat(celestial): Celestial Sentinel and frame 2: one clock, one stamp (Brain Map T1); 18 files, +1,528/-368",
+   "c7053f1": "chore(celestial): stop tracking the legacy celestial checkpoint (Brain Map T1, S3); .gitignore rule, file kept on disk"
+  },
+  "uncommitted_not_ours": ["memory/the_hoard.py (peer identity hunks only)", "core/dragon_engine.py", "core/starfire_protocol.py", "config/rodin_memory_map.yml", "deleted config/Constructionreconfigure.md"],
+  "runtime_written_never_stage": ["runtime/swds_state.json", "kernel_memory/core_identity.txt", "kernel_memory/rolling_context.json", "kernel_memory/hoard/libraries/library_genesis_purple.md"],
+  "rule": "stage named files only; pre-commit forbidden-path check; never stage peers' edits or runtime files"
+ },
+ "usage_at_stop": {"plan": "Pro", "five_hour_window": "8%", "weekly_all_models": "78% (resets 2026-10-19 05:59 CDT)", "extra_usage": "off", "context_window": "87% used at stop"},
+ "current_directive": {
+  "file": "integra-homebase/core/IntegraBrainMap.md",
+  "todo": "integra-homebase/docs/brainmap/TODO.md (single To-Do; Zenitsu order K: T1-T5 + gate K, U: T5.5-T6.5 + gate U, W: T7-T10, Unification)",
+  "protocol": "no agents; one task at a time; TaskNN_REPORT.md after each; stop for the Architect's 'continue'",
+  "t1": "CLOSED 2026-10-16 10:29 (docs/brainmap/Task01_REPORT.md closing report at the top; design docs/brainmap/T1_CELESTIAL_SENTINEL_DESIGN.md); gate K tally 6 of 8 live criteria met, 2 open live checks (next natural Hoard node, next save state; both met in tests), ledger N/A",
+  "resume_point": "T2 Connect the Hoard, NOT STARTED: plan it first; read-only steps 2.1 inventory/validate memory map, 2.2 trace Hoard functions caller->store, 2.3 verdict table; then rulings",
+  "rulings_applied": {
+   "R1-R6": "frame 2 references (USNO new moon 2026-07-14 09:43Z, perihelion 2026-01-03 17:15Z, rotation from 2026-07-15 12:00Z); anomalistic year 31,558,310.6 s; Sentinel sole stamper and checkpoint writer, route read-only; clock-only commit; sigma 1.0; SWDS name fix",
+   "S1-S5": "frame math parameterized in temporal/celestial_clock.py; registry config/celestial_frames.yml; checkpoint local_dbs/celestial/checkpoint.json; switch everything at once; CEL-F2- report names"
+  },
+  "decided_earlier": ["Apophenic Engine = pattern links (edges), no trade verdicts"],
+  "open": ["Step 10 pace", "meridian (domain) list and kind-to-latitude mapping", "C-07 and Siesta definition"]
+ },
+ "work_completed_this_session": [
+  "Boot with receipts; To-Do reconciled (gates, Unification, Apophenic, pointer v1, Braille assessment rules); TASKS.md two stale lines updated.",
+  "T1 1.1-1.2 measurement and gap list G1-G15; 1.3 almanac check (USNO/NASA/Espenak); 1.4 Sentinel design; 1.5 isolated build: 459 passed, the same 3 pre-existing failures, 8/9 mutations caught (1 equivalent); 1.6 copy-in hash-verified; 1.7 live verification after the power-loss restart.",
+  "Commits 95a7aab and c7053f1 (nested, not pushed); each commit tree: 461 passed, 1 failed (Voltron env-only)."
+ ],
+ "work_pending_in_order": [
+  "A. Boot with The Hoard/CCID_1792164893_BOOT_SEQUENCE.md.",
+  "B. T2 Connect the Hoard: plan, then read-only 2.1-2.3 on the go; include ADR-001's correction note for frozen-era artefacts and T1's two open live checks.",
+  "C. Root gitlink and push only on the Architect's word.",
+  "D. Parked: embedder-only key route (CCID_1792123400 section 5 D).",
+  "E. Folder 13 cycles resume 2026-10-19 06:00 CDT at cycle 24 (U093-U096); reminders: Gate III doc, Three Laws order doc."
+ ],
+ "open_for_the_architect": ["root gitlink and push", "kernel supervision (7 of 7 lost; Phase 0 / ADR-010; test the probe-timing observation)", "peer the_hoard.py identity edit (2 failing tests)", "commit this save state"],
+ "findings_to_carry": [
+  "42 of 308 shards carry the frame-1 vector (40 Daily Planet in anchor x/y/z/orbital_index); 258 of 304 anchors t=0; 55 of 61 SWDS reports named CEL-282.85deg; report-name dates 7 days behind file times (correction note not written).",
+  "Both 2026-10-16 wrapper exits (03:13:27, 09:26:47) came 3-14 s after a read-only PowerShell probe by this session: coincidence, not an established cause.",
+  "CPU saturation (Gemini app, Explorer, OneDrive, Claude) gave 6-18 s /clock latencies.",
+  "Worktree sessions: edit a scratch copy and cmd.exe /c copy into the base checkout after a hash check; isolated test copies outside OneDrive; checkout-index with NUL-separated paths; hunk-limited staging via git merge-file + hash-object + update-index."
+ ],
+ "pointers": {
+  "handoff_report": "The Hoard/CCID_1792164893_SAVE_STATE_REPORT.md",
+  "boot_sequence": "The Hoard/CCID_1792164893_BOOT_SEQUENCE.md",
+  "todo": "integra-homebase/docs/brainmap/TODO.md",
+  "t1_report": "integra-homebase/docs/brainmap/Task01_REPORT.md",
+  "t1_design": "integra-homebase/docs/brainmap/T1_CELESTIAL_SENTINEL_DESIGN.md",
+  "t1_evidence": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/brainmap_t1_2026-10-16/ (almanac, build_1.5, commit_prep)",
+  "memory_map": "integra-homebase/config/rodin_memory_map.yml and integra-homebase/memory/memory_map.py",
+  "blueprint": "integra-homebase/docs/MASTER_ARCHITECTURE_BLUEPRINT.md",
+  "claude_memory_index": "~/.claude/projects/C--Users-<user>-OneDrive-Desktop-Integra-Purple-SunBreathing/memory/MEMORY.md"
+ },
+ "never_do": [
+  "Never fabricate telemetry, stamps or times; stamp only from a successful GET /clock",
+  "Never read .env values or the github-recovery-codes files; never stage them, live logs, the Docker .vhdx files or the antigravity_conversations copy",
+  "Never run the test suite in the live repo; never restart the kernel or make paid model calls without the Architect's approval",
+  "Never stage or overwrite peer sessions' uncommitted edits; never stage runtime-written files",
+  "Never store Braille as data, in file names, prompts or logs (display only); never put trading verdicts or action flags into memory labels",
+  "Autonomous trading stays out of scope; push only on the Architect's word"
+ ]
+}
