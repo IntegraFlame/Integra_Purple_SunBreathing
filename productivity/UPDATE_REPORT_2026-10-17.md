@@ -93,3 +93,26 @@ Every outgoing range was scanned before its push:
   - ΔE: DS 2 v5 calls it read-live, while the dashboard keeps it CONSTANT on the blueprint's and P1's evidence;
   - H_smooth: badged CONSTANT, with no ruling (the blueprint says PROXY).
 - **Cleanup:** the four clean fork worktree folders.
+
+## 8. Addendum (same day): the untracked documents
+
+The 44 untracked nested files (about 956 KB) were listed with sizes and a privacy and copyright note on each. A scan found no secret-like strings in any of them; the username appeared only inside local home paths. The Architect picked three groups to publish:
+
+| Group | Files | Result |
+|---|--:|---|
+| Brain Map records: the To-Do, T1/T2 designs, plans and reports, the 10-15 design decisions, Task 10 (master document, report, script, evidence, 12 notes) | 24 | published |
+| The directive (`core/IntegraBrainMap.md`) and the codex (`memory/Braille-BasedSemanticLabelingSystem.md`), one copy each | 2 | published |
+| The raw shard `CCID_1792116734.json` (consistent with ruling R1) | 1 | published |
+
+- **Before staging:**
+  - 19 home paths in 7 files were replaced with `%USERPROFILE%`;
+  - the originals are backed up outside the repo, hash-checked;
+  - the To-Do's T10 row now says "committed".
+- **Scans:** no forbidden paths, no secret-pattern lines, no identifier lines.
+- **Commit:** nested `4b1741b` (27 files, all additions), pushed `287cf25..4b1741b`. The root gitlink records it in the commit that adds this section.
+- **17 files stay local on purpose:**
+  - vendor copies: Google ADK samples, Chroma docs, Interactions snippets;
+  - the Task 4 Morton draft, whose printed codes are wrong;
+  - the Gemini Atlas widget;
+  - the stale `orchestration/` blueprint copy;
+  - three duplicates: `core/IntegraBrainMap.txt`, the `core/` Braille copy, and `rust/…/theritualdance.md`, which is identical to a tracked file.
