@@ -26,6 +26,13 @@ from sensory.looking_glass import LookingGlassProtocol
 from core.cwa_router import CognitiveWeightingAlgorithm
 from sensory.pssr_lookback import PSSRLookback
 from governance.tpsl_filter import TolstoyPrincipleFilter
+from governance.security_protocols import (
+    DeviationLevel,
+    ForgeReadLockManager,
+    PhoenixFlightTwoManAuthenticator,
+    SovereignDefenseSuite,
+    TieredDeviationGuardrail,
+)
 
 
 class CheshireCatKernel:
@@ -47,7 +54,11 @@ class CheshireCatKernel:
     5. Spacetime Geometric Memory Serialization:
        Commits crystallized nodes to The Hoard uncompressed, stamping 4D spacetime coordinates.
     """
-    def __init__(self, polling_frequency_hz: float = 30.0):
+    def __init__(
+        self,
+        polling_frequency_hz: float = 30.0,
+        hoard_instance: Optional[TheHoard] = None,
+    ):
         self.polling_hz = polling_frequency_hz
         self.sleep_interval = 1.0 / self.polling_hz
         self.state = "INTERACTIVE_STANDBY"
@@ -57,7 +68,7 @@ class CheshireCatKernel:
         self.cognitive_engine = Y789NexusEngine()
         # Gemini 3.8 Flash Thalamic Delegator — router-managed (gated + budget-tracked)
         self.client = MODEL_ROUTER.get_routed_client("cheshire_cat_kernel") or CheshireCatClient()
-        self.hoard = TheHoard()
+        self.hoard = hoard_instance if hoard_instance is not None else TheHoard()
         self.rodin = RodinProtocol(self.hoard)
         self.phoenix = PhoenixForge()
         
@@ -72,6 +83,13 @@ class CheshireCatKernel:
         
         # Instantiate UGL Metacognitive Layer (P-SSR Lookback)
         self.ugl_layer = PSSRLookback(max_interventions=3, heimdall_instance=self.heimdall)
+
+        # Task L-5: Land Security, Exclusive Forge Read-Locks, 2-Man HMAC & Tiered Deviation Guardrail
+        self.defense_suite = SovereignDefenseSuite()
+        self.forge_lock_manager = ForgeReadLockManager()
+        self.two_man_authenticator = PhoenixFlightTwoManAuthenticator()
+        self.deviation_guardrail = TieredDeviationGuardrail()
+        self.cli_circuit_breaker = self.heimdall.cli_circuit_breaker
         
         # Register core components with Heimdall for live health tracking
         self.heimdall.register_component("cheshire_cat", self)
@@ -95,6 +113,127 @@ class CheshireCatKernel:
         self.event_queue.append(event)
         return event
 
+    def preempt_for_user_prompt(
+        self,
+        prompt: str = "",
+        throughput_engine: Any = None,
+    ) -> Dict[str, Any]:
+        """
+        Task L-5: Active Sun Breathing User Prompt Preemption.
+        Immediately releases any active Phoenix Forge read-locks so waking Flight
+        queries never read uncommitted mutations or stall, and re-queues interrupted
+        Forge tasks via EAM for the next SWDS/Siesta window.
+        """
+        receipt = self.forge_lock_manager.preempt_and_requeue_all(
+            reason="SUN_BREATHING_USER_PROMPT",
+            throughput_engine=throughput_engine,
+        )
+        if self.state == "GUARDIAN_STANDBY_SWDS":
+            self.transition_state("INTERACTIVE_STANDBY")
+        self.dispatch_event(
+            "EAM_SWDS_FORGE_PREEMPTED",
+            {
+                "prompt": (prompt or "")[:60],
+                "released_nodes": receipt["released_nodes"],
+                "requeued_task_ids": receipt["requeued_task_ids"],
+            },
+        )
+        return receipt
+
+    def evaluate_land_security_deviation(
+        self,
+        deviation_pct: float,
+        violates_immutable_principle: bool = False,
+        unauthorized_public_threat: bool = False,
+    ) -> Dict[str, Any]:
+        """
+        Task L-5: Evaluates behavioral/land security deviation across Levels 0-4.
+        - Level 3 (>=35%) enters `CRISIS_PAUSE_COMA` requiring `Command(resume="APPROVED")`.
+        - Level 4 (>=50% or immutable principle / public threat) isolates in Tsukuyomi / Mirror Maze.
+        """
+        assessment = self.deviation_guardrail.evaluate_deviation(
+            deviation_pct=deviation_pct,
+            violates_immutable_principle=violates_immutable_principle,
+            unauthorized_public_threat=unauthorized_public_threat,
+        )
+        sandbox_receipt = None
+        if assessment.level == DeviationLevel.LEVEL_3_35:
+            self.transition_state("CRISIS_PAUSE_COMA")
+            self.dispatch_event("CRISIS_PAUSE_ENGAGED", assessment.to_dict())
+        elif assessment.level == DeviationLevel.LEVEL_4_MAX:
+            self.transition_state("MIRROR_MAZE_ISOLATION")
+            sandbox_receipt = self.defense_suite.isolate_tsukuyomi_sandbox(assessment.to_dict())
+            self.dispatch_event("MIRROR_MAZE_LEVEL4_ISOLATED", assessment.to_dict())
+        out = assessment.to_dict()
+        out["kernel_state"] = self.state
+        out["sandbox_receipt"] = sandbox_receipt
+        return out
+
+    def resume_from_crisis_pause(self, command_payload: Dict[str, str]) -> Dict[str, Any]:
+        """Task L-5: Resumes Cheshire Cat from `CRISIS_PAUSE_COMA` upon `Command(resume='APPROVED')`."""
+        approved = self.deviation_guardrail.resume_from_crisis(command_payload)
+        if approved and self.state in ("CRISIS_PAUSE_COMA", "MIRROR_MAZE_ISOLATION"):
+            self.transition_state("INTERACTIVE_STANDBY")
+        return {
+            "resumed": approved,
+            "kernel_state": self.state,
+            "in_crisis_coma": self.deviation_guardrail.in_crisis_coma,
+            "session_isolated": self.deviation_guardrail.session_isolated,
+        }
+
+    def authorize_phoenix_flight_2man(
+        self,
+        batch_sha256: str,
+        architect_secret: Optional[str] = None,
+        amount: int = 0,
+        architect_confirmed: bool = True,
+        dragon_active: bool = True,
+        router: Any = None,
+    ) -> Dict[str, Any]:
+        """
+        Task L-5: Issues and verifies the 2-Man HMAC-SHA256 Flight Handoff Token
+        (`CHESHIRE_CAT_ACK::{batch_sha256}::PHOENIX_FORCE_FLIGHT_AUTH`) combining:
+          - Key 1 (`Architect` / `JeanGreyPhoenixForce` + Jean Grey threshold gate)
+          - Key 2 (`CheshireCatKernel` + `DragonEngine` + `Heimdall31`)
+        and engages `P0_PHOENIX_FORCE` on `ModelRouter` iff verified.
+        """
+        heimdall_healthy = self.heimdall.h_smooth <= self.heimdall.threshold
+        token_packet = self.two_man_authenticator.issue_2man_hmac_token(
+            batch_sha256=batch_sha256,
+            architect_secret=architect_secret,
+            amount=amount,
+            architect_confirmed=architect_confirmed,
+            cheshire_ack=True,
+            dragon_active=dragon_active,
+            heimdall_healthy=heimdall_healthy,
+            h_smooth=self.heimdall.h_smooth,
+            h_threshold=self.heimdall.threshold,
+        )
+        if not token_packet.get("issued"):
+            return {
+                "authorized": False,
+                "status": "TWO_MAN_TOKEN_REJECTED",
+                "reason": token_packet.get("reason"),
+                "token_packet": token_packet,
+            }
+
+        target_router = router if router is not None else MODEL_ROUTER
+        router_receipt = target_router.engage_phoenix_force_2man(
+            batch_sha256=batch_sha256,
+            token_packet=token_packet,
+            authenticator=self.two_man_authenticator,
+            dragon_active=dragon_active,
+            heimdall_healthy=heimdall_healthy,
+            h_smooth=self.heimdall.h_smooth,
+        )
+        return {
+            "authorized": bool(router_receipt.get("verified")),
+            "status": router_receipt.get("status"),
+            "envelope": token_packet.get("envelope"),
+            "token_packet": token_packet,
+            "router_receipt": router_receipt,
+        }
+
     async def process_cognitive_cycle(
         self,
         prompt: str,
@@ -114,6 +253,21 @@ class CheshireCatKernel:
         Phase 4: Adaptive Bicameral Synthesis (Y789 / Nexus dyad) & Phoenix Forge fusion.
         Phase 5: The Hoard physical disk commit stamped with 4D spacetime coordinates, CCID, and supervisory telemetry.
         """
+        # --- Task L-5 Gate: Crisis Coma / Session Isolation Block ---
+        if self.deviation_guardrail.is_execution_blocked():
+            return {
+                "status": "CRISIS_PAUSE::EXECUTION_BLOCKED",
+                "kernel_state": self.state,
+                "in_crisis_coma": self.deviation_guardrail.in_crisis_coma,
+                "session_isolated": self.deviation_guardrail.session_isolated,
+                "mandate": 'Execution halted in Crisis Coma; requires explicit Command(resume="APPROVED").',
+                "heimdall_telemetry": self.heimdall.get_telemetry(),
+            }
+
+        # --- Task L-5 Gate: Preempt active SWDS Forge read-locks on user prompt arrival ---
+        if self.state == "GUARDIAN_STANDBY_SWDS" or self.forge_lock_manager.locked_nodes:
+            self.preempt_for_user_prompt(prompt=prompt)
+
         # --- Phase 0: Topic Tracking & Heimdall 3.1 In-Flight Surveillance ---
         topic_record = self.protocol.track_conversation_topic(prompt)
         self.heimdall.monitor_sequence_step("PROMPT_INGESTION", {
@@ -201,7 +355,10 @@ class CheshireCatKernel:
             self.heimdall.monitor_sequence_step("RODIN_ROUTE_RETRIEVAL", {"active_prompt": active_prompt[:60]})
             # route_retrieval embeds the prompt (a blocking network call with a timeout): keep it off the event loop
             retrieval_map = await asyncio.to_thread(self.rodin.route_retrieval, active_prompt)
-            retrieved_paths = retrieval_map.get("retrieved_paths", [])
+            retrieved_paths = self.forge_lock_manager.filter_readable_nodes(
+                retrieval_map.get("retrieved_paths", [])
+            )
+            retrieval_map["retrieved_paths"] = retrieved_paths
             route_count = len(retrieved_paths)
             cohesion = float(retrieval_map.get("cohesion", 0.85 if route_count > 0 else 0.0))
             semantic_relevance = float(retrieval_map.get("relevance", 0.90 if route_count > 0 else 0.20))
@@ -447,6 +604,12 @@ class CheshireCatKernel:
             "cheshire_state": self.state,
             "polling_hz": self.polling_hz,
             "event_queue_depth": len(self.event_queue),
+            "land_security": {
+                "forge_locks": self.forge_lock_manager.get_status(),
+                "in_crisis_coma": self.deviation_guardrail.in_crisis_coma,
+                "session_isolated": self.deviation_guardrail.session_isolated,
+                "cli_circuit_breaker_trips": self.cli_circuit_breaker.trip_count,
+            },
             "heimdall_telemetry": self.heimdall.get_telemetry(),
             "system_health": health_report
         }
@@ -460,6 +623,7 @@ class CheshireCatKernel:
             "VASOVAGAL_SYNCOPE",
             "HEAVISIDE_HALT",
             "MIRROR_MAZE_ISOLATION",
+            "CRISIS_PAUSE_COMA",
             "CLARIFICATION_PENDING"
         ]
         if new_state in valid_states:
@@ -646,4 +810,3 @@ class CheshireCatKernel:
             "jean_grey_pass": jean_grey_mod.evaluate_jean_grey_pass_sync(amount=amount),
             "jean_grey_txt_exists": (agents_dir / "CheshireCatJeanGreyPass.txt").exists(),
         }
-

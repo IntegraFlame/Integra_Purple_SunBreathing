@@ -104,6 +104,8 @@ class ModelRouter:
         self._global_power: PowerState = PowerState.P3_DORMANT
         self._phoenix_force_active: bool = False
         self._phoenix_force_authorized_by: Optional[str] = None
+        self._two_man_hmac_verified: bool = False
+        self._last_phoenix_batch_sha256: Optional[str] = None
         self._boot_time: float = time.time()
         self._load_models_yml()
 
@@ -250,19 +252,83 @@ class ModelRouter:
     def engage_phoenix_force(self, authorized_by: str = "architect") -> Dict[str, Any]:
         """
         Engage Phoenix Force Override (P0).
-        Two-key operation: requires explicit authorization string.
+        Legacy direct override helper; for cryptographic 2-Man HMAC flight handoff,
+        use `engage_phoenix_force_2man(batch_sha256, token_packet)`.
         All duty cycle timers are suspended. Full compute.
         """
         self._phoenix_force_active = True
         self._phoenix_force_authorized_by = authorized_by
+        self._two_man_hmac_verified = False
         self.set_global_power(PowerState.P0_PHOENIX_FORCE)
         logger.warning(f"ModelRouter: ⚡ PHOENIX FORCE ENGAGED — authorized by {authorized_by}")
         return {
             "status": "PHOENIX_FORCE_ACTIVE",
             "authorized_by": authorized_by,
+            "two_man_hmac_verified": False,
             "power_state": "P0_PHOENIX_FORCE",
             "all_limiters": "SUSPENDED",
             "timestamp": time.time()
+        }
+
+    def engage_phoenix_force_2man(
+        self,
+        batch_sha256: str,
+        token_packet: Dict[str, Any],
+        authenticator: Optional[Any] = None,
+        dragon_active: bool = True,
+        heimdall_healthy: bool = True,
+        h_smooth: float = 0.0,
+    ) -> Dict[str, Any]:
+        """
+        Task L-5 (`IntegraBrainMap` Task 6): Cryptographic 2-Man HMAC-SHA256 P0 Override Gate.
+        Verifies `CHESHIRE_CAT_ACK::{batch_sha256}::PHOENIX_FORCE_FLIGHT_AUTH` against BOTH
+        Key 1 (`Architect` / `JeanGreyPhoenixForce`) and Key 2 (`CheshireCatKernel` + `DragonEngine`
+        + `Heimdall31`) before elevating global power to `P0_PHOENIX_FORCE`.
+        """
+        auth = authenticator
+        if auth is None:
+            from governance.security_protocols import PHOENIX_TWO_MAN_AUTHENTICATOR
+
+            auth = PHOENIX_TWO_MAN_AUTHENTICATOR
+
+        verification = auth.verify_2man_hmac_token(
+            batch_sha256=batch_sha256,
+            token_packet=token_packet,
+            dragon_active=dragon_active,
+            heimdall_healthy=heimdall_healthy,
+            h_smooth=h_smooth,
+        )
+        if not verification.get("verified"):
+            logger.warning(
+                f"ModelRouter: REFUSED P0_PHOENIX_FORCE 2-Man HMAC — {verification.get('reason')}"
+            )
+            return {
+                "status": "PHOENIX_FORCE_DENIED_INVALID_2MAN_HMAC",
+                "verified": False,
+                "two_man_hmac_verified": False,
+                "reason": verification.get("reason"),
+                "power_state": self._global_power.name,
+                "timestamp": time.time(),
+            }
+
+        self._phoenix_force_active = True
+        self._phoenix_force_authorized_by = "2MAN_HMAC::ARCHITECT_JEAN_GREY+CHESHIRE_DRAGON_HEIMDALL"
+        self._two_man_hmac_verified = True
+        self._last_phoenix_batch_sha256 = str(batch_sha256).strip()
+        self.set_global_power(PowerState.P0_PHOENIX_FORCE)
+        logger.warning(
+            f"ModelRouter: ⚡ PHOENIX FORCE ENGAGED VIA 2-MAN HMAC — batch={self._last_phoenix_batch_sha256[:16]}..."
+        )
+        return {
+            "status": "PHOENIX_FORCE_ACTIVE",
+            "verified": True,
+            "two_man_hmac_verified": True,
+            "authorized_by": self._phoenix_force_authorized_by,
+            "batch_sha256": self._last_phoenix_batch_sha256,
+            "envelope": verification["envelope"],
+            "power_state": "P0_PHOENIX_FORCE",
+            "all_limiters": "SUSPENDED",
+            "timestamp": time.time(),
         }
 
     def disengage_phoenix_force(self, return_to: PowerState = PowerState.P2_SWDS) -> Dict[str, Any]:
@@ -272,6 +338,7 @@ class ModelRouter:
         """
         self._phoenix_force_active = False
         self._phoenix_force_authorized_by = None
+        self._two_man_hmac_verified = False
         self.set_global_power(return_to)
         logger.warning(f"ModelRouter: Phoenix Force DISENGAGED → {return_to.name}")
         return {
@@ -423,6 +490,8 @@ class ModelRouter:
             "global_power_state": self._global_power.name,
             "phoenix_force_active": self._phoenix_force_active,
             "phoenix_force_authorized_by": self._phoenix_force_authorized_by,
+            "two_man_hmac_verified": self._two_man_hmac_verified,
+            "last_phoenix_batch_sha256": self._last_phoenix_batch_sha256,
             "uptime_seconds": round(time.time() - self._boot_time, 1),
             "components": {
                 key: {

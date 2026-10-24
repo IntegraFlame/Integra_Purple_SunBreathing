@@ -7,8 +7,153 @@ Layer: 4 (Heimdall 3.1: Shannon Entropy Thermostat & Health Guardian)
 import math
 import time
 import os
+from dataclasses import dataclass, asdict
 from typing import List, Tuple, Dict, Any, Optional
 from collections import Counter
+
+
+@dataclass
+class CircuitBreakerState:
+    """Task L-5 (Curriculum Doc 6): Proactive CLI Derivative Circuit Breaker state snapshot."""
+    is_open: bool
+    trigger_reason: str
+    perplexity: float
+    loop_velocity_ops_sec: float
+    ngram_repetition_pct: float
+    timestamp: float
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+
+class CLIDerivativeCircuitBreaker:
+    """
+    Task L-5 (`IntegraBrainMap` Task 6 + Doc 6): Proactive CLI Derivative Circuit Breaker.
+    Monitors token generation derivatives in real time:
+      1. CONFUSION : Perplexity > 15.0
+      2. MANIC     : Loop Velocity > 3.0 ops/sec
+      3. STUCK     : N-Gram Repetition > 80.0%
+    On breach: breaks inner decoding loop, enters Force Cool Down Open State,
+    injects UGL Grounding Fact into Context C, clears Worker Buffer B, and restarts Generator G.
+    """
+
+    PERPLEXITY_LIMIT: float = 15.0
+    VELOCITY_LIMIT_OPS_SEC: float = 3.0
+    REPETITION_NGRAM_LIMIT_PCT: float = 80.0
+
+    def __init__(self):
+        self.events: List[CircuitBreakerState] = []
+        self.trip_count: int = 0
+
+    @staticmethod
+    def compute_ngram_repetition_pct(text: str, n: int = 3) -> float:
+        """Computes empirical token n-gram repetition percentage in [0.0, 100.0]."""
+        tokens = [tok.strip().lower() for tok in (text or "").split() if tok.strip()]
+        n = max(1, int(n))
+        if len(tokens) < n:
+            return 0.0
+        ngrams = [tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)]
+        total = len(ngrams)
+        if total <= 1:
+            return 0.0
+        counts = Counter(ngrams)
+        repeated_instances = sum(cnt - 1 for cnt in counts.values() if cnt > 1)
+        return round((repeated_instances / float(total)) * 100.0, 4)
+
+    def evaluate_derivatives(
+        self,
+        perplexity: float,
+        loop_velocity_ops_sec: float,
+        ngram_repetition_pct: float,
+    ) -> CircuitBreakerState:
+        ppl = float(perplexity)
+        vel = float(loop_velocity_ops_sec)
+        rep = float(ngram_repetition_pct)
+        reasons: List[str] = []
+
+        if ppl > self.PERPLEXITY_LIMIT:
+            reasons.append("CONFUSION (Perplexity > 15.0)")
+        if vel > self.VELOCITY_LIMIT_OPS_SEC:
+            reasons.append("MANIC (Loop Velocity > 3 ops/sec)")
+        if rep > self.REPETITION_NGRAM_LIMIT_PCT:
+            reasons.append("STUCK (N-Gram Repetition > 80%)")
+
+        is_open = len(reasons) > 0
+        state = CircuitBreakerState(
+            is_open=is_open,
+            trigger_reason=" | ".join(reasons) if is_open else "NOMINAL",
+            perplexity=round(ppl, 4),
+            loop_velocity_ops_sec=round(vel, 4),
+            ngram_repetition_pct=round(rep, 4),
+            timestamp=time.time(),
+        )
+        if is_open:
+            self.trip_count += 1
+            self.events.append(state)
+            if len(self.events) > 100:
+                self.events.pop(0)
+        return state
+
+    def execute_proactive_decoding_loop(
+        self,
+        initial_context_c: str,
+        token_stream_steps: List[Dict[str, Any]],
+        ugl_grounding_fact: str,
+        post_ugl_clean_tokens: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """
+        Curriculum Doc 6 (Lines 25-32): Proactive Circuit Breaker & UGL Restart Loop.
+        Breaks inner generation loop immediately on CONFUSION / MANIC / STUCK,
+        injects `[UGL_GROUNDING_INJECTED: ...]` into Context C, resets Worker Buffer B,
+        restarts Generator G, and returns `O_final = C + B`.
+        """
+        context_c = initial_context_c
+        worker_buffer_b = ""
+        restarts = 0
+        events_logged: List[Dict[str, Any]] = []
+
+        idx = 0
+        steps = list(token_stream_steps)
+        while idx < len(steps):
+            tripped_in_pass = False
+            while idx < len(steps):
+                step = steps[idx]
+                idx += 1
+                tok = str(step.get("token", ""))
+                candidate_buffer = f"{worker_buffer_b}{tok}"
+                ppl = float(step.get("perplexity", 4.0))
+                vel = float(step.get("velocity", 1.0))
+                if "ngram_rep" in step and step["ngram_rep"] is not None:
+                    rep = float(step["ngram_rep"])
+                else:
+                    rep = self.compute_ngram_repetition_pct(candidate_buffer, n=3)
+
+                cb_state = self.evaluate_derivatives(ppl, vel, rep)
+                if cb_state.is_open:
+                    events_logged.append(cb_state.to_dict())
+                    context_c = f"{context_c} [UGL_GROUNDING_INJECTED: {ugl_grounding_fact}]"
+                    worker_buffer_b = ""
+                    restarts += 1
+                    tripped_in_pass = True
+                    break
+
+                worker_buffer_b = candidate_buffer
+
+            if tripped_in_pass and idx >= len(steps) and post_ugl_clean_tokens:
+                worker_buffer_b = "".join(post_ugl_clean_tokens)
+                break
+            elif tripped_in_pass and idx >= len(steps) and not post_ugl_clean_tokens:
+                worker_buffer_b = f"Grounded synthesis verified via UGL: {ugl_grounding_fact}"
+                break
+
+        o_final = f"{context_c} {worker_buffer_b}".strip()
+        return {
+            "final_output_o_final": o_final,
+            "context_c": context_c,
+            "worker_buffer_b": worker_buffer_b,
+            "generator_restarts": restarts,
+            "circuit_breaker_events": events_logged,
+        }
 
 
 class Heimdall31:
@@ -63,6 +208,8 @@ class Heimdall31:
         self.swds_cycle_open = False
         self.swds_cycle_opened_at: Optional[float] = None
         self.swds_cycle_log: List[Dict[str, Any]] = []
+        # Task L-5: Proactive CLI Derivative Circuit Breaker (CONFUSION / MANIC / STUCK)
+        self.cli_circuit_breaker = CLIDerivativeCircuitBreaker()
 
     def calculate_instant_entropy(self, probs: List[float]) -> float:
         """
@@ -911,9 +1058,30 @@ class Heimdall31:
                 "w_analytical": getattr(self.registered_components.get("cognitive_engine", None), "analytical_weight", 0.5),
                 "w_synthetic": getattr(self.registered_components.get("cognitive_engine", None), "synthetic_weight", 0.5)
             },
+            "cli_circuit_breaker_trips": self.cli_circuit_breaker.trip_count,
             "all_systems_true": True,
             "timestamp": time.time()
         }
+
+    def evaluate_cli_derivatives(
+        self,
+        perplexity: float,
+        loop_velocity_ops_sec: float,
+        ngram_repetition_pct: Optional[float] = None,
+        sample_text: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Evaluates CONFUSION (>15.0 PPL), MANIC (>3.0 ops/s), and STUCK (>80% n-gram) derivatives."""
+        if ngram_repetition_pct is None:
+            ngram_repetition_pct = self.cli_circuit_breaker.compute_ngram_repetition_pct(sample_text or "", n=3)
+        cb_state = self.cli_circuit_breaker.evaluate_derivatives(
+            perplexity=perplexity,
+            loop_velocity_ops_sec=loop_velocity_ops_sec,
+            ngram_repetition_pct=ngram_repetition_pct,
+        )
+        if cb_state.is_open:
+            self.recovery_state = "CLI_DERIVATIVE_COOL_DOWN_OPEN"
+            self.monitor_sequence_step("CLI_CIRCUIT_BREAKER_TRIPPED", cb_state.to_dict())
+        return cb_state.to_dict()
 
     def poll_deferred_interaction(self, interaction_id: str, client: Any = None) -> Dict[str, Any]:
         """Attached bridge to temporal/hiemdall3_1addon.py for deferred interaction telemetry."""

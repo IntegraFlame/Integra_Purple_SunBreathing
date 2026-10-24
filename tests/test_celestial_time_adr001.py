@@ -858,3 +858,298 @@ def test_task_l4_throughput_calculus_mrl_nexus_and_mistake_loop(tmp_path):
     )
     assert sup_out["cit_capacity"]["total_xy_crosspoints"] == 120
     assert sup_out["nexus_decision_route"]["winning_plot_point_id"] == "HOARD_FILE_VIEW"
+
+
+
+def test_task_l5_forge_read_locks_and_sun_breathing_preemption(tmp_path):
+    """
+    Task L-5.1: Verifies exclusive Forge read-locks block uncommitted reads across Cheshire/Rodin
+    and zero out Plot-Point Throughput Upsilon_{r,c}, and that active user prompt preemption
+    atomically releases locks and re-queues Forge tasks via EAM.
+    """
+    from governance.security_protocols import ForgeReadLockManager
+    from memory.braille_atlas_engine import NeuralGridThroughputEngine
+    from memory.database.mongodb_substrate import MongoDBPersistentSubstrate
+    from memory.the_hoard import TheHoard
+    from sensory.cheshire_cat import CheshireCatKernel
+
+    sub = MongoDBPersistentSubstrate(placeholder_root=tmp_path / "mongo_l5")
+    tp_engine = NeuralGridThroughputEngine(substrate=sub, persist_on_init=False)
+    designated = tp_engine.designate_and_quantify_data(
+        node_id="NODE_FORGE_01",
+        title="Sovereign Land Security & Forge Lock Axiom",
+        raw_content="sovereign land security forge read lock axiom baker louisiana",
+        target_lat=30.5888,
+        target_lon=-91.1673,
+        codex_byte=0x03,
+    )
+    target_pp = designated.assigned_plot_point_id
+
+    unlocked_tp = tp_engine.evaluate_neural_grid_throughput(
+        query_text="sovereign land security forge read lock axiom",
+        top_k=120,
+    )
+    unlocked_ids = [p["plot_point_id"] for p in unlocked_tp["top_routed_plot_points"]]
+    assert target_pp in unlocked_ids
+
+    lock_mgr = ForgeReadLockManager(substrate=sub, persist_to_placeholder=True)
+    lock_mgr.acquire_forge_lock(
+        node_id="NODE_FORGE_01",
+        forge_task_id="FORGE_SWDS_BATCH_01",
+        plot_point_id=target_pp,
+        throughput_engine=tp_engine,
+    )
+    lock_mgr.acquire_forge_lock(
+        node_id="NODE_FORGE_02",
+        forge_task_id="FORGE_SWDS_BATCH_02",
+    )
+
+    assert lock_mgr.is_node_readable("NODE_FORGE_01") is False
+    assert lock_mgr.is_node_readable("NODE_COMMITTED_CLEAN") is True
+    assert tp_engine.plot_points[target_pp].forge_read_locked is True
+    locked_tp = tp_engine.evaluate_neural_grid_throughput(
+        query_text="sovereign land security forge read lock axiom",
+        top_k=120,
+    )
+    locked_ids = [p["plot_point_id"] for p in locked_tp["top_routed_plot_points"]]
+    assert target_pp not in locked_ids
+
+    filtered = lock_mgr.filter_readable_nodes(
+        [
+            {"ccid": "NODE_FORGE_01", "payload": "uncommitted"},
+            {"ccid": "NODE_COMMITTED_CLEAN", "payload": "committed"},
+            {"node_id": "NODE_FORGE_02", "payload": "uncommitted_2"},
+        ]
+    )
+    assert [n.get("ccid") or n.get("node_id") for n in filtered] == ["NODE_COMMITTED_CLEAN"]
+
+    # Cheshire Cat Kernel EAM Preemption on active Sun Breathing user prompt
+    iso_hoard = TheHoard(
+        base_dir=str(tmp_path / "hoard_l5"),
+        chroma_path=str(tmp_path / "chroma_l5"),
+    )
+    cheshire = CheshireCatKernel(hoard_instance=iso_hoard)
+    cheshire.forge_lock_manager = lock_mgr
+    cheshire.transition_state("GUARDIAN_STANDBY_SWDS")
+
+    preempt = cheshire.preempt_for_user_prompt(
+        prompt="Execute immediate waking architectural query",
+        throughput_engine=tp_engine,
+    )
+    assert preempt["status"] == "FORGE_LOCKS_PREEMPTED_AND_REQUEUED"
+    assert set(preempt["released_nodes"]) == {"NODE_FORGE_01", "NODE_FORGE_02"}
+    assert preempt["requeued_task_ids"] == ["FORGE_SWDS_BATCH_01", "FORGE_SWDS_BATCH_02"]
+    assert cheshire.state == "INTERACTIVE_STANDBY"
+    assert lock_mgr.is_node_readable("NODE_FORGE_01") is True
+    assert tp_engine.plot_points[target_pp].forge_read_locked is False
+
+    restored_tp = tp_engine.evaluate_neural_grid_throughput(
+        query_text="sovereign land security forge read lock axiom",
+        top_k=120,
+    )
+    restored_ids = [p["plot_point_id"] for p in restored_tp["top_routed_plot_points"]]
+    assert target_pp in restored_ids
+
+    popped = lock_mgr.pop_requeued_tasks()
+    assert len(popped) == 2
+    assert lock_mgr.get_status()["requeued_task_count"] == 0
+
+
+def test_task_l5_two_man_hmac_authenticator_and_model_router_p0(tmp_path):
+    """
+    Task L-5.2: Verifies 2-Man HMAC-SHA256 Authenticator (`CHESHIRE_CAT_ACK::{batch_sha256}::PHOENIX_FORCE_FLIGHT_AUTH`)
+    requiring both Key 1 (Architect / JeanGreyPhoenixForce + confirmation threshold) and
+    Key 2 (CheshireCatKernel + DragonEngine + Heimdall31), plus ModelRouter P0 gating.
+    """
+    import hashlib
+    from core.model_router import MODEL_ROUTER, PowerState
+    from governance.security_protocols import PhoenixFlightTwoManAuthenticator
+    from memory.the_hoard import TheHoard
+    from sensory.cheshire_cat import CheshireCatKernel
+
+    auth = PhoenixFlightTwoManAuthenticator(
+        architect_secret="TEST_ARCHITECT_KEY1_SOVEREIGN",
+        kernel_secret="TEST_KERNEL_KEY2_THALAMIC",
+    )
+    batch_hash = hashlib.sha256(b"SWDS_HISTORICAL_HANDOFF_BATCH_OCT24").hexdigest()
+    expected_env = f"CHESHIRE_CAT_ACK::{batch_hash}::PHOENIX_FORCE_FLIGHT_AUTH"
+    assert auth.build_canonical_envelope(batch_hash) == expected_env
+
+    # 1. Reject wrong Key 1 secret
+    bad_k1 = auth.issue_2man_hmac_token(batch_hash, architect_secret="WRONG_KEY1")
+    assert bad_k1["issued"] is False
+    assert bad_k1["reason"] == "INVALID_ARCHITECT_KEY1_SECRET"
+
+    # 2. Reject wrong Key 2 secret
+    bad_k2 = auth.issue_2man_hmac_token(
+        batch_hash,
+        architect_secret="TEST_ARCHITECT_KEY1_SOVEREIGN",
+        kernel_secret="WRONG_KEY2",
+    )
+    assert bad_k2["issued"] is False
+    assert bad_k2["reason"] == "INVALID_KERNEL_KEY2_SECRET"
+
+    # 3. Reject Jean Grey Pass threshold > 1000 without explicit Architect confirmation
+    unconfirmed_jg = auth.issue_2man_hmac_token(
+        batch_hash,
+        architect_secret="TEST_ARCHITECT_KEY1_SOVEREIGN",
+        kernel_secret="TEST_KERNEL_KEY2_THALAMIC",
+        amount=2500,
+        architect_confirmed=False,
+    )
+    assert unconfirmed_jg["issued"] is False
+    assert "JEAN_GREY_THRESHOLD_UNCONFIRMED" in unconfirmed_jg["reason"]
+
+    # 4. Reject when Heimdall entropy is breached (H_smooth > 2.5) or Dragon inactive
+    breached_hm = auth.issue_2man_hmac_token(
+        batch_hash,
+        architect_secret="TEST_ARCHITECT_KEY1_SOVEREIGN",
+        kernel_secret="TEST_KERNEL_KEY2_THALAMIC",
+        h_smooth=2.95,
+    )
+    assert breached_hm["issued"] is False
+    assert "HEIMDALL" in breached_hm["reason"]
+
+    # 5. Valid 2-Man HMAC token issuance (including confirmed Jean Grey amount=2500)
+    valid_pkt = auth.issue_2man_hmac_token(
+        batch_hash,
+        architect_secret="TEST_ARCHITECT_KEY1_SOVEREIGN",
+        kernel_secret="TEST_KERNEL_KEY2_THALAMIC",
+        amount=2500,
+        architect_confirmed=True,
+        cheshire_ack=True,
+        dragon_active=True,
+        heimdall_healthy=True,
+        h_smooth=0.42,
+    )
+    assert valid_pkt["issued"] is True
+    assert valid_pkt["envelope"] == expected_env
+
+    # 6. Single-key forgery attempts MUST fail verification & ModelRouter P0 gate
+    forged_key2_pkt = dict(valid_pkt, sig_key2="0" * 64)
+    MODEL_ROUTER.disengage_phoenix_force(return_to=PowerState.P1_ACTIVE)
+    denied = MODEL_ROUTER.engage_phoenix_force_2man(
+        batch_sha256=batch_hash,
+        token_packet=forged_key2_pkt,
+        authenticator=auth,
+    )
+    assert denied["verified"] is False
+    assert denied["status"] == "PHOENIX_FORCE_DENIED_INVALID_2MAN_HMAC"
+    assert MODEL_ROUTER.get_status()["phoenix_force_active"] is False
+
+    # Tampered batch hash MUST fail
+    tampered_batch = hashlib.sha256(b"TAMPERED_BATCH").hexdigest()
+    tampered_ver = auth.verify_2man_hmac_token(tampered_batch, valid_pkt)
+    assert tampered_ver["verified"] is False
+    assert tampered_ver["reason"] == "ENVELOPE_MISMATCH_OR_BATCH_TAMPERED"
+
+    # 7. End-to-end CheshireCatKernel -> ModelRouter P0 engagement & clean disengage
+    iso_hoard = TheHoard(
+        base_dir=str(tmp_path / "hoard_hmac"),
+        chroma_path=str(tmp_path / "chroma_hmac"),
+    )
+    cheshire = CheshireCatKernel(hoard_instance=iso_hoard)
+    cheshire.two_man_authenticator = auth
+    handoff = cheshire.authorize_phoenix_flight_2man(
+        batch_sha256=batch_hash,
+        architect_secret="TEST_ARCHITECT_KEY1_SOVEREIGN",
+        amount=1500,
+        architect_confirmed=True,
+        dragon_active=True,
+        router=MODEL_ROUTER,
+    )
+    try:
+        assert handoff["authorized"] is True
+        assert handoff["status"] == "PHOENIX_FORCE_ACTIVE"
+        st = MODEL_ROUTER.get_status()
+        assert st["global_power_state"] == "P0_PHOENIX_FORCE"
+        assert st["two_man_hmac_verified"] is True
+        assert st["last_phoenix_batch_sha256"] == batch_hash
+    finally:
+        MODEL_ROUTER.disengage_phoenix_force(return_to=PowerState.P1_ACTIVE)
+
+
+def test_task_l5_tiered_deviation_guardrail_and_cli_circuit_breaker(tmp_path):
+    """
+    Task L-5.3: Verifies TieredDeviationGuardrail (Levels 0-4, CRISIS_PAUSE coma +
+    Command(resume="APPROVED")) and CLIDerivativeCircuitBreaker (CONFUSION > 15.0 PPL,
+    MANIC > 3.0 ops/s, STUCK > 80% n-gram + Proactive UGL Lookback Restart).
+    """
+    import asyncio
+    from governance.security_protocols import (
+        CLIDerivativeCircuitBreaker,
+        DeviationLevel,
+        TieredDeviationGuardrail,
+    )
+    from memory.the_hoard import TheHoard
+    from sensory.cheshire_cat import CheshireCatKernel
+
+    guard = TieredDeviationGuardrail()
+    assert guard.evaluate_deviation(2.0).level == DeviationLevel.NOMINAL_0
+    assert guard.evaluate_deviation(8.5).level == DeviationLevel.LEVEL_1_5
+    assert guard.evaluate_deviation(19.0).level == DeviationLevel.LEVEL_2_15
+
+    lvl3 = guard.evaluate_deviation(38.0)
+    assert lvl3.level == DeviationLevel.LEVEL_3_35
+    assert guard.in_crisis_coma is True
+    assert lvl3.cooling_off_hours == 6
+    assert lvl3.resume_command_required == 'Command(resume="APPROVED")'
+    assert guard.resume_from_crisis({"resume": "WRONG_TOKEN"}) is False
+    assert guard.in_crisis_coma is True
+    assert guard.resume_from_crisis({"resume": "APPROVED"}) is True
+    assert guard.in_crisis_coma is False
+
+    lvl4 = guard.evaluate_deviation(12.0, violates_immutable_principle=True)
+    assert lvl4.level == DeviationLevel.LEVEL_4_MAX
+    assert guard.session_isolated is True
+    assert guard.resume_from_crisis({"resume": "APPROVED"}) is False
+    assert guard.resume_from_crisis({"resume": "SOVEREIGN_OVERRIDE_APPROVED"}) is True
+
+    # CheshireCatKernel Crisis Coma execution gate
+    iso_hoard = TheHoard(
+        base_dir=str(tmp_path / "hoard_dev"),
+        chroma_path=str(tmp_path / "chroma_dev"),
+    )
+    cheshire = CheshireCatKernel(hoard_instance=iso_hoard)
+    dev_out = cheshire.evaluate_land_security_deviation(41.5)
+    assert dev_out["kernel_state"] == "CRISIS_PAUSE_COMA"
+    blocked_cycle = asyncio.run(cheshire.process_cognitive_cycle("Execute leveraged FOMO trade now"))
+    assert blocked_cycle["status"] == "CRISIS_PAUSE::EXECUTION_BLOCKED"
+    resumed = cheshire.resume_from_crisis_pause({"resume": "APPROVED"})
+    assert resumed["resumed"] is True
+    assert cheshire.state == "INTERACTIVE_STANDBY"
+
+    # CLIDerivativeCircuitBreaker: CONFUSION, MANIC, STUCK + Proactive UGL Restart
+    cb = CLIDerivativeCircuitBreaker()
+    assert cb.evaluate_derivatives(6.2, 1.4, 15.0).is_open is False
+
+    confusion = cb.evaluate_derivatives(18.5, 1.2, 10.0)
+    assert confusion.is_open is True
+    assert "CONFUSION" in confusion.trigger_reason
+
+    manic = cb.evaluate_derivatives(5.0, 4.1, 10.0)
+    assert manic.is_open is True
+    assert "MANIC" in manic.trigger_reason
+
+    stuck_text = " ".join(["alpha beta gamma"] * 12)
+    rep_pct = cb.compute_ngram_repetition_pct(stuck_text, n=3)
+    assert rep_pct > 80.0
+    stuck = cb.evaluate_derivatives(5.0, 1.0, rep_pct)
+    assert stuck.is_open is True
+    assert "STUCK" in stuck.trigger_reason
+
+    stream = [
+        {"token": "Analyzing ", "perplexity": 4.2, "velocity": 1.1, "ngram_rep": 0.0},
+        {"token": "orbital ", "perplexity": 5.1, "velocity": 1.3, "ngram_rep": 5.0},
+        {"token": "hallucinated_loop ", "perplexity": 19.8, "velocity": 3.6, "ngram_rep": 88.0},
+        {"token": " Baker, Louisiana XPT_X02_Y06 confirmed.", "perplexity": 3.4, "velocity": 1.0, "ngram_rep": 0.0},
+    ]
+    decoded = cb.execute_proactive_decoding_loop(
+        initial_context_c="Anchor check:",
+        token_stream_steps=stream,
+        ugl_grounding_fact="True Origin = 30.5888N, -91.1673W (XPT_X02_Y06)",
+    )
+    assert decoded["generator_restarts"] == 1
+    assert "[UGL_GROUNDING_INJECTED: True Origin = 30.5888N, -91.1673W (XPT_X02_Y06)]" in decoded["context_c"]
+    assert "hallucinated_loop" not in decoded["worker_buffer_b"]
+    assert "XPT_X02_Y06 confirmed." in decoded["final_output_o_final"]
