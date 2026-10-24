@@ -1,25 +1,25 @@
 {
   "state": "AWAKE",
   "phase": "WAKING_CONSCIOUSNESS",
-  "last_cycle_time": 1791460824.583866,
-  "sleep_initiated_at": "2026-10-08T02:00:21.420213",
+  "last_cycle_time": 1792584045.0180428,
+  "sleep_initiated_at": "2026-10-21T02:00:41.907090",
   "target_wake_time": "07:00 AM CDT",
   "target_wake_hour": 7,
   "mutations_applied": [
-    0.5,
-    0.34,
-    0.46
+    0.19,
+    0.43,
+    0.48
   ],
   "dream_log": [
-    "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.50.",
-    "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.34.",
-    "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.46."
+    "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.19.",
+    "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.43.",
+    "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.48."
   ],
   "last_report": {
-    "timestamp": "2026-10-08T07:00:24.584111",
+    "timestamp": "2026-10-21T07:00:45.018068",
     "status": "SWDS_CYCLE_COMPLETE",
     "awakening_phase": "PHASE_4_AWAKENING",
-    "sleep_window_executed": "2026-10-08T02:00:21.420213 -> 07:00 AM CDT",
+    "sleep_window_executed": "2026-10-21T02:00:41.907090 -> 07:00 AM CDT",
     "phase_1_consolidation": [
       "Archiving recent conversational matrices to The Hoard (ChromaDB local)...",
       "Executing Matryoshka Representation Learning (MRL) Compaction at 180 MPa."
@@ -28,14 +28,14 @@
       "Pruning redundant Psyche pathways (H_smooth > 2.0)."
     ],
     "phase_3_neuroevolution": [
-      "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.50.",
-      "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.34.",
-      "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.46."
+      "Cheshire Protocol Dream Sequence 1: Paradoxes resolved and topologies mapped with variance 0.19.",
+      "Cheshire Protocol Dream Sequence 2: Paradoxes resolved and topologies mapped with variance 0.43.",
+      "Cheshire Protocol Dream Sequence 3: Paradoxes resolved and topologies mapped with variance 0.48."
     ],
     "mutations": [
-      0.5,
-      0.34,
-      0.46
+      0.19,
+      0.43,
+      0.48
     ],
     "dataflow_pipeline_triggered": "swds-phoenix-engine",
     "airflow_dag": "swds_cycle_dag",

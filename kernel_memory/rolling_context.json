@@ -5,9 +5,10 @@
   "previous_ccid": "1789837697",
   "previous_session_id": "882ff934-e8c0-4cef-83bf-40db995fd1d5",
   "last_swds_epoch": {
-    "generation": 2,
-    "timestamp": 1791442821.7043426,
-    "library_file": "library_genesis_purple.md",
-    "shards_consolidated": 10
+    "generation": 4,
+    "timestamp": 1792566041.9252577,
+    "library_file": "kernel_memory/hoard/libraries/library_genesis_purple.md",
+    "shards_consolidated": 307,
+    "library_filename": "library_genesis_purple.md"
   }
 }

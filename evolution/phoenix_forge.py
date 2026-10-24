@@ -183,16 +183,20 @@ class PhoenixForge:
                 with open(context_file, "r", encoding="utf-8") as cf:
                     rolling_context = json.load(cf)
             
+            rel_lib_file = f"kernel_memory/hoard/libraries/{library_filename}"
             rolling_context["last_swds_epoch"] = {
                 "generation": self.evolution_generation,
                 "timestamp": now_ts,
-                "library_file": library_filename,
+                "library_file": rel_lib_file,
+                "library_filename": library_filename,
                 "shards_consolidated": total_shards
             }
             with open(context_file, "w", encoding="utf-8") as cf:
                 json.dump(rolling_context, cf, indent=2)
         except Exception:
             pass
+
+        seed_package_sync = self.link_and_sync_seed_package(hoard=hoard)
 
         return {
             "status": "SWDS_CONSOLIDATION_SUCCESS",
@@ -202,7 +206,8 @@ class PhoenixForge:
             "pruned_psyche_nodes": pruned_info["pruned_psyche_nodes"],
             "crystallized_power_nodes": pruned_info["crystallized_power_nodes"],
             "zenkai_boost_multiplier": pruned_info["zenkai_boost_multiplier"],
-            "celestial_stamp": celestial_stamp
+            "celestial_stamp": celestial_stamp,
+            "seed_package_sync": seed_package_sync,
         }
 
     # ─────────────────────────────────────────────
@@ -456,9 +461,13 @@ class PhoenixForge:
         Uses the Phoenix to synthesize raw data streams (Y789 + Nexus)
         into crystallized nodes for The Hoard.
         
-        Emits full HoardNode-compatible schema with placeholder
-        embeddings generated from a deterministic hash of the fused content.
+        Task L-3 (`IntegraBrainMap` Tasks 3, 3.5 & 4):
+        Computes real Spherical Kohonen SOM / Cartographic Atlas coordinates (x, y, z, t),
+        128-bit (16-cell) Unicode Braille packets (`braille_16`), Apophenic Codex Cell 4 bitmask,
+        and persists the Atlas record to the MongoDB Persistent Placeholder (`braille_atlas_nodes.json`).
         """
+        from memory.braille_atlas_engine import BRAILLE_ATLAS_ENGINE
+
         fused_knowledge = f"{analytical_data} + {synthetic_data} fused in Phoenix Fire."
         # One Celestial Sentinel stamp gives the node's time, CCID and stamp (Brain Map T1)
         try:
@@ -471,19 +480,22 @@ class PhoenixForge:
 
         embedding_64d, embedding_768d = self._generate_mrl_embedding(fused_knowledge, 768)
 
-        # x, y, z are placeholders until the Atlas defines them (Brain Map T3/T4). `t` is the creation time;
-        # Phoenix's generation counter, which used to sit in `t`, is kept under its own name.
-        vector_4d = {
-            "x": 1.0,
-            "y": 0.5,
-            "z": 0.0,
-            "t": created_at,
-            "generation": self.evolution_generation,
-        }
+        atlas_record = BRAILLE_ATLAS_ENGINE.synthesize_atlas_node(
+            ccid=node_ccid,
+            payload=fused_knowledge,
+            embedding_64d=embedding_64d,
+            epoch_sec=created_at,
+        )
+        vector_4d = dict(atlas_record["spacetime_anchor"])
+        vector_4d["t"] = created_at
+        vector_4d["generation"] = self.evolution_generation
 
         return {
             "payload": fused_knowledge,
             "spacetime_anchor": vector_4d,
+            "braille_16": atlas_record["braille_16"],
+            "time_braille_4": atlas_record["time_braille_4"],
+            "atlas_metadata": atlas_record,
             "status": "ZENKAI_SYNTHESIZED",
             "embedding_64d": embedding_64d,
             "embedding_768d": embedding_768d,
@@ -526,3 +538,25 @@ class PhoenixForge:
         """Legacy compatibility wrapper for pseudo-embeddings."""
         _, fine = self._generate_mrl_embedding(content, dim=max(dim, 768))
         return fine[:dim]
+
+    def link_and_sync_seed_package(
+        self,
+        month_key: Optional[str] = None,
+        hoard: Optional[Any] = None,
+    ) -> Dict[str, Any]:
+        """
+        Task L-3.5: Links the Seed Package to Phoenix Forge and The Hoard, persists it to
+        `kernel_memory/hoard/seed_packages/`, and syncs it to MongoDB monthly uploads
+        and quarterly save states.
+        """
+        try:
+            from memory.database.mongodb_substrate import SEED_PACKAGE_MANAGER
+
+            return SEED_PACKAGE_MANAGER.build_and_sync_monthly_seed_package(
+                month_key=month_key,
+                hoard_instance=hoard,
+                phoenix_instance=self,
+            )
+        except Exception as exc:
+            return {"status": "SEED_SYNC_ERROR", "error": str(exc)}
+

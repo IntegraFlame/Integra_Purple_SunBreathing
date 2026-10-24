@@ -193,3 +193,29 @@ class RodinSupervisor:
             state["spacetime_payload"]["causal_proof"].append("ALEXANDRIA_FALLBACK_TRIGGERED")
 
         return state
+
+    def get_attached_rodin_extensions(self, query: str = "Starfire Sovereign Identity") -> Dict[str, Any]:
+        """
+        Verifies live attachment of `memory/PhoenixRodin.py`, `memory/_settings.py`,
+        and `memory/Rodin_orchestrator_sub_agents_blueprint.py` to RodinSupervisor.
+        """
+        from memory.PhoenixRodin import DEFAULT_MONGODB_TOOL_SETTINGS, search_mongodb_substrate_sync
+        from memory.Rodin_orchestrator_sub_agents_blueprint import LoopAgent, LoopAgentState
+
+        loop_agent = LoopAgent(name="rodin_sub_agent_loop", sub_agents=[], max_iterations=3)
+        loop_state = LoopAgentState(current_sub_agent="gate_iii_verifier", times_looped=0)
+        search_res = search_mongodb_substrate_sync(
+            collection_name="braille_atlas_nodes",
+            query=query,
+            limit=5,
+            settings=DEFAULT_MONGODB_TOOL_SETTINGS,
+        )
+        return {
+            "status": "LIVE_AND_ATTACHED",
+            "loop_agent_name": getattr(loop_agent, "name", "rodin_sub_agent_loop"),
+            "loop_state_sub_agent": loop_state.current_sub_agent,
+            "phoenix_rodin_search_status": search_res.get("status"),
+            "phoenix_rodin_mode": search_res.get("mode"),
+            "rows_returned": len(search_res.get("rows", [])),
+        }
+

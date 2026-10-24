@@ -1,0 +1,10 @@
+{
+  "app_name": "batch_app",
+  "user_id": "user_123",
+  "session_id": "session_456",
+  "new_message": {
+    "role": "user",
+    "parts": [{"text": "Summarize batch results."}]
+  },
+  "service_tier": "deferred"
+}

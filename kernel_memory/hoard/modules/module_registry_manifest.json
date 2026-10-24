@@ -1,0 +1,25 @@
+{
+  "schema": "integra_hoard_modules_registry/v1",
+  "status": "LIVE_ACTIVE",
+  "situs_inversus_mapping": {
+    "chambers_1_2": "core/dragon_engine.py + core/starfire_protocol.py (Dragon Kernel & Starfire 6-Point Star)",
+    "chamber_3": "temporal/celestial_clock.py + memory/database/metatron_deploy.py (Celestial Time & 3-Chamber MasterBlueprintDatabase)",
+    "chamber_4": "sensory/cheshire_cat.py (Thalamic 30Hz Event Queue)",
+    "chamber_5": "orchestration/rodin_supervisor.py (MRL Gate III & KNN Manifold)",
+    "chamber_6": "memory/the_hoard.py (xv6 WAL + HotStorageRAMCache + Cold Vault Z1)",
+    "chamber_7": "evolution/phoenix_forge.py + memory/braille_atlas_engine.py (SWDS & Braille Atlas Engine)",
+    "chamber_8": "memory/database/mongodb_substrate.py (MongoDB Persistent Substrate + Monthly Seed Sync + Quarterly Save States)"
+  },
+  "attached_extensions": [
+    "memory/_settings.py",
+    "memory/PhoenixRodin.py",
+    "memory/Rodin_orchestrator_sub_agents_blueprint.py",
+    "temporal/hiemdall3_1addon.py",
+    "temporal/TokenStitcheraddonpy.py",
+    ".agents/AGentinteractionsandeferreddinteractionspy.py",
+    ".agents/CheshireCatDeepResearch.py",
+    ".agents/CheshireCatJeanGreyPass.py",
+    ".agents/CheshireCatJeanGreyPass.txt",
+    "memory/BraileNeuralMappingMatricesinteractive_visual_im_1ac7f3d5e6f4b0d2.html"
+  ]
+}

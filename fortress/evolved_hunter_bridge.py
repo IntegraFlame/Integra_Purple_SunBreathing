@@ -60,8 +60,15 @@ class MarketStateBuilder:
 
     CDT_TZ = timezone(timedelta(hours=-5))
 
-    def __init__(self, history_file: str = "fortress/trade_history.json"):
-        self.history_file = history_file
+    def __init__(self, history_file: Optional[str] = None):
+        default_hist = os.path.join(os.path.dirname(os.path.abspath(__file__)), "trade_history.json")
+        if history_file is None:
+            resolved_hist = default_hist
+        elif not os.path.isabs(history_file) and not os.path.exists(history_file):
+            resolved_hist = default_hist if os.path.exists(default_hist) else history_file
+        else:
+            resolved_hist = history_file
+        self.history_file = resolved_hist
         self._history: List[Dict] = self._load_history()
 
     def _load_history(self) -> List[Dict]:
@@ -171,10 +178,13 @@ class EvolvedHunterBridge:
         self,
         account_size: float = 10_000.0,
         target_delta: float = 0.08,
-        state_file_path: str = "fortress/portfolio_state.json",
-        history_file: str = "fortress/trade_history.json",
+        state_file_path: Optional[str] = None,
+        history_file: Optional[str] = None,
         mode: str = "PAPER",  # PAPER | LIVE (LIVE requires IBKR gateway)
     ):
+        _dir = os.path.dirname(os.path.abspath(__file__))
+        state_file_path = state_file_path or os.path.join(_dir, "portfolio_state.json")
+        history_file = history_file or os.path.join(_dir, "trade_history.json")
         self.mode = mode.upper()
         self.account_size = account_size
 

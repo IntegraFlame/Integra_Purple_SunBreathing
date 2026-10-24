@@ -5,14 +5,21 @@ Substrate: 75% SGOV & $20,000 Margin Lock Floor
 """
 
 import json
+import os
 from typing import Dict, Any
+
+_DEFAULT_PORTFOLIO_STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "portfolio_state.json")
 
 class FridayFortressBank:
     """
     Enforces the $20,000 margin floor and routes yields into risk-free treasury collateral.
     SGOV is credited at 99% margin utility for writing index options.
     """
-    def __init__(self, state_file_path: str = "fortress/portfolio_state.json"):
+    def __init__(self, state_file_path: str = _DEFAULT_PORTFOLIO_STATE):
+        if not os.path.isabs(state_file_path) and not os.path.exists(state_file_path):
+            candidate = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.basename(state_file_path))
+            if os.path.exists(candidate):
+                state_file_path = candidate
         self.state_path = state_file_path
         self.MARGIN_LOCK_FLOOR = 20000.0
 

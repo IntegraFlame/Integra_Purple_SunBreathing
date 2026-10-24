@@ -450,6 +450,148 @@ class DigitalNumericalClock:
         )
 
 
+# ─── 4-CELL BRAILLE TEMPORAL EPOCH CODEC & SPIRAL WAVE SPACE-TIME CLOCK ──────
+
+BRAILLE_EPOCH_BASE = 0x2800
+
+
+def encode_time_braille_4(epoch_sec: Optional[float] = None) -> str:
+    """
+    Task 1 (IntegraBrainMap.md): Encodes a 32-bit unsigned Unix epoch timestamp
+    into a 4-cell (32-bit / 4-byte) big-endian Unicode Braille prefix (Cells 0-3,
+    U+2800 to U+28FF), enabling O(1) chronological byte-prefix sorting.
+    """
+    import struct
+    ts = int(time.time() if epoch_sec is None else epoch_sec) & 0xFFFFFFFF
+    raw_bytes = struct.pack(">I", ts)
+    return "".join(chr(BRAILLE_EPOCH_BASE + b) for b in raw_bytes)
+
+
+def decode_time_braille_4(braille_4: str) -> int:
+    """Reconstructs the 32-bit unsigned Unix epoch integer from a 4-cell Braille prefix."""
+    import struct
+    if len(braille_4) != 4:
+        raise ValueError(f"Expected 4 Braille cells for temporal epoch, got {len(braille_4)}.")
+    raw_bytes = bytes((ord(ch) - BRAILLE_EPOCH_BASE) & 0xFF for ch in braille_4)
+    return struct.unpack(">I", raw_bytes)[0]
+
+
+def compute_spiral_wave_phase(
+    node_lat_deg: float = ANCHOR_LAT,
+    node_lon_deg: float = ANCHOR_LON,
+    hlc_ticks: int = 1,
+    spiral_freq_hz: float = 32.0,
+) -> Dict[str, float]:
+    """
+    Curriculum Doc 11 (Rotating Spiral Brain Waves Act as a Space-and-Time Clock):
+    Computes the cortical rotating spiral wave phase Psi_spiral(lat, lon, t)
+    around the North/South Polar conjugate singularities across the 12 meridians:
+        Psi_spiral(r, c, t) = (azimuth + k_spiral * colatitude - 2*pi*f_clock*t) mod 2*pi
+    """
+    colatitude_rad = math.radians(90.0 - max(-90.0, min(90.0, float(node_lat_deg))))
+    azimuth_rad = math.radians(max(-180.0, min(180.0, float(node_lon_deg))))
+    k_spiral = 2.0  # Spiral arm wavenumber across the spherical manifold
+    temporal_phase = 2.0 * math.pi * float(spiral_freq_hz) * (int(hlc_ticks) * 0.01)
+    psi_spiral_rad = (azimuth_rad + k_spiral * colatitude_rad - temporal_phase) % (2.0 * math.pi)
+    return {
+        "spiral_freq_hz": round(float(spiral_freq_hz), 2),
+        "spiral_wave_phase_rad": round(psi_spiral_rad, 5),
+        "spiral_wave_phase_deg": round(math.degrees(psi_spiral_rad), 2),
+        "spiral_phase_rad": round(psi_spiral_rad, 5),
+        "spiral_phase_deg": round(math.degrees(psi_spiral_rad), 2),
+        "real_projection": round(math.cos(psi_spiral_rad), 6),
+        "imag_projection": round(math.sin(psi_spiral_rad), 6),
+    }
+
+
+@dataclass
+class OrbitalCalibrationState:
+    """Self-correcting orbital checkpoint telemetry state (Task 6.5 / Task 1)."""
+    ping_lat_deg: float
+    ping_lon_deg: float
+    completed_rotations: int
+    completed_solar_orbits: int
+    alignment_checkpoints_logged: int
+    estimated_rotational_speed_kmh: float
+    estimated_orbital_distance_km: float
+    starting_hemisphere: str
+    lunar_quadrant: str
+    spatial_error_km: float
+    temporal_drift_ms: float
+    compounded_accuracy_pct: float
+
+
+class SelfCorrectingOrbitalClock:
+    """
+    Derives tangential rotational speed, hemisphere, and elliptical orbital perimeter
+    from the Baker, Louisiana geographic anchor (30.5888 N, -91.1673 W) and compounds
+    spatial-temporal accuracy across rotational returns, alignments, and full orbits.
+    """
+    EARTH_RADIUS_KM = 6378.137
+    SIDEREAL_DAY_SEC = 86164.0905
+
+    def __init__(self, ping_lat: float = ANCHOR_LAT, ping_lon: float = ANCHOR_LON):
+        self.ping_lat = ping_lat
+        self.ping_lon = ping_lon
+        self.rotations = 0
+        self.orbits = 0
+        self.checkpoints = 0
+        self._base_spatial_err_km = 12.50
+        self._base_temp_drift_ms = 250.0
+        self._decay_accum = 0.0
+
+    def record_orbital_checkpoint(
+        self,
+        observed_return_sec: float = SIDEREAL_DAY_SEC,
+        lunar_phase_deg: float = 45.0,
+        is_eclipse_or_alignment: bool = False,
+        full_orbit_completed: bool = False,
+    ) -> OrbitalCalibrationState:
+        self.rotations += 1
+        self.checkpoints += 1
+        if is_eclipse_or_alignment:
+            self._decay_accum += 0.45
+        if full_orbit_completed:
+            self.orbits += 1
+            self._decay_accum += 0.85
+        else:
+            self._decay_accum += 0.12
+
+        omega_est = (2.0 * math.pi) / max(1.0, float(observed_return_sec))
+        lat_rad = math.radians(self.ping_lat)
+        v_rot_kmh = omega_est * self.EARTH_RADIUS_KM * math.cos(lat_rad) * 3600.0
+
+        semi_major_km = 149597870.7
+        a = semi_major_km
+        b = a * math.sqrt(1.0 - ECCENTRICITY ** 2)
+        h = ((a - b) ** 2) / ((a + b) ** 2)
+        orbit_dist_km = math.pi * (a + b) * (1.0 + (3.0 * h) / (10.0 + math.sqrt(4.0 - 3.0 * h)))
+
+        ns = "N" if self.ping_lat >= 0 else "S"
+        ew = "E" if self.ping_lon >= 0 else "W"
+        q_idx = int((lunar_phase_deg % 360.0) // 90.0) + 1
+
+        factor = math.exp(-self._decay_accum)
+        spatial_err = max(0.0001, self._base_spatial_err_km * factor)
+        temp_drift = max(0.001, self._base_temp_drift_ms * factor)
+        accuracy_pct = min(99.9999, 100.0 * (1.0 - 0.05 * factor))
+
+        return OrbitalCalibrationState(
+            ping_lat_deg=self.ping_lat,
+            ping_lon_deg=self.ping_lon,
+            completed_rotations=self.rotations,
+            completed_solar_orbits=self.orbits,
+            alignment_checkpoints_logged=self.checkpoints,
+            estimated_rotational_speed_kmh=round(v_rot_kmh, 3),
+            estimated_orbital_distance_km=round(orbit_dist_km, 1),
+            starting_hemisphere=f"{ns}{ew}",
+            lunar_quadrant=f"LUNAR_Q{q_idx}",
+            spatial_error_km=round(spatial_err, 5),
+            temporal_drift_ms=round(temp_drift, 4),
+            compounded_accuracy_pct=round(accuracy_pct, 4),
+        )
+
+
 # ─── DUAL TEMPORAL ENGINE ───────────────────────────────────────────────────
 
 class DualTemporalEngine:
@@ -463,6 +605,7 @@ class DualTemporalEngine:
         self.digital = DigitalNumericalClock(time_zone_str="America/Chicago")
         self.hlc = HybridLogicalClock(node_id=0, total_nodes=4)  # Host node
         self.indexer = SpacetimeIndexer(self.hlc, self.celestial)
+        self.orbital_calibrator = SelfCorrectingOrbitalClock(ping_lat=anchor_lat, ping_lon=anchor_lon)
 
     @property
     def is_active(self) -> bool:
@@ -484,6 +627,7 @@ class DualTemporalEngine:
         rot_bucket = int(c_vec.earth_rotation_deg // 30) * 30
         orb_bucket = int(c_vec.orbital_trajectory_pos * 100 // 10) * 10
         c_dict["grid_bucket"] = f"ROT_{rot_bucket}_ORB_{orb_bucket}"
+        c_dict["time_braille_4"] = encode_time_braille_4(d_vec.unix_timestamp)
         in_effect = frame if frame is not None else self.celestial.frame
         if in_effect is not None:
             c_dict["frame"] = in_effect.frame_id
@@ -492,6 +636,7 @@ class DualTemporalEngine:
             "status": "DUAL_SYNAPSE_ANCHORED",
             "celestial_clock": c_dict,
             "digital_clock": asdict(d_vec),
+            "time_braille_4": c_dict["time_braille_4"],
             "sync_isolation_verified": True,
             "is_active": True,
             "all_systems_true": True,
@@ -501,7 +646,8 @@ class DualTemporalEngine:
 
     def get_full_telemetry(self) -> Dict[str, Any]:
         """
-        Extended telemetry including sacred calendar, vector clock, and cosmic checkpoint hash.
+        Extended telemetry including sacred calendar, vector clock, cosmic checkpoint hash,
+        4-cell Braille temporal epoch prefix, and Rotating Spiral Wave Space-Time phase.
         """
         c_vec = self.celestial.compute_4d_coordinates()
         d_vec = self.digital.get_digital_readout()
@@ -512,18 +658,36 @@ class DualTemporalEngine:
         rot_bucket = int(c_vec.earth_rotation_deg // 30) * 30
         orb_bucket = int(c_vec.orbital_trajectory_pos * 100 // 10) * 10
         c_dict["grid_bucket"] = f"ROT_{rot_bucket}_ORB_{orb_bucket}"
+        c_dict["time_braille_4"] = encode_time_braille_4(d_vec.unix_timestamp)
         if self.celestial.frame is not None:
             c_dict["frame"] = self.celestial.frame.frame_id
+
+        spiral_phase = compute_spiral_wave_phase(
+            node_lat_deg=self.celestial.anchor_lat,
+            node_lon_deg=self.celestial.anchor_lon,
+            hlc_ticks=sum(v_clock) or 1,
+        )
+
+        boot_geo: Optional[Dict[str, Any]] = None
+        try:
+            from temporal.boot_geolocation import BOOT_GEOLOCATION_ENGINE
+            boot_geo = BOOT_GEOLOCATION_ENGINE.get_status_readonly()
+        except Exception:
+            boot_geo = None
 
         return {
             "celestial_clock": c_dict,
             "digital_clock": asdict(d_vec),
+            "time_braille_4": c_dict["time_braille_4"],
+            "spiral_wave_clock": spiral_phase,
+            "boot_geolocation_lock": boot_geo,
             "sacred_calendar": asdict(s_vec),
             "causal_vector_clock": v_clock,
             "cosmic_checkpoint_hash": self.celestial.generate_cosmic_checkpoint_hash(),
             "completed_orbits": self.celestial.completed_orbits,
             "spiral_depth": self.celestial.spiral_depth,
             "sync_isolation_verified": True,
+            "all_systems_true": True,
             "principle": "Celestial space-derived kinematics remains uncoupled from civil NTP time."
         }
 

@@ -348,6 +348,7 @@ class TheHoard:
         "hoard/raw_shards",      # Unconsolidated waking-state JSON shards
         "hoard/modules",         # Blueprint manifests
         "hoard/libraries",       # 4D celestial-tagged markdown books
+        "hoard/seed_packages",   # Linked Seed Packages (Hoard + Phoenix -> MongoDB monthly uploads)
         "vectors",               # MRL embeddings & celestial index
         "drop_in",               # Drop-in file ingestion folder
     ]
@@ -403,25 +404,27 @@ class TheHoard:
         # Initialize directory structure
         self._initialize_kernel_memory()
 
+        # Initialize xv6 crash-safe write-ahead transaction logger & LRU Hot/Cold RAM cache (Task L-2)
+        self.wal = Xv6TransactionLogger(
+            wal_path=os.path.join(self.kernel_memory_dir, "hoard", "xv6_wal.json")
+        )
+        self.hot_cache = HotStorageRAMCache(
+            cold_vault_dir=os.path.join(self.kernel_memory_dir, "hoard", "cold_vault_z1"),
+            max_hot_nodes=256,
+        )
+
         # Initialize ChromaDB collection
         self._initialize_chromadb()
 
     def _initialize_kernel_memory(self):
-        """Create the kernel_memory/ directory tree if it doesn't exist."""
+        """Create the kernel_memory/ directory tree if it doesn't exist.
+        Note: Sovereign Identity (config/integra_identity_matrix.json & kernel_memory/core_identity.txt)
+        is defined and anchored exclusively by StarfireProtocol within DragonEngine / Dragon Kernel,
+        never by TheHoard.
+        """
         for subdir in self.KERNEL_DIRS:
             full_path = os.path.join(self.kernel_memory_dir, subdir)
             os.makedirs(full_path, exist_ok=True)
-
-        # Create core_identity.txt if it doesn't exist
-        identity_path = os.path.join(self.kernel_memory_dir, "core_identity.txt")
-        if not os.path.exists(identity_path):
-            with open(identity_path, "w", encoding="utf-8") as f:
-                f.write(
-                    "INTEGRA O/S — The Infinite Living Flame\n"
-                    "Modality: PURPLE (Unified Synthesis)\n"
-                    "Omega: 1.00\n"
-                    "Starfire: [Auteur=1.0, King=1.0, Prophet=1.0]^T\n"
-                )
 
         # Create rolling_context.json if it doesn't exist
         context_path = os.path.join(self.kernel_memory_dir, "rolling_context.json")
@@ -677,12 +680,43 @@ class TheHoard:
             anchor["t"] = node.created_at
         self.local_sparse_cache.append(node)
 
-        # Persist to raw_shards/
+        # Persist to raw_shards/ via xv6 crash-safe write-ahead transaction logger
         shard_path = self._shard_path(ccid)
+        node_dict = node.to_dict()
         try:
-            _write_json_atomic(shard_path, node.to_dict())
+            self.wal.begin_op()
+            self.wal.log_write(shard_path, node_dict)
+            self.wal.end_op()
         except Exception as e:
-            print(f"[HOARD] Failed to persist shard {ccid}: {e}")
+            print(f"[HOARD] WAL commit fallback for shard {ccid}: {e}")
+            try:
+                _write_json_atomic(shard_path, node_dict)
+            except Exception as inner_e:
+                print(f"[HOARD] Failed to persist shard {ccid}: {inner_e}")
+
+        # Populate Hot RAM Cache
+        self.hot_cache.put(ccid, node_dict)
+
+        # Mirror node record to MongoDB persistent placeholder file point
+        try:
+            from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+
+            MONGODB_SUBSTRATE.get_collection("hoard_nodes_mirror").update_one(
+                {"ccid": ccid},
+                {
+                    "$set": {
+                        "ccid": ccid,
+                        "shard_file": shard_path,
+                        "created_at": node.created_at,
+                        "outcome_label": node.outcome_label,
+                        "embed_space": node.embed_space,
+                        "has_vector": node.has_vector,
+                    }
+                },
+                upsert=True,
+            )
+        except Exception:
+            pass
 
         # Upsert to ChromaDB for semantic vector search (only a vector in the active space is indexed)
         chroma_synced = self.chroma_upsert(node)
@@ -1146,8 +1180,302 @@ class TheHoard:
             "ccid": ccid,
         }
 
+    def hydrate_all_cold_storage(self) -> Dict[str, Any]:
+        """
+        Task L-2: Unified Cold-to-Hot Hydration.
+        1. Recovers any uncommitted xv6 WAL blocks on startup.
+        2. Loads all raw shards from `kernel_memory/hoard/raw_shards/`.
+        3. Scans `The_Hoard/` and parent `The Hoard/` for `CCID_*.json` save states.
+        4. Hydrates loaded nodes into `HotStorageRAMCache` and mirrors to MongoDB placeholder.
+        """
+        wal_recovery = self.wal.recover_from_log()
+        raw_loaded = self.load_shards_from_disk()
+        synced_states = self.sync_all_save_states()
+
+        for node in self.local_sparse_cache[-self.hot_cache.max_hot_nodes :]:
+            self.hot_cache.put(node.ccid, node.to_dict())
+
+        # Mirror metadata summary into MongoDB placeholder collection
+        try:
+            from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+
+            col = MONGODB_SUBSTRATE.get_collection("hoard_nodes_mirror")
+            for node in self.local_sparse_cache[-32:]:
+                col.update_one(
+                    {"ccid": node.ccid},
+                    {
+                        "$set": {
+                            "ccid": node.ccid,
+                            "created_at": node.created_at,
+                            "outcome_label": node.outcome_label,
+                            "embed_space": node.embed_space,
+                            "has_vector": node.has_vector,
+                        }
+                    },
+                    upsert=True,
+                )
+        except Exception:
+            pass
+
+        seed_sync = self.link_and_sync_seed_package()
+
+        return {
+            "status": "HOARD_COLD_STORAGE_HYDRATED",
+            "wal_recovery": wal_recovery,
+            "raw_shards_loaded": raw_loaded,
+            "save_states_synced": len(synced_states),
+            "total_in_memory_nodes": len(self.local_sparse_cache),
+            "hot_ram_cache_count": len(self.hot_cache.hot_ram),
+            "cold_vault_z1_count": len(self.hot_cache.cold_vault_index),
+            "seed_package_sync": seed_sync,
+        }
+
+    def link_and_sync_seed_package(
+        self,
+        month_key: Optional[str] = None,
+        phoenix_instance: Any = None,
+    ) -> Dict[str, Any]:
+        """
+        Task L-3.5: Links the Seed Package to The Hoard and Phoenix Forge, persists it to
+        `kernel_memory/hoard/seed_packages/`, and syncs it to MongoDB monthly uploads
+        and quarterly save states.
+        """
+        try:
+            from memory.database.mongodb_substrate import SEED_PACKAGE_MANAGER
+
+            return SEED_PACKAGE_MANAGER.build_and_sync_monthly_seed_package(
+                month_key=month_key,
+                hoard_instance=self,
+                phoenix_instance=phoenix_instance,
+            )
+        except Exception as exc:
+            return {"status": "SEED_SYNC_ERROR", "error": str(exc)}
+
+
+
+class Xv6TransactionLogger:
+    """
+    Curriculum Document 9 (xv6 Chapter 8: File System Logging) Crash-Safe Transaction Logger.
+    Enforces:
+      - `begin_op()` -> `log_write()` (with `MAXOPBLOCKS = 10` log absorption) -> `end_op()`
+      - Two-phase commit: writes header (`n > 0`) to `xv6_wal.json`, installs blocks to target paths,
+        then zeroes header (`n = 0`) and mirrors committed transaction receipts to MongoDB placeholder.
+    """
+
+    MAXOPBLOCKS = 10
+
+    def __init__(self, wal_path: str):
+        self.wal_path = wal_path
+        os.makedirs(os.path.dirname(self.wal_path), exist_ok=True)
+        if not os.path.isfile(self.wal_path):
+            _write_json_atomic(self.wal_path, {"n": 0, "timestamp": time.time(), "blocks": [], "status": "INITIALIZED_CLEAN"})
+        self.outstanding: int = 0
+        self.committing: bool = False
+        self.pending_blocks: "OrderedDict[str, Any]" = OrderedDict()
+        self.total_committed_ops: int = 0
+
+    def begin_op(self) -> Dict[str, Any]:
+        if self.committing:
+            raise RuntimeError("Xv6TransactionLogger is currently committing; cannot begin_op.")
+        self.outstanding += 1
+        return {"status": "OP_BEGUN", "outstanding": self.outstanding}
+
+    def log_write(self, target_path: str, payload: Any) -> Dict[str, Any]:
+        """
+        Records a block write in the in-memory transaction log.
+        Repeated writes to the same `target_path` within an active transaction are absorbed
+        (log absorption), conserving the `MAXOPBLOCKS = 10` slot limit.
+        """
+        norm_path = os.path.abspath(target_path)
+        absorbed = norm_path in self.pending_blocks
+        if not absorbed and len(self.pending_blocks) >= self.MAXOPBLOCKS:
+            raise BufferError(
+                f"Xv6TransactionLogger exceeded MAXOPBLOCKS ({self.MAXOPBLOCKS}); commit before adding more blocks."
+            )
+        self.pending_blocks[norm_path] = payload
+        return {
+            "status": "LOG_ABSORBED" if absorbed else "LOG_QUEUED",
+            "target_path": norm_path,
+            "queued_blocks": len(self.pending_blocks),
+            "max_op_blocks": self.MAXOPBLOCKS,
+        }
+
+    def end_op(self) -> Dict[str, Any]:
+        if self.outstanding <= 0:
+            return {"status": "NO_ACTIVE_OP", "committed_blocks": 0}
+        self.outstanding -= 1
+        if self.outstanding > 0:
+            return {"status": "DEFERRED_GROUP_COMMIT", "outstanding": self.outstanding}
+
+        self.committing = True
+        try:
+            block_items = [
+                {"target_path": p, "payload": data}
+                for p, data in self.pending_blocks.items()
+            ]
+            n_blocks = len(block_items)
+            if n_blocks > 0:
+                # Step 1: Write WAL commit header (n > 0)
+                wal_header = {
+                    "n": n_blocks,
+                    "timestamp": time.time(),
+                    "blocks": block_items,
+                }
+                _write_json_atomic(self.wal_path, wal_header)
+
+                # Step 2: Install blocks to home locations on disk
+                for item in block_items:
+                    os.makedirs(os.path.dirname(item["target_path"]), exist_ok=True)
+                    _write_json_atomic(item["target_path"], item["payload"])
+
+                # Step 3: Zero WAL header (n = 0 -> transaction complete)
+                _write_json_atomic(self.wal_path, {"n": 0, "timestamp": time.time(), "blocks": []})
+                self.total_committed_ops += 1
+
+                # Mirror WAL receipt to MongoDB persistent placeholder
+                try:
+                    from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+
+                    wal_col = MONGODB_SUBSTRATE.get_collection("xv6_transaction_wal")
+                    wal_col.insert_one({
+                        "op_index": self.total_committed_ops,
+                        "committed_blocks": n_blocks,
+                        "paths": [b["target_path"] for b in block_items],
+                        "header_zeroed": True,
+                        "committed_at": time.time(),
+                    })
+                except Exception:
+                    pass
+
+            self.pending_blocks.clear()
+            return {
+                "status": "COMMITTED",
+                "committed_blocks": n_blocks,
+                "header_n": 0,
+                "total_committed_ops": self.total_committed_ops,
+            }
+        finally:
+            self.committing = False
+
+    def recover_from_log(self) -> Dict[str, Any]:
+        """
+        Crash recovery on startup: if `xv6_wal.json` has `n > 0`, replays all logged blocks
+        to their home locations and then zeroes `n = 0`.
+        """
+        if not os.path.exists(self.wal_path):
+            return {"status": "CLEAN_NO_WAL", "replayed_blocks": 0}
+        try:
+            with open(self.wal_path, "r", encoding="utf-8") as f:
+                wal_data = json.load(f)
+        except Exception:
+            return {"status": "UNREADABLE_WAL_SKIPPED", "replayed_blocks": 0}
+
+        n = int(wal_data.get("n", 0))
+        blocks = wal_data.get("blocks", [])
+        replayed = 0
+        if n > 0 and isinstance(blocks, list):
+            for item in blocks[:n]:
+                tpath = item.get("target_path")
+                if tpath and "payload" in item:
+                    os.makedirs(os.path.dirname(tpath), exist_ok=True)
+                    _write_json_atomic(tpath, item["payload"])
+                    replayed += 1
+            _write_json_atomic(self.wal_path, {"n": 0, "timestamp": time.time(), "blocks": []})
+            return {"status": "RECOVERED_FROM_WAL", "replayed_blocks": replayed}
+        return {"status": "CLEAN_HEADER_ZERO", "replayed_blocks": 0}
+
+
+class HotStorageRAMCache:
+    """
+    Task L-2 (`IntegraBrainMap` Task 2): Two-Tier Hot RAM / Cold Vault (`Z1_SOUTH_POLE`) Memory Manager.
+    - Active nodes reside in `hot_ram` (`OrderedDict` LRU).
+    - Evicted or explicitly archived nodes are shunted to `cold_vault_z1/` (`COLD_VAULT_SHUNTED`)
+      with `latitudinal_zone = "Z1_SOUTH_POLE"`.
+    - Querying a cold node transparently rehydrates it back into `hot_ram` (`REHYDRATED_INTO_HOT_RAM`).
+    """
+
+    def __init__(self, cold_vault_dir: str, max_hot_nodes: int = 256):
+        self.cold_vault_dir = cold_vault_dir
+        os.makedirs(self.cold_vault_dir, exist_ok=True)
+        self.manifest_path = os.path.join(self.cold_vault_dir, "cold_vault_manifest.json")
+        if not os.path.isfile(self.manifest_path):
+            _write_json_atomic(
+                self.manifest_path,
+                {
+                    "vault_id": "COLD_VAULT_Z1_SOUTH_POLE",
+                    "latitudinal_zone": "Z1_SOUTH_POLE",
+                    "status": "ACTIVE_READY",
+                    "cold_vault_dir": self.cold_vault_dir,
+                    "initialized_at": time.time(),
+                },
+            )
+        self.max_hot_nodes = max(1, int(max_hot_nodes))
+        self.hot_ram: "OrderedDict[str, Dict[str, Any]]" = OrderedDict()
+        self.cold_vault_index: Dict[str, str] = {}
+
+    def _cold_path(self, ccid: str) -> str:
+        safe = "".join(c if c.isalnum() or c in ("_", "-") else "_" for c in str(ccid))
+        return os.path.join(self.cold_vault_dir, f"{safe}.json")
+
+    def put(self, ccid: str, node_dict: Dict[str, Any]) -> Dict[str, Any]:
+        shunted_ccid = None
+        if ccid in self.hot_ram:
+            self.hot_ram.move_to_end(ccid)
+        self.hot_ram[ccid] = dict(node_dict)
+        if len(self.hot_ram) > self.max_hot_nodes:
+            oldest_ccid, oldest_data = self.hot_ram.popitem(last=False)
+            self.shunt_to_cold_vault(oldest_ccid, oldest_data)
+            shunted_ccid = oldest_ccid
+        return {
+            "status": "STORED_IN_HOT_RAM",
+            "ccid": ccid,
+            "hot_count": len(self.hot_ram),
+            "evicted_to_cold_z1": shunted_ccid,
+        }
+
+    def shunt_to_cold_vault(self, ccid: str, node_dict: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Moves a node out of Hot RAM into the `Z1_SOUTH_POLE` Cold Storage Vault on disk."""
+        data = dict(node_dict or self.hot_ram.pop(ccid, {}))
+        data["ccid"] = ccid
+        data["latitudinal_zone"] = "Z1_SOUTH_POLE"
+        data["storage_tier"] = "COLD_VAULT_Z1"
+        data["shunted_at"] = time.time()
+        cpath = self._cold_path(ccid)
+        _write_json_atomic(cpath, data)
+        self.cold_vault_index[ccid] = cpath
+        self.hot_ram.pop(ccid, None)
+        return {
+            "status": "COLD_VAULT_SHUNTED",
+            "ccid": ccid,
+            "latitudinal_zone": "Z1_SOUTH_POLE",
+            "cold_file": cpath,
+        }
+
+    def retrieve(self, ccid: str) -> Dict[str, Any]:
+        """Retrieves from Hot RAM in O(1), or transparently rehydrates from `Z1_SOUTH_POLE` Cold Vault."""
+        if ccid in self.hot_ram:
+            self.hot_ram.move_to_end(ccid)
+            return {
+                "status": "HOT_RAM_HIT",
+                "ccid": ccid,
+                "node": self.hot_ram[ccid],
+            }
+        cpath = self.cold_vault_index.get(ccid) or self._cold_path(ccid)
+        if os.path.exists(cpath):
+            with open(cpath, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            data["storage_tier"] = "HOT_RAM_REHYDRATED"
+            self.put(ccid, data)
+            return {
+                "status": "REHYDRATED_INTO_HOT_RAM",
+                "ccid": ccid,
+                "node": data,
+            }
+        return {"status": "NOT_FOUND", "ccid": ccid, "node": None}
+
 
 # NOTE: RodinProtocol has been consolidated into memory/rodin_protocol.py
 # which implements the real Matryoshka Representation Learning (MRL) and
 # Cosine Similarity retrieval. Import from there:
 #   from memory.rodin_protocol import RodinProtocol
+

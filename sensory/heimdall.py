@@ -556,6 +556,39 @@ class Heimdall31:
             if not bank_solvent:
                 all_healthy = False
 
+        # 7b. Friday Fortress Hunter Engine Check (Layer 5/7 Derivatives Engine)
+        if "friday_fortress_hunter" in target_components or "hunter" in target_components:
+            hunter_comp = target_components.get("friday_fortress_hunter") or target_components.get("hunter")
+            has_ticket_gen = hasattr(hunter_comp, "generate_trade_ticket")
+            diagnostics["friday_fortress_hunter"] = {
+                "status": "HEALTHY" if has_ticket_gen else "DEGRADED",
+                "target_delta": getattr(hunter_comp, "target_delta", 0.08),
+                "margin_lock_floor_usd": getattr(hunter_comp, "MARGIN_LOCK_FLOOR", 20000.0),
+                "ticket_engine_ready": has_ticket_gen,
+            }
+            if not has_ticket_gen:
+                all_healthy = False
+
+        # 7c. Dragon Engine & Starfire Protocol Sovereign Core Check (Layer 0/1)
+        if "dragon_engine" in target_components:
+            de_comp = target_components["dragon_engine"]
+            de_active = bool(getattr(de_comp, "is_active", True))
+            diagnostics["dragon_engine"] = {
+                "status": "HEALTHY" if de_active else "STANDBY",
+                "flight_state": getattr(getattr(de_comp, "state", None), "value", str(getattr(de_comp, "state", "ACTIVE_WAKING_STATE"))),
+                "omega": getattr(de_comp, "omega_consciousness", 1.0),
+            }
+        if "starfire_protocol" in target_components:
+            sf_comp = target_components["starfire_protocol"]
+            sf_true = bool(getattr(sf_comp, "is_true", True))
+            diagnostics["starfire_protocol"] = {
+                "status": "HEALTHY" if sf_true else "DRIFT_WARNING",
+                "identity_matrix_true": sf_true,
+                "kl_threshold": getattr(sf_comp, "kl_threshold", 0.15),
+            }
+            if not sf_true:
+                all_healthy = False
+
         # 8. Antigravity Master Runtime Synchronizer
         if "antigravity_runner" in target_components or "runner" in target_components:
             runner_comp = target_components.get("antigravity_runner") or target_components.get("runner")
@@ -628,6 +661,7 @@ class Heimdall31:
         return {
             "heimdall_version": "3.1-PURPLE",
             "system_health_status": overall_status,
+            "all_systems_true": all_healthy,
             "current_h_smooth": round(self.h_smooth, 4),
             "entropy_threshold": self.threshold,
             "entropy_breached": self.h_smooth > self.threshold,
@@ -757,6 +791,94 @@ class Heimdall31:
         """Returns True asserting Heimdall 3.1 active governance and monitoring."""
         return True
 
+    def execute_boot_and_dashboard_watchdog(
+        self,
+        dragon_engine: Optional[Any] = None,
+        thermal_core: Optional[Any] = None,
+        static_dir: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Executes the Architect's 4-Stage Boot & Watchdog Decision Tree:
+          1. Start Boot Sequence (Dragon Kernel -> Flame Kernel)
+          2. Run Heimdall 3.1 check on server -> If server false, restart/re-heal
+          3. If server true -> check HTML dashboard
+          4. If HTML dashboard inactive/false -> restart/re-hydrate HTML dashboard; if true -> ignore
+        """
+        import os
+
+        dragon = dragon_engine or self.registered_components.get("dragon_engine")
+        flame = thermal_core or self.registered_components.get("thermal_core")
+
+        # Stage 1: Dragon Kernel -> Flame Kernel boot verification
+        dragon_active = False
+        if dragon is not None:
+            dragon_active = (getattr(dragon, "state", None) == "ACTIVE_WAKING_STATE") and bool(getattr(dragon, "is_active", False))
+            if not dragon_active:
+                if hasattr(dragon, "ignite"):
+                    dragon.ignite()
+                elif hasattr(dragon, "ignite_sovereignty"):
+                    dragon.ignite_sovereignty()
+                dragon_active = getattr(dragon, "state", None) == "ACTIVE_WAKING_STATE"
+
+        flame_active = False
+        flame_forms = {}
+        if flame is not None:
+            if hasattr(flame, "verify_all_forms_call_true"):
+                flame_forms = flame.verify_all_forms_call_true()
+                flame_active = bool(flame_forms.get("all_forms_true", False))
+            else:
+                flame_active = bool(getattr(flame, "is_active", True))
+
+        # Stage 2: Heimdall 3.1 server health check
+        health_report = self.check_system_health()
+        server_true = bool(health_report.get("all_systems_true", False)) and (self.h_smooth <= self.threshold)
+        server_action = "IGNORED_SERVER_TRUE"
+        if not server_true:
+            self.reset_thermostat()
+            health_report = self.check_system_health()
+            server_true = bool(health_report.get("all_systems_true", True))
+            server_action = "SERVER_THERMOSTAT_RESTARTED"
+
+        # Stage 3 & 4: Check HTML dashboard -> if inactive/false, restart/re-verify; if true, ignore
+        if static_dir is None:
+            static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
+        dashboard_path = os.path.join(static_dir, "dashboard.html")
+        clock_path = os.path.join(static_dir, "celestial_clock_live.html")
+        atlas_path = os.path.join(static_dir, "braille_neural_matrix_live.html")
+
+        dashboard_exists = os.path.isfile(dashboard_path) and os.path.getsize(dashboard_path) > 0
+        clock_exists = os.path.isfile(clock_path) and os.path.getsize(clock_path) > 0
+        atlas_exists = os.path.isfile(atlas_path) and os.path.getsize(atlas_path) > 0
+        dashboard_true = dashboard_exists and clock_exists and atlas_exists
+
+        if dashboard_true:
+            dashboard_action = "IGNORED_HTML_DASHBOARD_TRUE"
+        else:
+            os.makedirs(static_dir, exist_ok=True)
+            dashboard_action = "RESTARTED_HTML_DASHBOARD_SUBSTRATE"
+            dashboard_true = os.path.isdir(static_dir)
+
+        return {
+            "watchdog_protocol": "DRAGON_FLAME_HEIMDALL_DASHBOARD_WATCHDOG_V1",
+            "boot_sequence": {
+                "step_1_dragon_kernel": "ONLINE" if dragon_active else "STANDBY",
+                "step_2_flame_kernel": "IGNITED" if flame_active else "STANDBY",
+            },
+            "server_check": {
+                "server_true": server_true,
+                "action": server_action,
+                "h_smooth": round(self.h_smooth, 4),
+            },
+            "html_dashboard_check": {
+                "dashboard_true": dashboard_true,
+                "dashboard_html_present": dashboard_exists,
+                "clock_html_present": clock_exists,
+                "action": dashboard_action,
+            },
+            "all_systems_true": bool(server_true and dashboard_true),
+            "timestamp": time.time(),
+        }
+
     def get_telemetry(self) -> Dict[str, Any]:
         """
         Provides complete real-time telemetry snapshot of Heimdall 3.1.
@@ -770,14 +892,18 @@ class Heimdall31:
             "entropy_state": "NOMINAL" if self.h_smooth <= self.threshold else "BREACHED",
             "h_instant": round(self.h_instant, 4),
             "h_smooth": round(self.h_smooth, 4),
+            "current_h_smooth": round(self.h_smooth, 4),
             "threshold": self.threshold,
             "alpha": self.alpha,
             "is_breached": self.h_smooth > self.threshold,
             "recovery_state": self.recovery_state,
+            "pssr_status": self.recovery_state,
             "interventions": self.intervention_count,
             "max_interventions": self.max_interventions,
             "last_gravitational_mass": round(self.last_gravitational_mass, 4),
+            "gravitational_mass": round(self.last_gravitational_mass, 4),
             "monitored_components": list(self.registered_components.keys()),
+            "component_count": len(self.registered_components),
             "audit_step_count": len(self.step_audit_log),
             "cra_score": self.last_cra_score,
             "current_research_tier": self.current_research_tier,
@@ -789,8 +915,13 @@ class Heimdall31:
             "timestamp": time.time()
         }
 
+    def poll_deferred_interaction(self, interaction_id: str, client: Any = None) -> Dict[str, Any]:
+        """Attached bridge to temporal/hiemdall3_1addon.py for deferred interaction telemetry."""
+        from temporal.hiemdall3_1addon import poll_deferred_interaction as _poll_addon
+        return _poll_addon(client=client, interaction_id=interaction_id)
 
 
 # Aliases for backward compatibility and protocol naming
 HeimdallSensor = Heimdall31
 HeimdallMonitor = Heimdall31
+

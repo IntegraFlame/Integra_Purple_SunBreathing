@@ -325,15 +325,22 @@ class CheshireCatProtocol:
         if heimdall is not None:
             try:
                 telemetry = heimdall.get_telemetry()
+                monitored = telemetry.get("monitored_components", [])
+                comp_count = telemetry.get(
+                    "component_count",
+                    len(monitored) if isinstance(monitored, list) else len(getattr(heimdall, "registered_components", {})),
+                )
+                grav_mass = telemetry.get("gravitational_mass", telemetry.get("last_gravitational_mass", 0.0))
+                pssr_st = telemetry.get("pssr_status", telemetry.get("recovery_state", "NOMINAL_TRACKING"))
                 observation["subsystems"]["heimdall"] = {
                     "status": "OBSERVED",
                     "entropy_state": telemetry.get("entropy_state", "UNKNOWN"),
-                    "gravitational_mass": telemetry.get("gravitational_mass", 0.0),
-                    "pssr_status": telemetry.get("pssr_status", "UNKNOWN"),
-                    "component_count": telemetry.get("component_count", 0)
+                    "gravitational_mass": grav_mass,
+                    "pssr_status": pssr_st,
+                    "component_count": comp_count,
                 }
                 # Anomaly: high entropy
-                h = telemetry.get("current_h_smooth", 0.0)
+                h = telemetry.get("current_h_smooth", telemetry.get("h_smooth", 0.0))
                 if h > 2.5:
                     observation["anomalies"].append({
                         "source": "heimdall",
@@ -354,6 +361,16 @@ class CheshireCatProtocol:
                     clock_data = clock.get_dual_telemetry()
                 elif hasattr(clock, "get_current_telemetry"):
                     clock_data = clock.get_current_telemetry()
+                elif hasattr(clock, "compute_4d_coordinates"):
+                    coords = clock.compute_4d_coordinates()
+                    sacred = clock.compute_sacred_calendar() if hasattr(clock, "compute_sacred_calendar") else {}
+                    clock_data = {
+                        "status": "CELESTIAL_4D_ACTIVE",
+                        "coordinates_4d": coords,
+                        "sacred_calendar": sacred,
+                    }
+                elif hasattr(clock, "get_spacetime_vector"):
+                    clock_data = clock.get_spacetime_vector()
                 else:
                     clock_data = {"status": "CLOCK_INTERFACE_UNRECOGNIZED"}
                 observation["subsystems"]["celestial_clock"] = {

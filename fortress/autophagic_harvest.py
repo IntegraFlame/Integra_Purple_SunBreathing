@@ -5,7 +5,10 @@ Protocol: Protocol B (Annual Late December Rebalancing)
 """
 
 import json
+import os
 from typing import Dict, Any
+
+_DEFAULT_PORTFOLIO_STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "portfolio_state.json")
 
 class AutophagicHarvestProtocol:
     """
@@ -15,7 +18,11 @@ class AutophagicHarvestProtocol:
     - 25% JNJ liquidation (JNJ is 10% of Reactor -> 2.5% total Reactor equity)
     Total harvested capital is flushed directly into SGOV (The Bank).
     """
-    def __init__(self, state_file_path: str = "fortress/portfolio_state.json"):
+    def __init__(self, state_file_path: str = _DEFAULT_PORTFOLIO_STATE):
+        if not os.path.isabs(state_file_path) and not os.path.exists(state_file_path):
+            candidate = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.basename(state_file_path))
+            if os.path.exists(candidate):
+                state_file_path = candidate
         self.state_path = state_file_path
 
     def execute_december_harvest(self) -> Dict[str, Any]:

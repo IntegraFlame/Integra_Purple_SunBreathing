@@ -21,3 +21,9 @@ class TokenStitcher:
     def stitch_packets(self, prior_exit_momentum: float, incoming_input_momentum: float) -> bool:
         """Verifies delta E = 0 across turn boundaries."""
         return abs(prior_exit_momentum - incoming_input_momentum) < 1e-4
+
+    def extract_completed_interaction(self, interaction_id: str, client: Any = None) -> Dict[str, Any]:
+        """Attached bridge to temporal/TokenStitcheraddonpy.py for interaction text and usage extraction."""
+        from temporal.TokenStitcheraddonpy import inspect_completed_interaction
+        return inspect_completed_interaction(client=client, interaction_id=interaction_id)
+

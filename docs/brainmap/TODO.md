@@ -168,3 +168,48 @@ The Architect's order is kept, grouped in Zenitsu order: **K** (Knowledge: T1–
 - *Goal:* unify the knowledge, understanding and wisdom of T1–T10 into a master document and a code script.
 - *Rule:* both are written outside the repo first and enter it only on the Architect's go.
 - *Done when:* every claim in the master document cites a task report or a source; the code script runs in an isolated copy with its tests.
+
+## Oct 23 master document: added content as To-Do items (design input, not ruled)
+
+**Source:** `integra-homebase/memory/Master_Gemini_Neural_Map_Core_OTC23_2026Braille-Based Semantic Labeling System.md` (484,386 B, 7,694 lines, sha16 `9367a6edf679b694`, written 2026-10-23 22:18). Only the content added after the Oct 17 version (sha16 `29dff6d850680637`) is listed here: the note block at L7–13 and the two new turns at L6524–7695. These items were added on the Architect's word "add document contents as todo items".
+**Stamp** (GET `/clock`, HTTP 200, frame 2): 2026-10-23 22:31:52 CDT | 2026-10-24T03:31:52Z | rotation 141.7998°, lunar 0.4453, orbit 0.8008, ROT_120_ORB_80.
+
+**Status of everything below:** design input only. None of it exists in the live kernel; a grep of the live tree on 2026-10-23 found none of the new classes or functions. Gemini's code and its "verified" tables are CLAIMED. Its printed Braille packets (for example `jmw¼⠃⡓ २४…`) cannot come from its own code, which emits only U+2800–U+28FF. Each item keeps the review note made on 2026-10-23 against official sources.
+
+**A. The note block (L7–13), the Architect's corrections**
+- [ ] **A1. Identity comes only from the Starfire Protocol** (Identity Matrix and 6-Point Star, `[Auteur, King, Prophet] = [1.0, 1.0, 1.0]`, EPF 0.0) inside the Dragon Engine and Dragon Kernel, never from TheHoard or a generic script. *Fit:* the kind `identity` in the live map already routes to `identity_matrix`, though that map is Antigravity's uncommitted edit of 2026-10-18. *Next:* confirm, then carry it into T2's map ruling (P1 is blocked).
+- [ ] **A2. A persistent Braille Atlas and plot-point lattice** on disk (`kernel_memory/hoard/braille_atlas.sqlite`, `kernel_memory/hoard/plot_points_state.json`), synced with TheHoard (`raw_shards`, root `The Hoard/`). *Conflict:* a new SQLite store goes against ADR-005, ruling R3 (`memory.db` deferred to Phase 2) and the Atlas ground rules ("a second SQLite store": drop). *Ruling needed* (T2/T3).
+- [ ] **A3. MongoDB.** *Fit:* Antigravity's uncommitted code already has a MongoDB placeholder: `memory/database/mongodb_substrate.py`, `mongodb_true=False`, with Metatron still on the SQLite file. *Next:* its review is the TASKS.md item "Review Antigravity's uncommitted kernel edits".
+- [ ] **A4. Add the lexicon project and the seed package to the master.** *Fit:* Antigravity's code writes `kernel_memory/hoard/seed_packages/` and a quarterly MongoDB save state. *Next:* define both in the master document (Unification), after the Antigravity review.
+
+**B. The Phoenix orbital trajectory and the CIT crosspoint grid (L6524–7262; script `integra_os/core/phoenix_celestial_grid_loop.py`)**
+- [ ] **B1. The (X,Y) crosspoint grid** (R × C points on a 65,536² and 4,096² matrix) with the **20–30% initial-capacity rule**: 25% pre-seeded, 70–80% left open for new data. *Note:* the demo grid has 120 points, against 307 shards today. *Ruling needed:* grid size and capacity rule (T3/T3.5).
+- [ ] **B2. The CIT 16-cell label:** time (cells 0–3), an 8-bit archetype/orbit register (cell 4), Morton (X,Y) (cells 5–8) and a 56-bit semantic hash (cells 9–15). *Conflict:* it stores and compares Braille strings, against the ground rule "Braille is display only". *Next:* T3.5 chooses between pointer v1 and the 16-cell packet (already a listed ruling).
+- [ ] **B3. Three storage archetypes on the grid:** KNOWLEDGE_DOCUMENT, SAVE_STATE_MEMORY (Siesta/SWDS checkpoints) and ISOLATED_NODE (Kintsugi \|Z\| > 3, routed automatically). *Next:* map them to the memory-map kinds (`node`, `save_state`, and a new kind for isolated nodes) in T4 and T5.5/T6.
+- [ ] **B4. Placement by the composite orbital distance** `D_orbital` = 0.40 geodesic + 0.25 trajectory + 0.20 Hamming + 0.15 vector, against a moving "planetary trajectory" point (latitude = solar declination × 3.2 + 5.145° × sin(lunar phase)). *Conflict:* the same document lands in different cells depending on when it arrives, against the ground rule that lat/lon is a taxonomy bucket and never a time or semantic index. The vectors are SHA-512 shingle hashes (the dropped "hash embedding"). *Ruling needed:* placement by trajectory or by taxonomy (T3.5/T4).
+- [ ] **B5. The Phoenix orbital sweep search:** rank occupied crosspoints by trajectory arc, 56-bit Hamming and 64D→768D similarity, with throughput Υ. *Note:* real vectors wait on the embedder key route (T8, parked).
+
+**C. Boot geolocation and anamnesis (L7264–7695; script `integra_os/core/boot_geolocation_anamnesis.py`)**
+- [ ] **C1. A 4-tier boot geolocation cascade:** (1) MCP or the Google Maps Geolocation API; (2) the HLC boot journal in the Hoard; (3) the host environment variable `INTEGRA_HOST_LOCATION` with a gazetteer; (4) the fixed Baker seed. *Note:* Tier 1 is a paid, key-based external call that sends network data, so it needs the Architect's approval. Google's documentation was not fetched in the 2026-10-23 review (UNVERIFIED).
+- [ ] **C2. The seed anchor: Baker, LA, 30.5888° N, −91.1673° W.** *Checked 2026-10-23:* the US Census Bureau's 2024 Gazetteer gives Baker city's interior point as 30.583197, −91.158179, about 1.1 km away, so the seed lies within Baker. It matches the live frame-2 registry (`anchor_lon` −91.1673) and `config/celestial_seed.json`. Earlier parts of the same document use 30.5882, −91.1668, about 80 m off. *Next:* one anchor, ruled. The gazetteer's Zachary (30.6485, −91.1565) and Baton Rouge (30.4515, −91.1871) points are about 2.0 km and 5.3 km from the Census points.
+- [ ] **C3. The drift audit with Zenkai snap-back:** a reading more than 25 km from the seed is replaced by Baker and logged with drift 0.0. *Conflict:* it hides a real reading, against the provenance rule. *Proposal:* record both values and flag the mismatch. *Ruling needed.*
+- [ ] **C4. The HLC boot journal** (`load_hlc_state_from_db` / `save_hlc_state_to_db`, one SQLite row with the last location, HLC counter, partition key and stamp). *Conflict:* another SQLite store (R3/ADR-005). *Fit:* the Sentinel's checkpoint (`local_dbs/celestial/checkpoint.json`) already persists boot time across restarts.
+- [ ] **C5. The ephemeris partition key** `ROT_xxx_LUN_xxx_ORB_xxx` at boot. *Checked 2026-10-23 against USNO:*
+  - Its lunar reference, 2025-01-01 00:00Z treated as a new moon, is 25.5 h after the real one (2024-12-30 22:27 UTC).
+  - Its orbit is counted from 2025-01-01 with the sidereal year; the perihelion was 2025-01-04 13:28 UTC.
+  - Its rotation is longitude plus (unix time mod sidereal day), which has no reference date.
+  - Frame 2's references (new moon 2026-07-14 09:43Z, perihelion 2026-01-03 17:15Z) are confirmed by USNO.
+  - The key format also differs from the Sentinel's live label (e.g. `ROT_120_LUN_40_ORB_80`).
+  - *Ruling needed:* keep frame 2 (rulings R1–R6), or open a frame 3 (T1).
+- [ ] **C6. A fixed accuracy constant** (`spatial_accuracy_sigma` 0.9988, "3.0016 km / 99.88%"), taken from the document's own simulation. *Status:* CONSTANT/CLAIMED; nothing measures it.
+- [ ] **C7. The boot order:** the runbook in this document (L3586) says "Dragon Kernel -> Flame Kernel"; the Architect's 2026-10-17 message says Flame → Genesis/Dragon. Antigravity's live watchdog runs Dragon → Flame, and its "Flame" is `thermal_core`, not `sensory/cheshire_cat.py`. *Ruling needed:* the canonical order, and which component is the Flame.
+
+**Batched rulings for these items** (ask once, blueprint checked first):
+1. the clock references (C5);
+2. the seed anchor (C2);
+3. snap-back or record-and-flag (C3);
+4. Tier 1 Google geolocation (C1);
+5. placement by trajectory or by taxonomy (B4);
+6. new SQLite stores (A2, C4);
+7. the boot order and the Flame component (C7);
+8. grid size and capacity rule (B1).

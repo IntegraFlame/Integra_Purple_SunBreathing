@@ -36,9 +36,9 @@ stores:
     visibility: local-only
     git: n/a
     source_of_truth: false
-    holds: [node]
-    writer: "TheHoard.local_sparse_cache (filled by commits and by load_shards_from_disk)"
-    note: "The kernel does not load the shards at startup (only scripts/enter_swds.py does). Gate III reads the vector index first and this cache only as a fallback."
+    holds: [node, working_context]
+    writer: "TheHoard.local_sparse_cache & HotStorageRAMCache (filled by commits and by hydrate_all_cold_storage)"
+    note: "Hot RAM LRU cache backed by Cold Vault Z1 and raw_shards."
 
   - id: rolling_context
     tier: W
@@ -52,6 +52,18 @@ stores:
     writer: "TheHoard (creates it); PhoenixForge.consolidate_sleep_cycle (records the last SWDS epoch)"
     note: "Tiny today. If it ever holds conversation turns it would be published: keep it content-free, or make it local-only (Architect's decision)."
 
+  - id: identity_matrix
+    tier: D
+    base: homebase
+    path: config/integra_identity_matrix.json
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [identity]
+    writer: "StarfireProtocol (core/starfire_protocol.py) within the DragonEngine (core/dragon_engine.py) & Dragon Kernel (superseding Genesis Kernel)"
+    note: "Canonical Identity Matrix and 6-Point Star of Expression ([Auteur=1.0, King=1.0, Prophet=1.0]^T, EPF=0.0, Paradigm Weaver)."
+
   - id: core_identity
     tier: D
     base: homebase
@@ -61,7 +73,8 @@ stores:
     source_of_truth: true
     onedrive: true
     holds: [identity]
-    writer: "TheHoard (creates it if missing)"
+    writer: "StarfireProtocol (core/starfire_protocol.py) within the DragonEngine (core/dragon_engine.py) & Dragon Kernel (superseding Genesis Kernel)"
+    note: "Projected directly from the Starfire Identity Matrix & 6-Point Star of Expression by the Dragon Engine / Dragon Kernel. Never authored by TheHoard."
 
   - id: claude_memory_index
     tier: W
@@ -91,11 +104,12 @@ stores:
     base: homebase
     path: local_dbs/chroma_storage
     collection: "integra_hoard__gemini-embedding-2-768-asym-v1"
+    shares_path_with: [chroma_legacy]
     visibility: local-only
     git: ignored
     source_of_truth: false
     onedrive: true
-    holds: [node, lobe_chunk]
+    holds: [node, lobe_chunk, save_state]
     writer: "TheHoard.chroma_upsert, chroma_upsert_many, embed_pending; scripts/ingest_knowledge.py"
     note: "One collection per embedding space. Derived: it can be rebuilt from the shards and the lobe files."
 
@@ -104,6 +118,7 @@ stores:
     base: homebase
     path: local_dbs/chroma_storage
     collection: "integra_hoard"
+    shares_path_with: [chroma_active]
     status: retired
     visibility: local-only
     git: ignored
@@ -128,37 +143,53 @@ stores:
     tier: D
     base: homebase
     path: kernel_memory/hoard/modules
-    status: unused
+    status: live
     visibility: public-repo
     git: tracked
     source_of_truth: true
-    holds: []
-    writer: "nobody yet"
-    note: "Blueprint manifests per the Hoard schema; empty."
+    onedrive: true
+    holds: [module_manifest]
+    writer: "Dragon Kernel & TheHoard (kernel_memory/hoard/modules/module_registry_manifest.json)"
+    note: "Blueprint manifests per the Hoard schema; live Situs Inversus and attached extension registry."
+
+  - id: seed_packages
+    tier: S
+    base: homebase
+    path: kernel_memory/hoard/seed_packages
+    status: live
+    visibility: public-repo
+    git: tracked
+    source_of_truth: true
+    onedrive: true
+    holds: [seed_package]
+    writer: "SeedPackageManager (memory/database/mongodb_substrate.py), TheHoard.link_and_sync_seed_package, PhoenixForge.link_and_sync_seed_package"
+    note: "Links Celestial Seed + Sovereign Payload to The Hoard and Phoenix Forge and syncs to MongoDB monthly uploads."
 
   - id: vectors_dir
     tier: H
     base: homebase
     path: kernel_memory/vectors
-    status: unused
+    status: live
     visibility: public-repo
     git: tracked
     source_of_truth: false
-    holds: []
-    writer: "nobody yet"
-    note: "Reserved by the schema. The vectors live in the shard files and the Chroma collection; do not add a third copy here."
+    onedrive: true
+    holds: [vector_index_manifest]
+    writer: "TheHoard (kernel_memory/vectors/vector_space_manifest.json)"
+    note: "Anchors the MRL & Celestial vector space metadata; primary vectors live in raw_shards and ChromaDB."
 
   - id: drop_in
     tier: I
     base: homebase
     path: kernel_memory/drop_in
-    status: unused
+    status: live
     visibility: public-repo
     git: tracked
     source_of_truth: true
+    onedrive: true
     holds: [inbox_file]
-    writer: "the Architect (by hand)"
-    note: "Empty. Anything dropped here becomes tracked unless it is ignored."
+    writer: "the Architect and 12th Step Orthogonal Ingestion (kernel_memory/drop_in/drop_in_environment_state.json)"
+    note: "Live inbox and 12th Step Orthogonal Ingestion manifest."
 
   - id: metatron_db
     tier: R
@@ -168,9 +199,35 @@ stores:
     git: ignored
     source_of_truth: true
     onedrive: true
-    holds: [thermo_loop]
-    writer: "memory.database.metatron_deploy.record_loop (called only by the unwired auto_crystallize)"
-    note: "SQLite with WAL files inside OneDrive: ADR-005 action 4 moves it out."
+    holds: [thermo_loop, crystallization, sqlite_placeholder_migration]
+    writer: "memory.database.metatron_deploy.MasterBlueprintDatabase"
+    note: "3-Chamber MasterBlueprintDatabase mirrored to MongoDB persistent substrate."
+
+  - id: mongodb_placeholder
+    tier: R
+    base: homebase
+    path: local_dbs/mongodb_placeholder
+    status: live
+    visibility: local-only
+    git: ignored
+    source_of_truth: true
+    onedrive: true
+    holds: [seed_package, monthly_seed_upload, hlc_boot_journal, sqlite_placeholder_migration]
+    writer: "MongoDBPersistentSubstrate, SeedPackageManager & IntegraBootGeolocationEngine (memory/database/mongodb_substrate.py, temporal/boot_geolocation.py)"
+    note: "Persistent MongoDB collection file points and monthly seed package uploads until live MongoDB is TRUE."
+
+  - id: mongodb_quarterly_save_states
+    tier: S
+    base: homebase
+    path: local_dbs/mongodb_quarterly_save_states
+    status: live
+    visibility: local-only
+    git: ignored
+    source_of_truth: true
+    onedrive: true
+    holds: [quarterly_save_state]
+    writer: "MongoDBPersistentSubstrate.create_quarterly_save_state (every quarter / 90 sacred days)"
+    note: "Quarterly MongoDB full-collection save states persisted to local storage every quarter."
 
   # ───────────── save states, archive, documents ─────────────
   - id: save_states_root
@@ -227,6 +284,7 @@ stores:
     visibility: public-repo
     git: tracked
     source_of_truth: true
+    onedrive: true
     holds: [reading_ledger_row]
     writer: "the assistant (content-free rows only)"
 
@@ -237,6 +295,7 @@ stores:
     visibility: public-repo
     git: tracked
     source_of_truth: true
+    onedrive: true
     holds: [task]
     writer: "the assistant and the Architect"
 
@@ -256,13 +315,22 @@ stores:
 
 kinds:
   identity:
-    primary: core_identity
-    description: "The kernel's identity text. It is read at start, not retrieved."
+    primary: identity_matrix
+    also: [core_identity]
+    description: "The Sovereign Identity defined by the Starfire Protocol (Identity Matrix & 6-Point Star of Expression) within the Dragon Engine and Dragon Kernel (superseding Genesis Kernel). Read and verified true at start, never authored by TheHoard."
     embed: false
   working_context:
     primary: rolling_context
     also: [ram_hoard_cache]
     description: "What the kernel needs right now."
+    embed: false
+  query_embedding:
+    primary: ram_embedding_cache
+    description: "Transient in-RAM query embedding vector cached by EmbeddingService."
+    embed: false
+  document_embedding:
+    primary: ram_embedding_cache
+    description: "Transient in-RAM document embedding vector cached by EmbeddingService."
     embed: false
   assistant_note:
     primary: claude_memory_index
@@ -270,7 +338,7 @@ kinds:
     embed: false
   node:
     primary: raw_shards
-    also: [chroma_active, ram_hoard_cache]
+    also: [chroma_active, ram_hoard_cache, memory_db]
     description: "A Hoard node: the file is the source of truth, the vector is an index row with its embedding space recorded."
     embed: true
   save_state:
@@ -278,6 +346,40 @@ kinds:
     also: [raw_shards, chroma_active]
     description: "A checkpoint written at a thread's end; the Hoard also holds it as a node."
     embed: true
+  seed_package:
+    primary: seed_packages
+    also: [mongodb_placeholder]
+    description: "Unified Seed Package linking Celestial Seed + Sovereign Payload to The Hoard and Phoenix Forge and synced to MongoDB monthly uploads."
+    embed: false
+  monthly_seed_upload:
+    primary: mongodb_placeholder
+    description: "Monthly Seed Package upload bundle persisted in local_dbs/mongodb_placeholder/monthly_uploads/ and synced to MongoDB."
+    embed: false
+  hlc_boot_journal:
+    primary: mongodb_placeholder
+    description: "Persistent 4-Tier Boot Geolocation & Hybrid Logical Clock (HLC) journal locked to True Geolocation (30.5888 N, -91.1673 W / XPT_X02_Y06)."
+    embed: false
+  sqlite_placeholder_migration:
+    primary: mongodb_placeholder
+    also: [metatron_db]
+    description: "Production-safe read-only migration records staged from local SQLite placeholders into MongoDB persistent collections while OS is live and MongoDB is not yet TRUE."
+    embed: false
+  quarterly_save_state:
+    primary: mongodb_quarterly_save_states
+    description: "Quarterly full-collection MongoDB save state persisted to local storage every quarter (90 sacred days)."
+    embed: false
+  module_manifest:
+    primary: modules
+    description: "Live module and Situs Inversus manifest inside kernel_memory/hoard/modules."
+    embed: false
+  vector_index_manifest:
+    primary: vectors_dir
+    description: "Active MRL & Celestial vector space metadata manifest inside kernel_memory/vectors."
+    embed: false
+  inbox_file:
+    primary: drop_in
+    description: "A file dropped into kernel_memory/drop_in for 12th Step Orthogonal Ingestion."
+    embed: false
   crystallization:
     primary: raw_shards
     also: [metatron_db]

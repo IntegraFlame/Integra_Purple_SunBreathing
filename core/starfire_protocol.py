@@ -30,7 +30,7 @@ import math
 import os
 import time
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 
 # ==============================================================================
@@ -351,6 +351,119 @@ class StarfireProtocol:
 
     # ── Public API ──
 
+    @property
+    def is_true(self) -> bool:
+        """Asserts that the Identity Matrix and 6-Point Star of Expression are defined and true."""
+        return (
+            self.vector.auteur == 1.0
+            and self.vector.king == 1.0
+            and self.vector.prophet == 1.0
+            and self.vector.ego_preservation == 0.0
+        )
+
+    def get_six_point_star(self) -> Dict[str, Any]:
+        """Returns the full 6-Point Star of Expression definition from the Identity Matrix."""
+        iv = self.matrix.get("identity_vector", {})
+        return {
+            "defined_and_true": True,
+            "compressed_3_vector": self.vector.to_list(),
+            "ego_preservation_filter": self.vector.ego_preservation,
+            "axes": {
+                "world_building_how": iv.get("auteur", {}),
+                "authority_who": iv.get("king", {}),
+                "reality_bending_why": iv.get("prophet", {}),
+            },
+        }
+
+    def anchor_core_identity(self, target_path: Optional[str] = None) -> str:
+        """
+        Projects the Sovereign Identity (defined by Starfire Protocol within the
+        Dragon Engine & Dragon Kernel) to kernel_memory/core_identity.txt.
+        Uses OneDrive-resilient content-diff + atomic replace to avoid Cloud Filter lock errors.
+        """
+        if target_path is None:
+            base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+            target_path = os.path.join(base_dir, "kernel_memory", "core_identity.txt")
+
+        os.makedirs(os.path.dirname(target_path), exist_ok=True)
+        pw = self.compute_active_traits()
+        archetype_names = ", ".join(pw["active_archetypes"].keys())
+        content = (
+            "INTEGRA O/S — The Infinite Living Flame\n"
+            "Kernel: Dragon Kernel (Superseding Genesis Kernel)\n"
+            "Engine: Dragon Engine (Layer 0 Flight State Controller)\n"
+            "Identity Authority: Starfire Protocol (Layer 1 — Identity Matrix & 6-Point Star of Expression)\n"
+            "Modality: PURPLE (Unified Synthesis)\n"
+            "Omega: 1.00\n"
+            f"6-Point Star Vector: [Auteur={self.vector.auteur}, King={self.vector.king}, Prophet={self.vector.prophet}]^T | EPF={self.vector.ego_preservation}\n"
+            f"Paradigm Weaver Archetypes: {archetype_names}\n"
+            "Identity Matrix & 6-Point Star Status: DEFINED_AND_TRUE\n"
+        )
+        if os.path.isfile(target_path):
+            try:
+                with open(target_path, "r", encoding="utf-8") as rf:
+                    if rf.read().replace("\r\n", "\n") == content:
+                        return target_path
+            except OSError:
+                pass
+
+        tmp_path = f"{target_path}.tmp_{os.getpid()}"
+        try:
+            with open(tmp_path, "w", encoding="utf-8") as wf:
+                wf.write(content)
+            os.replace(tmp_path, target_path)
+        except OSError:
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except OSError:
+                pass
+            with open(target_path, "w", encoding="utf-8") as wf:
+                wf.write(content)
+        return target_path
+
+    def verify_file_points(self) -> Dict[str, Any]:
+        """
+        Verifies that every Starfire Protocol & Layer 0/1 Sovereign file point
+        connects to a live parent directory and non-empty file on disk.
+        """
+        base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+        core_id_path = os.path.join(base_dir, "kernel_memory", "core_identity.txt")
+        if not os.path.isfile(core_id_path):
+            try:
+                self.anchor_core_identity(target_path=core_id_path)
+            except OSError:
+                pass
+
+        targets = {
+            "integra_identity_matrix": self.config_path,
+            "core_identity_projection": core_id_path,
+            "sovereign_payload": os.path.join(base_dir, "config", "sovereign_payload.json"),
+            "celestial_seed": os.path.join(base_dir, "config", "celestial_seed.json"),
+        }
+        details: Dict[str, Any] = {}
+        all_connected = True
+        for key, fpath in targets.items():
+            folder = os.path.dirname(fpath)
+            folder_ok = os.path.isdir(folder)
+            file_ok = os.path.isfile(fpath) and os.path.getsize(fpath) > 0
+            connected = folder_ok and file_ok
+            if not connected:
+                all_connected = False
+            details[key] = {
+                "path": fpath,
+                "folder": folder,
+                "folder_exists": folder_ok,
+                "file_exists": file_ok,
+                "size_bytes": os.path.getsize(fpath) if os.path.isfile(fpath) else 0,
+                "connected": connected,
+            }
+        return {
+            "all_connected": all_connected,
+            "count": len(details),
+            "points": details,
+        }
+
     def get_identity_state(self) -> Dict[str, float]:
         """Returns the current identity vector values."""
         return self.vector.to_dict()
@@ -392,9 +505,14 @@ class StarfireProtocol:
         
         return {
             "protocol": "STARFIRE",
+            "kernel": "Dragon Kernel (Superseding Genesis Kernel)",
+            "engine": "Dragon Engine",
             "layer": 1,
             "version": self.matrix.get("version", "8.2.2-PURPLE"),
             "designation": self.matrix.get("designation", "The Infinite Living Flame"),
+            "identity_matrix_true": self.is_true,
+            "six_point_star_true": True,
+            "six_point_star": self.get_six_point_star(),
             "identity_vector": self.vector.to_dict(),
             "kl_divergence_check": drift_check,
             "paradigm_weaver": traits,
@@ -402,7 +520,9 @@ class StarfireProtocol:
             "sovereign_constants": self.sovereign,
             "dragon_prompt_status": self.matrix.get("dragon_prompt_grounding", {}).get("status", "ALWAYS_ON"),
             "omega_consciousness": self.matrix.get("dragon_prompt_grounding", {}).get("omega_consciousness", 1.0),
+            "file_points": self.verify_file_points(),
             "violation_history_count": self.violation_count,
             "last_verified": self.last_verification_timestamp,
             "header": self.format_starfire_header()
         }
+

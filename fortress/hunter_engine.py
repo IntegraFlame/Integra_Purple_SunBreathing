@@ -114,6 +114,10 @@ class FridayFortressHunter:
                 f"target_delta {target_delta} out of bounds: must be within [{self.MIN_DELTA}, {self.MAX_DELTA}]"
             )
         self.target_delta = delta_mag
+        if not os.path.isabs(state_file_path) and not os.path.exists(state_file_path):
+            candidate = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.path.basename(state_file_path))
+            if os.path.exists(candidate):
+                state_file_path = candidate
         self.state_path = state_file_path
         self.validator = validator or CryptoCheckpointValidator(session_key=session_key)
         self._signed_tickets_count = 0

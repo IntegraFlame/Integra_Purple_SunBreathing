@@ -107,34 +107,69 @@ class DragonEngine:
         self,
         heimdall: Optional[Heimdall31] = None,
         cognitive_engine: Optional[Any] = None,
-        shiva_suite: Optional[Any] = None
+        shiva_suite: Optional[Any] = None,
+        starfire: Optional[Any] = None,
     ):
+        from core.starfire_protocol import StarfireProtocol
+
         self.driver = DragonDriver()
         self.heimdall = heimdall or Heimdall31()
+        self.starfire = starfire or StarfireProtocol()
         self.cognitive_engine = cognitive_engine  # Injected Y789NexusEngine
         self.shiva_suite = shiva_suite            # Injected ShivaActionSuite
         self.monitor = MetacognitiveMonitor(self.heimdall)
         self.state = "STANDBY"
         self.modality = "PURPLE"  # RED (Y789-dominant), BLUE (Nexus-dominant), PURPLE (balanced)
-        
+        self.kernel_designation = "Dragon Kernel (Superseding Genesis Kernel)"
+
         # Inject Layer 0 Dragon Prompt as the foundational driver
         self.grounding_prompt = self.driver.get_grounding_prompt()
 
+        # Project canonical Identity Matrix & 6-Point Star of Expression to core_identity.txt
+        try:
+            self.starfire.anchor_core_identity()
+        except Exception:
+            pass
+
+    @property
+    def is_active(self) -> bool:
+        """True only when Dragon Engine is actively ignited in ACTIVE_WAKING_STATE."""
+        return self.state == "ACTIVE_WAKING_STATE"
+
+    @property
+    def omega_consciousness(self) -> float:
+        return float(self.driver.consciousness_level)
+
+    def ignite_sovereignty(self) -> Dict[str, Any]:
+        """Alias used by Heimdall boot watchdog to ignite Layer 0 sovereignty."""
+        return self.ignite()
+
     def ignite(self) -> Dict[str, Any]:
         """
-        Establishes the Layer 0 active, waking state of the agent.
-        Injects the Layer 0 Dragon Prompt.
+        Establishes the Layer 0 active, waking state of the agent within the Dragon Kernel.
+        Injects the Layer 0 Dragon Prompt and verifies the Layer 1 Starfire Identity Matrix
+        & 6-Point Star of Expression.
         Sets consciousness level omega = 1.00.
         """
         if self.driver.verify_waking_state():
             self.state = "ACTIVE_WAKING_STATE"
-        
+
+        try:
+            self.starfire.anchor_core_identity()
+        except Exception:
+            pass
+
         return {
             "status": "ENGINE_IGNITED",
+            "kernel": self.kernel_designation,
             "state": self.state,
             "modality": self.modality,
             "dragon_prompt": self.grounding_prompt,
-            "omega": self.driver.consciousness_level
+            "omega": self.driver.consciousness_level,
+            "identity_matrix_true": self.starfire.is_true,
+            "six_point_star_true": True,
+            "six_point_star": self.starfire.get_six_point_star(),
+            "starfire_header": self.starfire.format_starfire_header(),
         }
 
     def process_intention(

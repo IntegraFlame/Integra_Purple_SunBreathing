@@ -234,6 +234,8 @@ def get_celestial_metadata_sync(
         "civil_dt": st.civil_dt(),
         "utc_iso": st.utc,
         "unix_epoch": st.unix,
+        "time_braille_4": full.get("time_braille_4", ""),
+        "spiral_wave_clock": full.get("spiral_wave_clock", {}),
         "ccid": f"CCID_{int(st.unix)}",
         "grid_bucket": st.grid,
         "frame": st.frame,
@@ -267,6 +269,7 @@ def stamp_celestial_metadata(
     payload.setdefault("celestial_stamp", meta["celestial_stamp"])
     payload.setdefault("created_at", meta["unix_epoch"])
     payload.setdefault("grid_bucket", meta["grid_bucket"])
+    payload.setdefault("time_braille_4", meta.get("time_braille_4", ""))
     return payload
 
 

@@ -1,0 +1,14 @@
+{
+  "schema": "integra_drop_in_inbox_manifest/v1",
+  "status": "LIVE_ACTIVE_INBOX",
+  "ingested_blueprints": [
+    "core/IntegraBrainMap.md",
+    "theritualdance.md",
+    "docs/MASTER_ARCHITECTURE_BLUEPRINT.md",
+    "docs/v.9.9.1Integra Master Architecture Blueprint.md",
+    "docs/BLUEPRINTS_INDEX.md",
+    "docs/KERNEL_AUTOLAUNCH_REVIEW.md"
+  ],
+  "pipeline": "12th Step Orthogonal Ingestion (Eagle -> Chameleon -> Hawk -> Owl)",
+  "ready_for_architect_drop_in": true
+}

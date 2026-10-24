@@ -1,3 +1,4 @@
+import os
 from datetime import datetime, timedelta
 
 from airflow import DAG
@@ -28,8 +29,10 @@ with DAG(
     tags=['job:datacloud:antigravity', 'integra-os', 'swds'],
 ) as dag:
 
-    # Path to the Dataflow pipeline script
-    pipeline_script = '/home/airflow/gcs/data/pipelines/swds_pipeline.py'
+    # Path to the Dataflow/Local SWDS pipeline script (Cloud Composer GCS mount when deployed, local Homebase otherwise)
+    _composer_script = '/home/airflow/gcs/data/pipelines/swds_pipeline.py'
+    _local_script = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'pipelines', 'swds_pipeline.py'))
+    pipeline_script = _composer_script if os.path.exists('/home/airflow/gcs/data') else _local_script
     
     # Task to trigger the Phoenix Engine Dataflow pipeline
     run_phoenix_engine = DataflowCreatePythonJobOperator(

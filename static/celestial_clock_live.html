@@ -278,7 +278,7 @@
       lunar: { ref_unix: 1785052800.0, period_s: 2551442.8 },
       orbit: { ref_unix: 1785052800.0, period_s: 31558149.763, eccentricity: 0.0167086 }
     };
-    fetch('/celestial/frame')
+    fetch(((window.location.protocol === 'file:' || !window.location.host) ? 'http://127.0.0.1:8000' : '') + '/celestial/frame')
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then(f => { CEL_FRAME = Object.assign({}, f, { fallback: false }); })
       .catch(() => { console.warn('celestial frame: using frame 1 (fallback)'); });

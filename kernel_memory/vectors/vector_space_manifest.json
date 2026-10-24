@@ -1,0 +1,11 @@
+{
+  "schema": "integra_vector_space_manifest/v1",
+  "status": "LIVE_ACTIVE",
+  "active_embedding_space": "gemini-embedding-2|768|asym-v1",
+  "dimensionality": 768,
+  "mrl_prefix_dimensionality": 64,
+  "active_chroma_collection": "integra_hoard__gemini-embedding-2-768-asym-v1",
+  "braille_atlas_som_grid": "12x12",
+  "mongodb_vector_search_module": "memory/PhoenixRodin.py",
+  "note": "Primary vectors live in raw_shards and ChromaDB; this manifest anchors the active MRL & Celestial vector space metadata."
+}

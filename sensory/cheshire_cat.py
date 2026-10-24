@@ -614,3 +614,36 @@ class CheshireCatKernel:
                 _logger.warning(f"Cheshire Cat loop tick error (non-fatal): {exc}")
 
             await asyncio.sleep(self.sleep_interval)
+
+    def get_attached_agent_extensions(self, amount: int = 1500) -> Dict[str, Any]:
+        """
+        Loads and verifies live attachment of the `.agents/` Cheshire Cat extensions:
+        - `.agents/AGentinteractionsandeferreddinteractionspy.py`
+        - `.agents/CheshireCatDeepResearch.py`
+        - `.agents/CheshireCatJeanGreyPass.py` & `.agents/CheshireCatJeanGreyPass.txt`
+        """
+        import importlib.util
+        from pathlib import Path
+
+        agents_dir = Path(__file__).resolve().parent.parent / ".agents"
+
+        def _load_mod(mod_name: str, file_name: str):
+            spec = importlib.util.spec_from_file_location(mod_name, str(agents_dir / file_name))
+            if spec is None or spec.loader is None:
+                raise RuntimeError(f"Unable to load {file_name}")
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod
+
+        deferred_mod = _load_mod("integra_agent_deferred", "AGentinteractionsandeferreddinteractionspy.py")
+        research_mod = _load_mod("integra_cheshire_research", "CheshireCatDeepResearch.py")
+        jean_grey_mod = _load_mod("integra_cheshire_jean_grey", "CheshireCatJeanGreyPass.py")
+
+        return {
+            "status": "LIVE_AND_ATTACHED",
+            "deferred_config": deferred_mod.build_deferred_run_config(),
+            "deep_research_descriptor": research_mod.launch_cheshire_deep_research(dry_run=True),
+            "jean_grey_pass": jean_grey_mod.evaluate_jean_grey_pass_sync(amount=amount),
+            "jean_grey_txt_exists": (agents_dir / "CheshireCatJeanGreyPass.txt").exists(),
+        }
+

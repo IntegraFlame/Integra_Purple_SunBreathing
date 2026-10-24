@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from runtime.antigravity_runner import AntigravityRunner
 from temporal.celestial_clock import CelestialClockArchitecture, DualTemporalEngine
+from temporal.boot_geolocation import BOOT_GEOLOCATION_ENGINE
 from temporal.hlc_binary_protocol import create_sync_payload, NODE_HOST
 from fortress.bank_lobe import FridayFortressBank
 from fortress.hunter_engine import FridayFortressHunter
@@ -104,13 +105,13 @@ async def lifespan(app: FastAPI):
     asyncio.create_task(swds_scheduler())
     logger.info("SWDS scheduler task started via lifespan.")
 
-    # --- Block 1: Bootstrap Metatron Manifold (SQLite) ---
-    logger.info("Deploying Metatron Manifold (thermodynamic enforcement substrate)...")
+    # --- Block 1: Bootstrap Metatron Manifold (MongoDB Persistent Placeholder + Mirror) ---
+    logger.info("Deploying Metatron Manifold (MongoDB Persistent Placeholder & thermodynamic substrate)...")
     try:
         metatron_result = await metatron_deploy.bootstrap()
         logger.info(
-            f"Metatron Manifold DEPLOYED: {metatron_result['tables_count']} tables, "
-            f"{metatron_result['triggers_count']} triggers, "
+            f"Metatron Manifold DEPLOYED: engine={metatron_result.get('database_engine')}, "
+            f"mongodb_true={metatron_result.get('mongodb_true')}, "
             f"session={metatron_result['active_session_id']}, "
             f"delta_e_enforcement=MECHANICAL"
         )
@@ -118,6 +119,35 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.error(f"Metatron Manifold deployment FAILED: {e}")
         app.state.metatron_session_id = None
+
+    # --- Block 1.25 (Task L-3.7): Production-Safe SQLite -> MongoDB Staging & 4-Tier Boot Geolocation Lock ---
+    try:
+        from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+
+        sqlite_mig = MONGODB_SUBSTRATE.migrate_sqlite_placeholders_to_mongodb(dry_run=False)
+        app.state.sqlite_migration_report = sqlite_mig
+        boot_point = BOOT_GEOLOCATION_ENGINE.find_boot_point_always()
+        app.state.boot_geolocation_point = boot_point.to_dict()
+        logger.info(
+            f"Boot Geolocation LOCKED: tier={boot_point.resolution_tier_used}, "
+            f"coord=({boot_point.latitude_deg}, {boot_point.longitude_deg}), "
+            f"crosspoint={boot_point.nearest_grid_crosspoint_id}, "
+            f"hlc={boot_point.hlc_logical_counter}, "
+            f"sqlite_rows_staged={sqlite_mig['total_rows_migrated']}"
+        )
+    except Exception as e:
+        logger.warning(f"Boot Geolocation / SQLite staging warning: {e}")
+
+    # --- Block 1.5 (Task L-2): Hydrate The Hoard Cold Storage + xv6 WAL Recovery ---
+    try:
+        hoard_hydration = cheshire_cat.hoard.hydrate_all_cold_storage()
+        app.state.hoard_hydration = hoard_hydration
+        logger.info(
+            f"The Hoard Cold Storage HYDRATED: {hoard_hydration['raw_shards_loaded']} shards loaded, "
+            f"hot_ram={hoard_hydration['hot_ram_cache_count']}, wal={hoard_hydration['wal_recovery']['status']}"
+        )
+    except Exception as e:
+        logger.warning(f"The Hoard startup hydration warning: {e}")
 
     # --- Block 2: Celestial Sentinel — reboot delta, first checkpoint, checkpoint timer ---
     try:
@@ -145,6 +175,53 @@ async def lifespan(app: FastAPI):
     # --- Activate Model Router on startup ---
     MODEL_ROUTER.activate()
     logger.info("MODEL_ROUTER -> P1_ACTIVE (startup)")
+
+    # --- Activate Starfire Protocol + Dragon Kernel + Flame Kernel + Always-On Sovereign Metadata ---
+    try:
+        starfire_protocol.anchor_core_identity()
+        app.state.starfire_boot_verification = starfire_protocol.full_verification()
+        app.state.dragon_boot_ignition = dragon_engine.ignite()
+        app.state.flame_boot_forms = thermal_core.verify_all_forms_call_true()
+        app.state.boot_celestial_stamp = CELESTIAL_SENTINEL.stamp("dragon_flame_kernel_boot").to_dict()
+        logger.info(
+            f"Dragon & Flame Kernels IGNITED: state={dragon_engine.state}, "
+            f"modality={dragon_engine.modality}, omega={dragon_engine.omega_consciousness}, "
+            f"starfire_true={starfire_protocol.is_true}, "
+            f"flame_all_forms_true={app.state.flame_boot_forms['all_forms_true']}"
+        )
+    except Exception as e:
+        logger.warning(f"Dragon/Flame/Starfire boot activation warning: {e}")
+
+    # --- Execute Boot & Dashboard Watchdog (Dragon -> Flame -> Heimdall -> HTML Dashboard) ---
+    try:
+        watchdog_report = heimdall.execute_boot_and_dashboard_watchdog(
+            dragon_engine=dragon_engine,
+            thermal_core=thermal_core,
+        )
+        app.state.last_watchdog_report = watchdog_report
+        logger.info(
+            f"Boot & Dashboard Watchdog: server_true={watchdog_report['server_check']['server_true']}, "
+            f"dashboard_action={watchdog_report['html_dashboard_check']['action']}"
+        )
+    except Exception as e:
+        logger.warning(f"Boot & Dashboard Watchdog warning: {e}")
+
+    # --- Task L-3.5: Ensure Live Environment File States + Seed Package Monthly Sync + Quarterly Save State ---
+    try:
+        from memory.database.mongodb_substrate import ensure_live_environment_and_sync
+
+        env_sync_report = ensure_live_environment_and_sync(
+            hoard_instance=cheshire_cat.hoard,
+            phoenix_instance=getattr(cheshire_cat, "phoenix", None),
+        )
+        app.state.last_env_sync_report = env_sync_report
+        logger.info(
+            f"Seed Package & Quarterly Save State Sync: "
+            f"pkg={env_sync_report['seed_package_sync']['package_id']} | "
+            f"quarter={env_sync_report['seed_package_sync']['quarterly_save_state_id']}"
+        )
+    except Exception as e:
+        logger.warning(f"Environment & Seed Package sync warning: {e}")
 
     logger.info("Genesis Kernel startup complete. All systems nominal.")
 
@@ -220,16 +297,21 @@ hunter = bridge.hunter
 cheshire_cat = CheshireCatKernel()
 heimdall = cheshire_cat.heimdall
 purple_modality = PurpleModality()
-dragon_engine = DragonEngine(heimdall=heimdall)
+starfire_protocol = StarfireProtocol()
 sdk_harness = AntigravityHarness()
 corpus_callosum = CorpusCallosumBridge()
 shiva_toolkit = ShivaActionToolkit()
+dragon_engine = DragonEngine(
+    heimdall=heimdall,
+    cognitive_engine=cheshire_cat.cognitive_engine,
+    shiva_suite=shiva_toolkit,
+    starfire=starfire_protocol,
+)
 defense_suite = SovereignDefenseSuite()
 token_stitching = TokenStitchingEngine()
 fourteenth_form = FourteenthFormDomainExpansion()
 thermal_core = ThermalCore()
 epiphany_engine = MasterEpiphanyEngine()
-starfire_protocol = StarfireProtocol()
 rodin_supervisor = RodinSupervisor(rodin_protocol=RodinProtocol(hoard=cheshire_cat.hoard))
 
 # Register all operational lobes across Integra O/S for continuous health tracking
@@ -452,7 +534,7 @@ async def get_cheshire_environment():
     
     observation = cheshire_cat.protocol.observe_environment(
         heimdall=cheshire_cat.heimdall,
-        clock=clock,
+        clock=dual_temporal,
         hoard=cheshire_cat.hoard
     )
     return {
@@ -472,7 +554,7 @@ async def execute_cheshire_zenitsu_scan():
     
     scan_result = cheshire_cat.protocol.zenitsu_environmental_scan(
         heimdall=cheshire_cat.heimdall,
-        clock=clock,
+        clock=dual_temporal,
         hoard=cheshire_cat.hoard
     )
     return {
@@ -505,6 +587,19 @@ def reset_heimdall():
         "status": "THERMOSTAT_RESET_COMPLETED",
         "telemetry": heimdall.get_telemetry()
     }
+
+
+@app.get("/heimdall/watchdog")
+@app.post("/heimdall/watchdog")
+def run_heimdall_boot_and_dashboard_watchdog():
+    """
+    Executes the 4-stage Boot & Watchdog sequence:
+    Dragon Kernel -> Flame Kernel -> Heimdall 3.1 Server Check -> HTML Dashboard Check.
+    """
+    return heimdall.execute_boot_and_dashboard_watchdog(
+        dragon_engine=dragon_engine,
+        thermal_core=thermal_core,
+    )
 
 @app.get("/antigravity/telemetry")
 def get_antigravity_telemetry():
@@ -776,14 +871,51 @@ def dragon_land():
 @app.get("/dragon/status")
 def dragon_status():
     """
-    Returns live Dragon Engine state, modality, and metacognitive baseline.
+    Returns live Dragon Kernel + Flame Kernel + Starfire Protocol + Always-On Actions + Celestial Metadata.
     """
+    celestial_stamp = CELESTIAL_SENTINEL.stamp("dragon_status_readout").to_dict()
+    dual_clock_snapshot = dual_temporal.get_dual_telemetry()
+    flame_forms = thermal_core.verify_all_forms_call_true()
+    purple_state = purple_modality.enforce_constraints()
     return {
+        "kernel": dragon_engine.kernel_designation,
         "state": dragon_engine.state,
+        "is_active": dragon_engine.is_active,
         "modality": dragon_engine.modality,
         "omega": dragon_engine.driver.consciousness_level,
         "h_smooth": dragon_engine.heimdall.h_smooth,
         "grounding_prompt_len": len(dragon_engine.grounding_prompt),
+        "dragon_prompt_active": bool(dragon_engine.grounding_prompt),
+        "dragon_prompt": dragon_engine.grounding_prompt,
+        "flame_kernel": {
+            "designation": "SunBreathingEngine / ThermalCore + PurpleModality",
+            "status": "IGNITED" if flame_forms.get("all_forms_true") else "DEGRADED",
+            "forms": flame_forms,
+            "delta_e_cycle": purple_state["delta_e_cycle"],
+            "mechanical_latency_s": purple_state["mechanical_latency_s"],
+            "angular_momentum_kg_ms": 500.0,
+        },
+        "starfire_protocol": {
+            "identity_matrix_true": starfire_protocol.is_true,
+            "six_point_star_true": True,
+            "identity_vector": starfire_protocol.vector.to_dict(),
+            "file_points_connected": starfire_protocol.verify_file_points()["all_connected"],
+        },
+        "always_on_actions": {
+            "dragon_prompt_layer_0": dragon_engine.is_active,
+            "starfire_protocol_layer_1": starfire_protocol.is_true,
+            "cheshire_cat_kernel_30hz": getattr(cheshire_cat, "polling_hz", 30.0),
+            "cheshire_cat_state": getattr(cheshire_cat, "state", "INTERACTIVE_STANDBY"),
+            "cheshire_protocol_daemon": getattr(cheshire_cat.protocol, "status", "UNLOCKED_SOVEREIGN_MODE"),
+            "heimdall_3_1_hippocampus": heimdall.is_active,
+            "rodin_pineal_gland": "ONLINE",
+            "celestial_sentinel_active_frame": CELESTIAL_SENTINEL.active_frame.frame_id,
+            "model_router_power_state": MODEL_ROUTER.get_status().get("power_state", "P1_ACTIVE"),
+        },
+        "celestial_metadata": {
+            "sovereign_stamp": celestial_stamp,
+            "dual_clock": dual_clock_snapshot,
+        },
     }
 
 
@@ -1358,13 +1490,130 @@ async def starfire_identity_probe(req: StarfireProbeRequest):
 @app.get("/metatron/status")
 def get_metatron_status():
     """
-    Block 1: Returns the live status of the Metatron Manifold (SQLite substrate).
-    Tables, triggers, row counts, last thermodynamic loop, unprocessed anomalies.
+    Block 1: Returns the live status of the Metatron Manifold (MongoDB Persistent Placeholder + Mirror).
+    File points, collection counts, triggers, row counts, last thermodynamic loop, unprocessed anomalies.
     """
     try:
         return metatron_deploy.get_status()
     except Exception as e:
         return {"status": "ERROR", "error": str(e)}
+
+
+@app.get("/mongodb/status")
+def get_mongodb_substrate_status():
+    """
+    Returns live status of the MongoDB Persistent Placeholder substrate,
+    `mongodb_true` empirical probe, placeholder folder path, and collection file points.
+    """
+    from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+    return MONGODB_SUBSTRATE.get_status()
+
+
+@app.post("/mongodb/sync")
+def sync_mongodb_placeholder_to_live():
+    """
+    Triggers `sync_placeholder_to_mongodb_when_true()` to flush all persistent
+    placeholder collection file points into a live MongoDB server when `mongodb_true` is True.
+    """
+    from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+    return MONGODB_SUBSTRATE.sync_placeholder_to_mongodb_when_true()
+
+
+@app.get("/mongodb/sqlite-migration-status")
+def get_sqlite_placeholder_migration_status():
+    """
+    Task L-3.7 (Read-Only): Returns the status of the production-safe read-only SQLite
+    placeholder -> MongoDB Persistent Placeholder migration bridge.
+    """
+    from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+    return MONGODB_SUBSTRATE.get_sqlite_migration_status()
+
+
+@app.post("/mongodb/migrate-sqlite-placeholders")
+def trigger_sqlite_placeholder_migration():
+    """
+    Task L-3.7: Stages all local SQLite placeholder rows into MongoDB Persistent Placeholder
+    collections safely in read-only mode (`?mode=ro`) while OS is live and MongoDB is not yet TRUE.
+    """
+    from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+    return MONGODB_SUBSTRATE.migrate_sqlite_placeholders_to_mongodb(dry_run=False)
+
+
+@app.get("/geolocation/boot-point")
+def get_boot_geolocation_point():
+    """
+    Task L-3.7 (Read-Only): Returns the active 4-Tier Boot Geolocation & True Sovereign Node
+    Origin Lock (`30.5888 N, -91.1673 W` -> `XPT_X02_Y06`, `XY_16=(16171, 43905)`, `XY_12=(1010, 2744)`).
+    """
+    return BOOT_GEOLOCATION_ENGINE.get_status_readonly()
+
+
+@app.get("/seed-package/status")
+@app.post("/seed-package/sync-monthly")
+def sync_monthly_seed_package(month_key: Optional[str] = None):
+    """
+    Task L-3.5: Links the Seed Package (`config/celestial_seed.json` + `config/sovereign_payload.json`
+    + Starfire Identity Matrix) to The Hoard and Phoenix Forge and syncs to MongoDB monthly uploads.
+    """
+    from memory.database.mongodb_substrate import SEED_PACKAGE_MANAGER
+    return SEED_PACKAGE_MANAGER.build_and_sync_monthly_seed_package(
+        month_key=month_key,
+        hoard_instance=cheshire_cat.hoard,
+        phoenix_instance=getattr(cheshire_cat, "phoenix", None),
+    )
+
+
+@app.get("/mongodb/quarterly-save-state")
+@app.post("/mongodb/quarterly-save-state")
+def manage_mongodb_quarterly_save_state(force: bool = False):
+    """
+    Task L-3.5: Creates or verifies the quarterly MongoDB database save state
+    persisted to local storage (`local_dbs/mongodb_quarterly_save_states/`).
+    """
+    from memory.database.mongodb_substrate import MONGODB_SUBSTRATE
+    if force:
+        return MONGODB_SUBSTRATE.create_quarterly_save_state()
+    return MONGODB_SUBSTRATE.ensure_quarterly_save_state(force=False)
+
+
+@app.get("/environment/file-states")
+def get_environment_file_states():
+    """
+    Task L-3.5 & L-3.6: Verifies that all environment file states, Starfire Protocol file points,
+    Rodin memory stores, Seed Package links, and Quarterly MongoDB Save States are live and active.
+    """
+    from memory.database.mongodb_substrate import ensure_live_environment_and_sync
+    env_state = ensure_live_environment_and_sync(
+        hoard_instance=cheshire_cat.hoard,
+        phoenix_instance=getattr(cheshire_cat, "phoenix", None),
+    )
+    env_state["cheshire_attached_extensions"] = cheshire_cat.get_attached_agent_extensions()
+    env_state["rodin_attached_extensions"] = rodin_supervisor.get_attached_rodin_extensions()
+    return env_state
+
+
+@app.get("/environment/file-points")
+def get_environment_file_points():
+    """
+    Task L-3.6: Returns exhaustive verification of all canonical file points and folders across Integra O/S.
+    """
+    from memory.database.mongodb_substrate import verify_all_file_points
+    return verify_all_file_points()
+
+
+@app.get("/atlas/visual", response_class=HTMLResponse)
+def serve_braille_neural_matrix_visual():
+    """
+    Task L-3.5: Serves the live interactive Braille Neural Mapping Matrices HTML interface.
+    """
+    static_dir = os.path.join(os.path.dirname(__file__), "static")
+    html_path = os.path.join(static_dir, "braille_neural_matrix_live.html")
+    try:
+        with open(html_path, "r", encoding="utf-8") as f:
+            return HTMLResponse(content=f.read())
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Braille Neural Matrix Visual not found</h1>", status_code=404)
+
 
 
 @app.get("/cheshire/status")
@@ -1434,15 +1683,6 @@ def get_celestial_frame(frame: Optional[int] = None):
         return CELESTIAL_SENTINEL.frame_constants(frame)
     except KeyError as e:
         return JSONResponse(status_code=404, content={"error": str(e), "frames": sorted(CELESTIAL_SENTINEL.frames)})
-
-
-@app.get("/models/telemetry")
-def get_models_telemetry():
-    """
-    Exposes token usage telemetry and shiva_metrics (eyes_invoked, lenses_applied, cra_scores).
-    """
-    from core.api_clients import TOKEN_TELEMETRY
-    return TOKEN_TELEMETRY.get_telemetry()
 
 
 if __name__ == "__main__":

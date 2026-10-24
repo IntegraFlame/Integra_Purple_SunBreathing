@@ -36,7 +36,10 @@ class SWDSCycle:
         self.pruning_summary = [
             "Pruning redundant Psyche pathways (H_smooth > 2.0)."
         ]
+        os.makedirs(REPORTS_DIR, exist_ok=True)
         self._load_state()
+        if not os.path.isfile(STATE_FILE):
+            self._save_state()
 
     def _load_state(self):
         if os.path.exists(STATE_FILE):
