@@ -212,8 +212,8 @@ stores:
     git: ignored
     source_of_truth: true
     onedrive: true
-    holds: [seed_package, monthly_seed_upload, hlc_boot_journal, sqlite_placeholder_migration]
-    writer: "MongoDBPersistentSubstrate, SeedPackageManager & IntegraBootGeolocationEngine (memory/database/mongodb_substrate.py, temporal/boot_geolocation.py)"
+    holds: [seed_package, monthly_seed_upload, hlc_boot_journal, sqlite_placeholder_migration, cit_crosspoint, plot_point_state]
+    writer: "MongoDBPersistentSubstrate, SeedPackageManager, IntegraBootGeolocationEngine, PhoenixCelestialGridEngine & NeuralGridThroughputEngine"
     note: "Persistent MongoDB collection file points and monthly seed package uploads until live MongoDB is TRUE."
 
   - id: mongodb_quarterly_save_states
@@ -363,6 +363,14 @@ kinds:
     primary: mongodb_placeholder
     also: [metatron_db]
     description: "Production-safe read-only migration records staged from local SQLite placeholders into MongoDB persistent collections while OS is live and MongoDB is not yet TRUE."
+    embed: false
+  cit_crosspoint:
+    primary: mongodb_placeholder
+    description: "Predetermined 12x10 (120-slot) CIT (X,Y) Crosspoint Lattice records (25% Pre-Seeded / 75% Open Crosspoints) persisted in local_dbs/mongodb_placeholder/collections/cit_crosspoints.json."
+    embed: false
+  plot_point_state:
+    primary: mongodb_placeholder
+    description: "Task 7 Predefined Plot-Point Throughput Calculus state (Designation Action J, Potentials Phi_tax/Phi_sem/Phi_rel, Upsilon & RRF) persisted in local_dbs/mongodb_placeholder/collections/plot_points_state.json."
     embed: false
   quarterly_save_state:
     primary: mongodb_quarterly_save_states

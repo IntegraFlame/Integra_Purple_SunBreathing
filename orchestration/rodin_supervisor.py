@@ -55,9 +55,17 @@ class RodinSupervisor:
     verdicts of the RodinProtocol and routes failures to the AlexandriaProtocol.
     """
 
-    def __init__(self, rodin_protocol: RodinProtocol = None, alexandria: Any = None):
+    def __init__(
+        self,
+        rodin_protocol: RodinProtocol = None,
+        alexandria: Any = None,
+        cit_grid_engine: Any = None,
+        throughput_engine: Any = None,
+    ):
         self.rodin = rodin_protocol or RodinProtocol()
         self.alexandria = alexandria or AlexandriaProtocol()
+        self._cit_grid_engine = cit_grid_engine
+        self._throughput_engine = throughput_engine
         self.agent_registry = {
             "ANALYST": "AnalystAgent - Data synthesis and metric evaluation",
             "RESEARCH": "ResearchAgent - Deep traversal of internal Hoard",
@@ -219,3 +227,70 @@ class RodinSupervisor:
             "rows_returned": len(search_res.get("rows", [])),
         }
 
+    @property
+    def cit_grid_engine(self):
+        if self._cit_grid_engine is None:
+            from memory.braille_atlas_engine import PHOENIX_CELESTIAL_GRID_ENGINE
+
+            self._cit_grid_engine = PHOENIX_CELESTIAL_GRID_ENGINE
+        return self._cit_grid_engine
+
+    @property
+    def throughput_engine(self):
+        if self._throughput_engine is None:
+            from memory.braille_atlas_engine import NEURAL_GRID_THROUGHPUT_ENGINE
+
+            self._throughput_engine = NEURAL_GRID_THROUGHPUT_ENGINE
+        return self._throughput_engine
+
+    def dispatch_cit_orbital_route(
+        self,
+        prompt: str,
+        search_epoch_sec: Optional[int] = None,
+        cwa_nexus_posterior: float = 0.50,
+        intent_confidence: float = 0.92,
+        active_context_tokens: int = 48000,
+        indirect_bridge_score: float = 0.0,
+        top_k: int = 3,
+    ) -> Dict[str, Any]:
+        """
+        Task L-4 Unified Conductor:
+          1. Sweeps Occupied CIT (X, Y) Crosspoints along the Planetary Trajectory (`D_orbital`).
+          2. Evaluates Master Plot-Point Throughput (`Upsilon_{r,c}`) & Multi-Modal RRF (`k=60`).
+          3. If `RodinProtocol.neural_grid_router` holds registered 768D plot points, executes
+             Two-Stage MRL (`64D -> 768D`), `M_knn`, `EIG`, `SSR >= 0.95`, Nexus Decision Tree,
+             and the 4-Step Neuron Checkpointer.
+        """
+        epoch = int(time.time() if search_epoch_sec is None else search_epoch_sec)
+        orbital_sweep = self.cit_grid_engine.phoenix_orbital_locate_nodes(
+            query_text=prompt,
+            search_epoch_sec=epoch,
+            top_k=top_k,
+        )
+        throughput_eval = self.throughput_engine.evaluate_neural_grid_throughput(
+            query_text=prompt,
+            cwa_nexus_posterior=cwa_nexus_posterior,
+            top_k=top_k,
+        )
+        router = self.rodin.get_neural_grid_router()
+        nexus_route = None
+        if router.plot_points:
+            nexus_route = router.route_query_through_neural_grid(
+                prompt=prompt,
+                intent_confidence=intent_confidence,
+                active_context_tokens=active_context_tokens,
+                indirect_bridge_score=indirect_bridge_score,
+            ).to_dict()
+
+        return {
+            "prompt": prompt,
+            "search_epoch_sec": epoch,
+            "cit_capacity": self.cit_grid_engine.grid_capacity_telemetry(),
+            "orbital_sweep": orbital_sweep,
+            "throughput_calculus": throughput_eval,
+            "nexus_decision_route": nexus_route,
+        }
+
+    def apply_mistake_loop_correction(self, correction_packet: Dict[str, str]) -> Dict[str, Any]:
+        """Forwards user Correction Packet to Rodin's Mistake Loop & Shadow State Warm Cache."""
+        return self.rodin.apply_mistake_loop_correction(correction_packet)

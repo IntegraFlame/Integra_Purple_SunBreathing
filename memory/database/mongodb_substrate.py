@@ -60,6 +60,8 @@ CANONICAL_COLLECTIONS = (
     "quarterly_save_states_ledger",
     "hlc_boot_journal",
     "sqlite_migrated_records",
+    "cit_crosspoints",
+    "plot_points_state",
 )
 
 SQLITE_TABLE_TO_COLLECTION_MAP: Dict[str, str] = {
@@ -70,6 +72,8 @@ SQLITE_TABLE_TO_COLLECTION_MAP: Dict[str, str] = {
     "atlas_nodes": "braille_atlas_nodes",
     "braille_atlas_nodes": "braille_atlas_nodes",
     "swds_handoff_batches": "swds_handoff_batches",
+    "cit_crosspoints": "cit_crosspoints",
+    "plot_points_state": "plot_points_state",
 }
 
 
@@ -295,6 +299,39 @@ class MongoCollectionPlaceholder:
         if modified:
             self._save_docs(docs)
         return {"acknowledged": True, "modified_count": modified, "file_point": str(self.file_point)}
+
+    def replace_many(self, documents: List[Dict[str, Any]], key_field: str = "_id") -> Dict[str, Any]:
+        """Batch-upserts multiple documents in a single atomic file-point write."""
+        existing = self._load_docs()
+        by_key: Dict[Any, Dict[str, Any]] = {}
+        order: List[Any] = []
+        now_ts = time.time()
+        for doc in existing:
+            k = doc.get(key_field) or doc.get("_id") or str(uuid.uuid4())
+            if k not in by_key:
+                order.append(k)
+            by_key[k] = dict(doc)
+        for incoming in documents:
+            new_doc = dict(incoming)
+            k = new_doc.get(key_field) or new_doc.get("_id") or str(uuid.uuid4())
+            new_doc.setdefault("_id", str(k))
+            if k in by_key:
+                merged = dict(by_key[k])
+                merged.update(new_doc)
+                merged["_updated_at"] = now_ts
+                by_key[k] = merged
+            else:
+                new_doc.setdefault("_persisted_at", now_ts)
+                order.append(k)
+                by_key[k] = new_doc
+        final_docs = [by_key[k] for k in order]
+        self._save_docs(final_docs)
+        return {
+            "acknowledged": True,
+            "upserted_or_updated_count": len(documents),
+            "total_count": len(final_docs),
+            "file_point": str(self.file_point),
+        }
 
     def count_documents(self, query: Optional[Dict[str, Any]] = None) -> int:
         return len(self.find(query=query))

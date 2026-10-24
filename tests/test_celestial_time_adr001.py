@@ -578,3 +578,283 @@ def test_task_l3_7_production_safe_sqlite_placeholder_migration(tmp_path):
         assert custom_doc["payload"] == {"__bytes_b64__": "AQL+/w=="}
     finally:
         live_writer.close()
+
+
+
+def test_task_l4_cit_crosspoint_lattice_and_phoenix_orbital_loop(tmp_path):
+    """
+    Task L-4 (Part 1): Verifies the 12x10 = 120 CIT (X,Y) Crosspoint Lattice
+    (25.0% Seeded / 75.0% Open), lossless CITBrailleCodec Morton (X,Y) codec,
+    CelestialOrbitalClock checkpoint compounding, Phoenix planetary trajectory
+    placement (KNOWLEDGE_DOCUMENT, SAVE_STATE_MEMORY, and |Z| > 3.0 ISOLATED_KINTSUGI_NODE
+    auto-quarantine), orbital sweep search, and isolated MongoDB persistence.
+    """
+    import pytest
+    from memory.database.mongodb_substrate import MongoDBPersistentSubstrate
+    from memory.braille_atlas_engine import (
+        CITBrailleCodec,
+        CITCodexFlag,
+        DatasetArchetype,
+        PhoenixCelestialGridEngine,
+    )
+
+    # 1. Enforce Phase 2.4 20-30% initial deployment guard
+    with pytest.raises(ValueError):
+        PhoenixCelestialGridEngine(pretrained_capacity_ratio=0.10)
+    with pytest.raises(ValueError):
+        PhoenixCelestialGridEngine(pretrained_capacity_ratio=0.45)
+
+    # 2. Lossless Morton Z-Order bijective codec on True Node Origin XY_16=(16171, 43905)
+    m_origin = CITBrailleCodec.interleave_morton_xy16(16171, 43905)
+    assert CITBrailleCodec.deinterleave_morton_xy16(m_origin) == (16171, 43905)
+    pkt16 = CITBrailleCodec.encode_cit_packet_16(1792803600, int(CITCodexFlag.DOT1_EXPANSION), 16171, 43905, 0x123456789ABCDE)
+    decoded = CITBrailleCodec.decode_cit_packet_16(pkt16)
+    assert decoded["epoch_sec"] == 1792803600
+    assert decoded["matrix_xy_16"] == (16171, 43905)
+    assert decoded["matrix_xy_12"] == (1010, 2744)
+    assert decoded["semantic_bq_56bit"] == 0x123456789ABCDE
+
+    # 3. Initialize 12x10 = 120 lattice on isolated MongoDB substrate
+    isolated_sub = MongoDBPersistentSubstrate(placeholder_root=tmp_path / "mongo_cit_l4")
+    engine = PhoenixCelestialGridEngine(
+        x_meridians=12,
+        y_rings=10,
+        pretrained_capacity_ratio=0.25,
+        substrate=isolated_sub,
+        persist_on_init=True,
+    )
+    cap_init = engine.grid_capacity_telemetry()
+    assert cap_init["total_xy_crosspoints"] == 120
+    assert cap_init["occupied_crosspoints"] == 30
+    assert cap_init["open_crosspoints_available"] == 90
+    assert cap_init["open_capacity_pct"] == 75.0
+    assert cap_init["seeded_capacity_pct"] == 25.0
+    assert engine.get_crosspoint("XPT_X02_Y06") is not None
+    assert isolated_sub.get_collection("cit_crosspoints").count_documents() == 120
+
+    # 4. Compound orbital accuracy across 2 solar orbits and 2 eclipse alignments
+    engine.clock.register_orbital_checkpoint(is_eclipse_or_solstice=True, full_orbit=True)
+    engine.clock.register_orbital_checkpoint(is_eclipse_or_solstice=True, full_orbit=True)
+
+    # 5. Place all 3 storage archetypes (including automatic |Z|=4.25 > 3.0 Kintsugi quarantine)
+    p_doc = engine.phoenix_orbital_place_dataset(
+        dataset_id="DOC_SPIRAL_CLOCK_01",
+        title="Rotating Spiral Brain Waves & 4D Celestial Metadata",
+        raw_content="cortical spiral waves space time clock morton quadtree braille coordinate",
+        archetype=DatasetArchetype.KNOWLEDGE_DOCUMENT,
+        epoch_sec=1792803600,
+        target_lat_hint=+64.0,
+        target_lon_hint=-40.0,
+    )
+    p_save = engine.phoenix_orbital_place_dataset(
+        dataset_id="SAVESTATE_SWDS_H04",
+        title="SWDS Hour 4 Checkpointer Snapshot (Freeze-Serialize-Commit-Resume)",
+        raw_content="save state memory checkpoint swds siesta 200 char trailing edge overlap",
+        archetype=DatasetArchetype.SAVE_STATE_MEMORY,
+        epoch_sec=1792807200,
+        target_lat_hint=+12.0,
+        target_lon_hint=+15.0,
+    )
+    # Pass KNOWLEDGE_DOCUMENT with z_score_anomaly=4.25 -> must auto-quarantine to ISOLATED_KINTSUGI_NODE!
+    p_iso = engine.phoenix_orbital_place_dataset(
+        dataset_id="KINTSUGI_CRACK_Z4_2",
+        title="Isolated High-Entropy Trajectory Anomaly (|Z| = 4.25)",
+        raw_content="isolated kintsugi anomaly crack sandbox quarantine volatility spike",
+        archetype=DatasetArchetype.KNOWLEDGE_DOCUMENT,
+        epoch_sec=1792810800,
+        target_lat_hint=-72.0,
+        target_lon_hint=+155.0,
+        z_score_anomaly=4.25,
+    )
+    assert p_doc["archetype"] == "KNOWLEDGE_DOCUMENT"
+    assert p_save["archetype"] == "SAVE_STATE_MEMORY"
+    assert p_iso["archetype"] == "ISOLATED_KINTSUGI_NODE"
+    assert (p_iso["cit_codex_flags_int"] & int(CITCodexFlag.DOT8_ISOLATED_NODE)) != 0
+    assert len(p_doc["cit_braille_packet_16"]) == 16
+
+    cap_after = engine.grid_capacity_telemetry()
+    assert cap_after["occupied_crosspoints"] == 33
+    assert cap_after["open_crosspoints_available"] == 87
+
+    # Verify MongoDB collection persisted compressed_payload_zlib_b64 cleanly
+    stored_doc = isolated_sub.get_collection("cit_crosspoints").find_one(
+        {"crosspoint_id": p_doc["assigned_crosspoint_id"]}
+    )
+    assert stored_doc is not None
+    assert stored_doc["stored_dataset_id"] == "DOC_SPIRAL_CLOCK_01"
+    assert isinstance(stored_doc["compressed_payload_zlib_b64"], str)
+
+    # 6. Orbital sweep search locates DOC_SPIRAL_CLOCK_01 as Rank #1
+    sweep = engine.phoenix_orbital_locate_nodes(
+        query_text="Rotating Spiral Brain Waves & 4D Celestial Metadata cortical spiral waves space time clock morton quadtree braille coordinate",
+        search_epoch_sec=1792803600,
+        top_k=3,
+    )
+    top_hit = sweep["top_located_nodes"][0]
+    assert top_hit["dataset_id"] == "DOC_SPIRAL_CLOCK_01"
+    assert top_hit["hamming_distance_bits"] == 0
+    assert top_hit["mrl_768d_similarity"] > 0.99
+
+
+def test_task_l4_throughput_calculus_mrl_nexus_and_mistake_loop(tmp_path):
+    """
+    Task L-4 (Part 2): Verifies Task 7 Equations 7.1-7.10:
+      - NeuralGridThroughputEngine (Designation Action J, Potentials Phi_tax/Phi_sem/Phi_rel,
+        Master Plot-Point Throughput Upsilon_{r,c}, RRF k=60, Epiphany Integral Omega, MongoDB persistence)
+      - CompleteNeuralGridRouterV2 & RodinSupervisor (Mistake Loop + Shadow State Warm Cache,
+        Two-Stage MRL 64D->768D, M_knn, EIG, SSR >= 0.95 gate, 4-Metric Nexus Decision Tree across
+        Scenarios 2a/2e/2f + Indirect Connection + Clarify + Direct, and 4-Step Checkpointer + 170 MPa 7th Form).
+    """
+    from memory.database.mongodb_substrate import MongoDBPersistentSubstrate
+    from memory.braille_atlas_engine import NeuralGridThroughputEngine, PhoenixCelestialGridEngine
+    from memory.rodin_protocol import RodinProtocol
+    from orchestration.rodin_supervisor import RodinSupervisor
+
+    isolated_sub = MongoDBPersistentSubstrate(placeholder_root=tmp_path / "mongo_tp_l4")
+    tp_engine = NeuralGridThroughputEngine(
+        lat_rings=10,
+        lon_meridians=12,
+        substrate=isolated_sub,
+        persist_on_init=True,
+    )
+    assert len(tp_engine.plot_points) == 120
+    assert isolated_sub.get_collection("plot_points_state").count_documents() == 120
+
+    d1 = tp_engine.designate_and_quantify_data(
+        node_id="DATA_NODE_AXIOM_01",
+        title="Bayesian Geodesic & Epistemology First Principles",
+        raw_content="epistemology bayesian axiom logic starfire routing manifold",
+        target_lat=+78.0,
+        target_lon=+15.0,
+        codex_byte=0x03,
+    )
+    d2 = tp_engine.designate_and_quantify_data(
+        node_id="DATA_NODE_TUFTE_03",
+        title="Tufte Visual Display Data-Ink Ratio & Lie Factor",
+        raw_content="visual information display tufte data ink geometry lie factor",
+        target_lat=+58.0,
+        target_lon=+105.0,
+        codex_byte=0x03,
+    )
+    tp_engine.link_plot_points(d1.assigned_plot_point_id, d2.assigned_plot_point_id, weight=0.96)
+
+    tp_out = tp_engine.evaluate_neural_grid_throughput(
+        query_text="epistemology bayesian axiom logic starfire manifold",
+        target_hemisphere="NE",
+        target_zone="Z5_NORTH_POLE",
+        cwa_nexus_posterior=0.50,
+        top_k=3,
+    )
+    assert tp_out["epiphany_integral_omega"] > 0.0
+    rank1 = tp_out["top_routed_plot_points"][0]
+    assert "DATA_NODE_AXIOM_01" in rank1["designated_nodes"]
+    assert rank1["rrf_fusion_score"] > 0.0
+
+    # Wire RodinProtocol + CompleteNeuralGridRouterV2 + RodinSupervisor
+    rodin = RodinProtocol()
+    router = rodin.get_neural_grid_router()
+    router.register_plot_point(
+        plot_point_id="HOARD_CONV_HIST",
+        title="Show me the hoard conversation history log",
+        raw_content="hoard conversation history chat turns archive thread",
+        ccid="CCID_UI_TABS",
+        lat_deg=+15.0,
+        lon_deg=-45.0,
+        trigger_keyword="hoard",
+        initial_conf=0.70,
+    )
+    router.register_plot_point(
+        plot_point_id="HOARD_FILE_VIEW",
+        title="Show me the hoard files and cold storage vault",
+        raw_content="show me the hoard files cold storage database nodes",
+        ccid="CCID_UI_TABS",
+        lat_deg=+18.0,
+        lon_deg=-42.0,
+        trigger_keyword="hoard",
+        initial_conf=0.45,
+    )
+    router.register_plot_point(
+        plot_point_id="PLOT_QUANTUM_RL_STALE",
+        title="Quantum Reinforcement Learning Policy Gradients",
+        raw_content="analyze this new paper on quantum rl policy gradients",
+        ccid="CCID_RESEARCH",
+        lat_deg=+52.0,
+        lon_deg=+14.0,
+        stale_days=19.0,
+        initial_conf=0.88,
+    )
+
+    # Eq. 7.9 Mistake Loop & Shadow State Warm Cache
+    corr = rodin.apply_mistake_loop_correction(
+        {
+            "trigger": "hoard",
+            "previous_id": "HOARD_CONV_HIST",
+            "new_id": "HOARD_FILE_VIEW",
+            "user_feedback": "direct_correction",
+        }
+    )
+    assert corr["previous_confidence_after"] < 0.40
+    assert corr["new_confidence_after"] > 0.70
+    assert "HOARD_CONV_HIST" not in corr["active_shadow_state_ids"]
+    assert "HOARD_FILE_VIEW" in corr["active_shadow_state_ids"]
+
+    # Test A: Command routed to corrected HOARD_FILE_VIEW (Direct Answer + SSR >= 0.95)
+    res_a = rodin.route_neural_grid_query(
+        prompt="Show me the hoard files and cold storage vault",
+        active_context_tokens=52000,
+    )
+    assert res_a.winning_plot_point_id == "HOARD_FILE_VIEW"
+    assert res_a.ssr_confidence_score >= 0.95
+    assert res_a.ssr_gate_action == "PROCEED_TO_OUTPUT"
+    assert res_a.nexus_decision_outcome == "DIRECT_MULTIDIMENSIONAL_ANSWER"
+    assert res_a.m_knn > 0.80
+
+    # Test B: Scenario 2a Conversational Continuation + 175.0 MPa >= 170.0 MPa 7th Form Cavitation
+    res_b = rodin.route_neural_grid_query(
+        prompt="Show me the hoard files and cold storage vault.",
+        active_context_tokens=175000,
+    )
+    assert res_b.nexus_decision_outcome == "SCENARIO_2A_CONVERSATIONAL_CONTINUATION"
+    assert res_b.rodin_constitutional_outcome == "CONVERSATIONAL_CONTINUATION"
+    assert res_b.checkpointer_receipt.axial_stress_mpa == 175.0
+    assert res_b.checkpointer_receipt.seventh_form_cavitation_active is True
+    assert res_b.checkpointer_receipt.sequence_stages_completed == [
+        "1_FREEZE",
+        "2_SERIALIZE",
+        "3_COMMIT",
+        "4_RESUME",
+    ]
+
+    # Test C: Scenario 2e Stale Verification
+    res_c = rodin.route_neural_grid_query(
+        prompt="Analyze this new paper on quantum rl policy gradients?",
+        active_context_tokens=64000,
+    )
+    assert res_c.m_stale is True
+    assert res_c.nexus_decision_outcome == "SCENARIO_2E_ALEXANDRIA_VERIFY_STALE"
+    assert res_c.rodin_constitutional_outcome == "ALEXANDRIA_VERIFICATION"
+
+    # Test D: Scenario 2f Alexandria Guided Search vs Request Clarification
+    res_d = rodin.route_neural_grid_query(
+        prompt="completely unrelated exoplanet magnetosphere spectroscopy?",
+        intent_confidence=0.91,
+    )
+    assert res_d.nexus_decision_outcome == "SCENARIO_2F_ALEXANDRIA_GUIDED_SEARCH"
+    assert res_d.rodin_constitutional_outcome == "ALEXANDRIA_GUIDED_SEARCH"
+
+    res_e = rodin.route_neural_grid_query(
+        prompt="completely unrelated exoplanet magnetosphere spectroscopy?",
+        intent_confidence=0.40,
+    )
+    assert res_e.nexus_decision_outcome == "NEXUS_REQUEST_CLARIFICATION"
+    assert res_e.rodin_constitutional_outcome == "REQUEST_CLARIFICATION"
+
+    # Test F: RodinSupervisor unified CIT orbital + throughput + Nexus dispatch
+    cit_engine = PhoenixCelestialGridEngine(substrate=isolated_sub)
+    sup = RodinSupervisor(rodin_protocol=rodin, cit_grid_engine=cit_engine, throughput_engine=tp_engine)
+    sup_out = sup.dispatch_cit_orbital_route(
+        prompt="Show me the hoard files and cold storage vault",
+        search_epoch_sec=1792803600,
+    )
+    assert sup_out["cit_capacity"]["total_xy_crosspoints"] == 120
+    assert sup_out["nexus_decision_route"]["winning_plot_point_id"] == "HOARD_FILE_VIEW"
